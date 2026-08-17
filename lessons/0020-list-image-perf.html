@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0020: List and Image Performance</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 0020: List and Image Performance</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Optimize FlatList performance with virtualization, cache images, and prevent memory leaks.
+      </div>
+
+      <!-- ======== Section 1 ======== -->
+      <h2>FlatList Optimization</h2>
+      <p>FlatList is already virtualized, but you can optimize it further:</p>
+
+<pre><code>&lt;FlatList
+  data={DATA}
+  keyExtractor={item => item.id}
+  renderItem={renderItem}
+  // Performance props
+  initialNumToRender={10}        // How many items to render first
+  maxToRenderPerBatch={10}       // Items per batch render
+  windowSize={5}                  // Number of items kept in memory
+  removeClippedSubviews={true}   // Unmount off-screen items
+  getItemLayout={(data, index) => (  // Skip measurement calculation
+    { length: 60, offset: 60 * index, index }
+  )}
+/&gt;</code></pre>
+
+      <div class="tip">
+        <strong>getItemLayout</strong>
+        If all items have the same height, provide <code>getItemLayout</code> so FlatList can skip layout measurement — significant performance boost.
+      </div>
+
+      <!-- ======== Section 2 ======== -->
+      <h2>Image Caching</h2>
+      <p>Use <code>react-native-fast-image</code> for better image performance with caching:</p>
+
+<pre><code>import FastImage from 'react-native-fast-image';
+
+function CachedImage({ uri }) {
+  return (
+    &lt;FastImage
+      style={{ width: 200, height: 200 }}
+      source={{
+        uri: uri,
+        priority: FastImage.priority.normal,
+        cache: FastImage.cacheControl.immutable,
+      }}
+      resizeMode={FastImage.resizeMode.cover}
+    /&gt;
+  );
+}</code></pre>
+
+      <p>FastImage automatically caches images to disk, reducing network requests on subsequent loads.</p>
+
+      <!-- ======== Section 3 ======== -->
+      <h2>Memory Leaks</h2>
+      <p>Memory leaks happen when you don't clean up resources. Common causes in React Native:</p>
+
+      <table>
+        <tr><th>Cause</th><th>Solution</th></tr>
+        <tr><td>Uncleaned intervals/timeouts</td><td>Clear in useEffect cleanup</td></tr>
+        <tr><td>Event listeners not removed</td><td>Remove in useEffect cleanup</td></tr>
+        <tr><td>Unmounted component state updates</td><td>Track mount status with useRef</td></tr>
+        <tr><td>Large images in memory</td><td>Use FastImage with cache control</td></tr>
+      </table>
+
+<pre><code>function SafeComponent() {
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => { isMounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    fetchData().then(data => {
+      if (isMounted.current) { // Only update if still mounted
+        setData(data);
+      }
+    });
+  }, []);
+}</code></pre>
+
+      <!-- ======== Quiz ======== -->
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What does removeClippedSubviews do in FlatList?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Removes the scroll bar</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Unmounts off-screen items to save memory</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Removes item separators</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. Why is getItemLayout useful?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> It styles items automatically</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> It lets FlatList skip layout measurement</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> It adds lazy loading</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. How do you prevent state updates on unmounted components?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Use try/catch</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Track mount status with useRef and check before setting state</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Use setTimeout</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Optimized Image Gallery</h3>
+        <p>Build a FlatList of 100 images using FastImage with caching. Add all performance props (initialNumToRender, getItemLayout, etc.) and measure the scrolling smoothness.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>FlatList: use <code>initialNumToRender</code>, <code>getItemLayout</code>, <code>removeClippedSubviews</code></li>
+        <li><strong>FastImage</strong> provides disk caching for images</li>
+        <li>Always <strong>clean up</strong> intervals, timeouts, and event listeners</li>
+        <li>Track mount status to <strong>prevent memory leaks</strong></li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native — Performance</strong> — Official performance guide. <a href="https://reactnative.dev/docs/performance" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
