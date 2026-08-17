@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 41: SQLite</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 41: SQLite</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn how to use SQLite in React Native with expo-sqlite — open databases, create tables, perform CRUD operations with parameterized queries, and manage schema migrations.</div>
+
+      <h2>What is SQLite in React Native?</h2>
+      <p>SQLite is a lightweight, relational database that runs locally on the device. It's ideal for apps that need structured data storage with complex queries, relationships between data, and ACID transactions.</p>
+
+      <h3>When to use SQLite vs key-value storage?</h3>
+      <ul>
+        <li><strong>Use SQLite when:</strong> You need complex queries, joins, relationships, or structured data</li>
+        <li><strong>Use MMKV/AsyncStorage when:</strong> You need simple key-value pairs like settings or tokens</li>
+        <li><strong>SQLite handles:</strong> Offline-first apps, chat messages, notes, inventory systems</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <pre><code>npx expo install expo-sqlite</code></pre>
+
+      <h2>Opening a Database</h2>
+      <p>Use <code>openDatabaseAsync</code> to create or open a database. The database persists across app launches.</p>
+
+      <pre><code>// database/db.js
+import * as SQLite from 'expo-sqlite';
+
+let db = null;
+
+export async function getDatabase() {
+  if (!db) {
+    db = await SQLite.openDatabaseAsync('myapp.db');
+  }
+  return db;
+}
+
+// Initialize tables on app start
+export async function initDatabase() {
+  const database = await getDatabase();
+
+  await database.execAsync(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
+
+    CREATE TABLE IF NOT EXISTS notes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      content TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  console.log('Database initialized');
+}</code></pre>
+
+      <h2>CREATE TABLE</h2>
+      <p>Define your table schema using standard SQL. Always use <code>IF NOT EXISTS</code> to avoid errors on subsequent launches.</p>
+
+      <pre><code>// Create a users table
+await database.execAsync(`
+  CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    avatar TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+`);
+
+// Create a posts table with foreign key
+await database.execAsync(`
+  CREATE TABLE IF NOT EXISTS posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    body TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+`);</code></pre>
+
+      <h2>INSERT with Parameterized Queries</h2>
+      <p>Always use parameterized queries to prevent SQL injection. Never concatenate user input directly into SQL strings.</p>
+
+      <pre><code>// Insert a single note
+const result = await database.runAsync(
+  'INSERT INTO notes (title, content) VALUES (?, ?)',
+  ['My First Note', 'This is the content of my note']
+);
+console.log('Inserted note with ID:', result.lastInsertRowId);
+
+// Insert multiple notes
+const notes = [
+  { title: 'Shopping List', content: 'Milk, Eggs, Bread' },
+  { title: 'Meeting Notes', content: 'Discuss Q4 targets' },
+  { title: 'Ideas', content: 'Build a recipe app' },
+];
+
+for (const note of notes) {
+  await database.runAsync(
+    'INSERT INTO notes (title, content) VALUES (?, ?)',
+    [note.title, note.content]
+  );
+}
+
+// Insert with named parameters
+await database.runAsync(
+  'INSERT INTO users (username, email) VALUES ($username, $email)',
+  { $username: 'johndoe', $email: 'john@example.com' }
+);</code></pre>
+
+      <h2>SELECT Queries</h2>
+      <p>Use <code>getAllAsync</code> for multiple rows and <code>getFirstAsync</code> for a single row.</p>
+
+      <pre><code>// Get all notes
+const allNotes = await database.getAllAsync('SELECT * FROM notes');
+console.log(allNotes);
+// [{ id: 1, title: 'My First Note', content: '...', created_at: '...' }]
+
+// Get notes with a condition
+const filtered = await database.getAllAsync(
+  'SELECT * FROM notes WHERE title LIKE ?',
+  ['%Shopping%']
+);
+
+// Get a single note by ID
+const note = await database.getFirstAsync(
+  'SELECT * FROM notes WHERE id = ?',
+  [1]
+);
+
+// Get notes with JOIN
+const notesWithUsers = await database.getAllAsync(`
+  SELECT notes.*, users.username
+  FROM notes
+  JOIN users ON notes.user_id = users.id
+  ORDER BY notes.created_at DESC
+`);
+
+// Aggregate queries
+const stats = await database.getFirstAsync(
+  'SELECT COUNT(*) as total, MIN(created_at) as first_note FROM notes'
+);</code></pre>
+
+      <h2>UPDATE and DELETE</h2>
+      <pre><code>// Update a note
+await database.runAsync(
+  'UPDATE notes SET title = ?, content = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+  ['Updated Title', 'Updated content', 1]
+);
+
+// Delete a note
+await database.runAsync('DELETE FROM notes WHERE id = ?', [1]);
+
+// Delete all notes
+await database.runAsync('DELETE FROM notes');
+
+// Check rows affected
+const result = await database.runAsync(
+  'UPDATE notes SET title = ? WHERE id = ?',
+  ['New Title', 999]
+);
+console.log('Rows affected:', result.changes);</code></pre>
+
+      <h2>Database Migrations</h2>
+      <p>Use a version table to track schema changes and run migrations when the app updates.</p>
+
+      <pre><code>// migrations/migrate.js
+export async function migrate(database) {
+  // Create migrations table
+  await database.execAsync(`
+    CREATE TABLE IF NOT EXISTS migrations (
+      version INTEGER PRIMARY KEY,
+      applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+  const current = await database.getFirstAsync(
+    'SELECT MAX(version) as version FROM migrations'
+  );
+  const currentVersion = current?.version || 0;
+
+  const migrations = [
+    {
+      version: 1,
+      up: `CREATE TABLE IF NOT EXISTS notes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        content TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );`,
+    },
+    {
+      version: 2,
+      up: `ALTER TABLE notes ADD COLUMN updated_at DATETIME DEFAULT CURRENT_TIMESTAMP;`,
+    },
+    {
+      version: 3,
+      up: `CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL
+      );`,
+    },
+  ];
+
+  for (const migration of migrations) {
+    if (migration.version > currentVersion) {
+      await database.execAsync(migration.up);
+      await database.runAsync(
+        'INSERT INTO migrations (version) VALUES (?)',
+        [migration.version]
+      );
+      console.log(`Applied migration ${migration.version}`);
+    }
+  }
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. Why should you use parameterized queries instead of string concatenation?</strong></p>
+        <label><input type="radio" name="q1" value="a"> They are faster</label>
+        <label><input type="radio" name="q1" value="b"> They prevent SQL injection attacks</label>
+        <label><input type="radio" name="q1" value="c"> They support more data types</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. What does the WAL pragma mode do in SQLite?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Enables encryption</label>
+        <label><input type="radio" name="q2" value="b"> Enables Write-Ahead Logging for better concurrent performance</label>
+        <label><input type="radio" name="q2" value="c"> Compresses the database file</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. Which method returns a single row from a SQLite query?</strong></p>
+        <label><input type="radio" name="q3" value="a"> getAllAsync</label>
+        <label><input type="radio" name="q3" value="b"> getFirstAsync</label>
+        <label><input type="radio" name="q3" value="c"> getRowAsync</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Notes App with SQLite</h3>
+        <p>Create a notes app with full CRUD operations, search functionality, and database migrations.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install: <code>npx expo install expo-sqlite</code></li>
+          <li>Create <code>database/db.js</code> with initDatabase function</li>
+          <li>Create a notes table with id, title, content, created_at, updated_at</li>
+          <li>Implement CRUD functions: addNote, getNotes, updateNote, deleteNote</li>
+          <li>Build a FlatList screen showing all notes</li>
+          <li>Add a form screen to create/edit notes</li>
+          <li>Add search functionality with LIKE query</li>
+        </ol>
+        <pre><code>// Bonus: Add a search function
+export async function searchNotes(query) {
+  const database = await getDatabase();
+  return await database.getAllAsync(
+    'SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? ORDER BY updated_at DESC',
+    [`%${query}%`, `%${query}%`]
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>expo-sqlite</strong> provides local SQLite database support for React Native</li>
+        <li>Use <strong>parameterized queries</strong> (?) to prevent SQL injection</li>
+        <li><strong>getAllAsync</strong> returns multiple rows; <strong>getFirstAsync</strong> returns one row</li>
+        <li>Use <strong>migrations</strong> with a version table to manage schema changes</li>
+        <li>Enable <strong>WAL mode</strong> for better performance</li>
+        <li>SQLite is ideal for structured, relational data with complex queries</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>expo-sqlite Documentation</strong> — Official Expo docs with API reference and examples. <a href="https://docs.expo.dev/versions/latest/sdk/sqlite/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

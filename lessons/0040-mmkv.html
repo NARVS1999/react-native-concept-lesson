@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 40: MMKV</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 40: MMKV</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn MMKV — the fastest key-value storage for React Native. Master synchronous get/set/delete operations, encryption, and the useMMKVString hook for reactive state.</div>
+
+      <h2>What is MMKV?</h2>
+      <p>MMKV is a key-value storage framework originally developed by WeChat. It's significantly faster than AsyncStorage because it uses memory-mapped files and runs synchronously on the native thread.</p>
+
+      <h3>MMKV vs AsyncStorage</h3>
+      <table>
+        <tr><th>Feature</th><th>MMKV</th><th>AsyncStorage</th></tr>
+        <tr><td>Speed</td><td>~30x faster</td><td>Slow (async)</td></tr>
+        <tr><td>API</td><td>Synchronous</td><td>Asynchronous</td></tr>
+        <tr><td>Encryption</td><td>Built-in AES</td><td>Not built-in</td></tr>
+        <tr><td>Size Limit</td><td>No practical limit</td><td>6MB default</td></tr>
+        <tr><td>Multi-process</td><td>Supported</td><td>Not supported</td></tr>
+      </table>
+
+      <h3>Installation</h3>
+      <pre><code>npm install react-native-mmkv</code></pre>
+      <p>For Expo, you'll need a development build:</p>
+      <pre><code>npx expo install react-native-mmkv
+npx expo prebuild</code></pre>
+
+      <h2>Instantiating MMKV</h2>
+      <p>Create an MMKV instance to start storing data. You can create multiple instances with different names.</p>
+
+      <pre><code>// storage/storage.js
+import { MMKV } from 'react-native-mmkv';
+
+// Default instance
+export const storage = new MMKV();
+
+// Custom instance with ID and encryption key
+export const secureStorage = new MMKV({
+  id: 'user-storage',
+  encryptionKey: 'my-secret-key-123',
+});
+
+// Reset instance (useful for testing)
+storage.clearAll();</code></pre>
+
+      <h2>Basic Operations: set, get, delete</h2>
+      <p>MMKV provides simple synchronous methods for all operations.</p>
+
+      <pre><code>import { storage } from './storage';
+
+// SET - Store different types
+storage.set('username', 'JohnDoe');
+storage.set('age', 25);
+storage.set('isLoggedIn', true);
+storage.set('score', 3.14);
+
+// GET - Retrieve values with type safety
+const username = storage.getString('username');  // 'JohnDoe'
+const age = storage.getNumber('age');              // 25
+const isLoggedIn = storage.getBoolean('isLoggedIn'); // true
+
+// Check if key exists
+const hasKey = storage.contains('username'); // true
+
+// DELETE - Remove a key
+storage.delete('username');
+
+// Clear all data
+storage.clearAll();</code></pre>
+
+      <h3>Storing Complex Data</h3>
+      <pre><code>// Store objects/arrays as JSON strings
+const user = { name: 'John', age: 25, hobbies: ['reading', 'coding'] };
+storage.set('user', JSON.stringify(user));
+
+// Retrieve and parse
+const userStr = storage.getString('user');
+const parsedUser = userStr ? JSON.parse(userStr) : null;
+
+// Store with try-catch for safety
+try {
+  const data = JSON.stringify(largeObject);
+  storage.set('largeData', data);
+} catch (error) {
+  console.error('Failed to store data:', error);
+}</code></pre>
+
+      <h2>Encryption</h2>
+      <p>MMKV supports AES encryption out of the box. Just provide an encryption key when creating an instance.</p>
+
+      <pre><code>// storage/secureStorage.js
+import { MMKV } from 'react-native-mmkv';
+
+export const secureStorage = new MMKV({
+  id: 'secure-storage',
+  encryptionKey: 'your-256-bit-encryption-key',
+});
+
+// Store sensitive data
+secureStorage.set('authToken', 'eyJhbGciOiJIUzI1NiIs...');
+secureStorage.set('refreshToken', 'dGhpcyBpcyBhIHJlZnJl...');
+
+// Read is transparent - decryption happens automatically
+const token = secureStorage.getString('authToken');</code></pre>
+
+      <h2>The useMMKVString Hook</h2>
+      <p>React Native MMKV provides hooks that make MMKV state reactive — components re-render when the value changes.</p>
+
+      <pre><code>// hooks/useSettings.js
+import { useMMKVString, useMMKVNumber, useMMKVBoolean } from 'react-native-mmkv';
+import { storage } from '../storage/storage';
+
+export function useSettings() {
+  const [theme, setTheme] = useMMKVString('theme', storage);
+  const [fontSize, setFontSize] = useMMKVNumber('fontSize', storage);
+  const [notifications, setNotifications] = useMMKVBoolean('notifications', storage);
+
+  return {
+    theme,
+    setTheme,
+    fontSize,
+    setFontSize,
+    notifications,
+    setNotifications,
+  };
+}</code></pre>
+
+      <h3>Using the Hook in Components</h3>
+      <pre><code>// screens/SettingsScreen.js
+import { View, Text, Switch, StyleSheet } from 'react-native';
+import { useSettings } from '../hooks/useSettings';
+
+export default function SettingsScreen() {
+  const { theme, setTheme, notifications, setNotifications, fontSize, setFontSize } = useSettings();
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.row}&gt;
+        &lt;Text&gt;Dark Mode&lt;/Text&gt;
+        &lt;Switch
+          value={theme === 'dark'}
+          onValueChange={(val) =&gt; setTheme(val ? 'dark' : 'light')}
+        /&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.row}&gt;
+        &lt;Text&gt;Notifications&lt;/Text&gt;
+        &lt;Switch
+          value={notifications ?? true}
+          onValueChange={setNotifications}
+        /&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.row}&gt;
+        &lt;Text&gt;Font Size: {fontSize ?? 16}&lt;/Text&gt;
+        &lt;Button title="Increase" onPress={() =&gt; setFontSize((fontSize ?? 16) + 2)} /&gt;
+        &lt;Button title="Decrease" onPress={() =&gt; setFontSize(Math.max(12, (fontSize ?? 16) - 2))} /&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10 },
+});</code></pre>
+
+      <h2>Performance Tips</h2>
+      <ul>
+        <li>Use MMKV for frequently accessed data (settings, auth tokens, caches)</li>
+        <li>Store large objects as JSON strings when needed</li>
+        <li>Use separate MMKV instances for different data categories</li>
+        <li>Leverage encryption for sensitive data like tokens</li>
+        <li>The synchronous API eliminates the need for async/await in storage operations</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What makes MMKV faster than AsyncStorage?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It uses SQLite underneath</label>
+        <label><input type="radio" name="q1" value="b"> It uses memory-mapped files and synchronous native calls</label>
+        <label><input type="radio" name="q1" value="c"> It compresses data before storing</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. How do you make MMKV data reactive in React components?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Using useState with AsyncStorage</label>
+        <label><input type="radio" name="q2" value="b"> Using useMMKVString/Number/Boolean hooks</label>
+        <label><input type="radio" name="q2" value="c"> Using useEffect to poll for changes</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. How do you enable encryption in MMKV?</strong></p>
+        <label><input type="radio" name="q3" value="a"> By calling storage.encrypt() after creation</label>
+        <label><input type="radio" name="q3" value="b"> By passing an encryptionKey option when creating the instance</label>
+        <label><input type="radio" name="q3" value="c"> By using a special setEncrypted method</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Fast Key-Value Store with MMKV</h3>
+        <p>Create a settings screen that uses MMKV for persistent, reactive state with theme, font size, and notification preferences.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install: <code>npm install react-native-mmkv</code></li>
+          <li>Create an MMKV instance in <code>storage/storage.js</code></li>
+          <li>Create a <code>useSettings</code> hook using useMMKVString/Number/Boolean</li>
+          <li>Build a SettingsScreen with Switch and Button controls</li>
+          <li>Add a second MMKV instance with encryption for auth tokens</li>
+          <li>Create a useAuth hook that stores/retrieves tokens securely</li>
+        </ol>
+        <pre><code>// Bonus: Add a reset button that clears all settings
+const resetSettings = () =&gt; {
+  storage.delete('theme');
+  storage.delete('fontSize');
+  storage.delete('notifications');
+};</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>MMKV</strong> is ~30x faster than AsyncStorage using memory-mapped files</li>
+        <li>All operations are <strong>synchronous</strong> — no async/await needed</li>
+        <li><strong>Encryption</strong> is built-in with AES, just pass an encryptionKey</li>
+        <li><strong>useMMKVString/Number/Boolean</strong> hooks make data reactive in components</li>
+        <li>Use separate instances for different data categories (settings, auth, cache)</li>
+        <li>Store complex data as JSON strings with <code>JSON.stringify/parse</code></li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native MMKV GitHub</strong> — Official documentation with API reference and examples. <a href="https://github.com/mrousavy/react-native-mmkv" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

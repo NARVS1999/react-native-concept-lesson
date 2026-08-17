@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 39: React Query</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 39: React Query</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Master TanStack React Query for server state management — learn QueryClient setup, useQuery, useMutation, caching strategies, query invalidation, and optimistic updates.</div>
+
+      <h2>What is React Query?</h2>
+      <p>TanStack React Query (formerly React Query) is a powerful data-fetching and caching library for React. It manages server state, handles loading/error states, provides automatic re-fetching, and optimizes your app's network usage.</p>
+
+      <h3>Why React Query?</h3>
+      <ul>
+        <li><strong>Automatic caching</strong> — Data is cached and re-used across components</li>
+        <li><strong>Background re-fetching</strong> — Stale data is updated silently</li>
+        <li><strong>Request deduplication</strong> — Multiple components share one network request</li>
+        <li><strong>Built-in loading/error states</strong> — No more manual state management</li>
+        <li><strong>Optimistic updates</strong> — Update UI before server responds</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <pre><code>npm install @tanstack/react-query</code></pre>
+
+      <h2>Setting Up QueryClient</h2>
+      <p>The <code>QueryClient</code> manages the cache and configuration for all queries in your app.</p>
+
+      <pre><code>// App.js
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import HomeScreen from './screens/HomeScreen';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5,  // 5 minutes
+      cacheTime: 1000 * 60 * 30, // 30 minutes
+      retry: 2,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
+
+export default function App() {
+  return (
+    &lt;QueryClientProvider client={queryClient}&gt;
+      &lt;HomeScreen /&gt;
+    &lt;/QueryClientProvider&gt;
+  );
+}</code></pre>
+
+      <h2>useQuery for Fetching Data</h2>
+      <p><code>useQuery</code> fetches and caches data. It returns <code>data</code>, <code>isLoading</code>, <code>error</code>, and more.</p>
+
+      <pre><code>// hooks/usePosts.js
+import { useQuery } from '@tanstack/react-query';
+
+const fetchPosts = async () =&gt; {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts');
+  if (!response.ok) throw new Error('Failed to fetch posts');
+  return response.json();
+};
+
+export function usePosts() {
+  return useQuery({
+    queryKey: ['posts'],
+    queryFn: fetchPosts,
+    staleTime: 1000 * 60 * 2, // 2 minutes
+  });
+}</code></pre>
+
+      <h3>Using useQuery in Components</h3>
+      <pre><code>// screens/PostsScreen.js
+import { usePosts } from '../hooks/usePosts';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet } from 'react-native';
+
+export default function PostsScreen() {
+  const { data: posts, isLoading, error, refetch } = usePosts();
+
+  if (isLoading) return &lt;ActivityIndicator size="large" style={styles.center} /&gt;;
+  if (error) return (
+    &lt;View style={styles.center}&gt;
+      &lt;Text&gt;Error: {error.message}&lt;/Text&gt;
+      &lt;Button title="Retry" onPress={refetch} /&gt;
+    &lt;/View&gt;
+  );
+
+  return (
+    &lt;FlatList
+      data={posts}
+      keyExtractor={(item) =&gt; item.id.toString()}
+      onRefresh={refetch}
+      refreshing={isLoading}
+      renderItem={({ item }) =&gt; (
+        &lt;View style={styles.item}&gt;
+          &lt;Text style={styles.title}&gt;{item.title}&lt;/Text&gt;
+          &lt;Text&gt;{item.body}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    /&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  item: { padding: 16, borderBottomWidth: 1 },
+  title: { fontWeight: 'bold', marginBottom: 4 },
+});</code></pre>
+
+      <h2>Query Options: staleTime and cacheTime</h2>
+      <ul>
+        <li><strong>staleTime</strong> — How long data is considered "fresh". During this time, no re-fetch occurs.</li>
+        <li><strong>cacheTime</strong> — How long unused data stays in memory. After this, it's garbage collected.</li>
+        <li><strong>refetchOnMount</strong> — Whether to re-fetch when component mounts (default: true)</li>
+        <li><strong>refetchOnWindowFocus</strong> — Whether to re-fetch when app regains focus</li>
+        <li><strong>retry</strong> — Number of retry attempts on failure</li>
+      </ul>
+
+      <h2>useMutation for Creating/Updating Data</h2>
+      <p><code>useMutation</code> handles POST, PUT, DELETE operations. It provides <code>mutate</code>, <code>isLoading</code>, and <code>error</code>.</p>
+
+      <pre><code>// hooks/useCreatePost.js
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+
+const createPost = async (newPost) =&gt; {
+  const response = await fetch('https://jsonplaceholder.typicode.com/posts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(newPost),
+  });
+  if (!response.ok) throw new Error('Failed to create post');
+  return response.json();
+};
+
+export function useCreatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: createPost,
+    onSuccess: () =&gt; {
+      // Invalidate the posts query to refetch fresh data
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) =&gt; {
+      console.error('Error creating post:', error);
+    },
+  });
+}</code></pre>
+
+      <h3>Using Mutation in Components</h3>
+      <pre><code>// screens/CreatePostScreen.js
+import { useState } from 'react';
+import { View, TextInput, Button, Alert } from 'react-native';
+import { useCreatePost } from '../hooks/useCreatePost';
+
+export default function CreatePostScreen() {
+  const [title, setTitle] = useState('');
+  const [body, setBody] = useState('');
+  const createPost = useCreatePost();
+
+  const handleSubmit = () =&gt; {
+    if (!title || !body) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+    createPost.mutate(
+      { title, body, userId: 1 },
+      {
+        onSuccess: () =&gt; {
+          Alert.alert('Success', 'Post created!');
+          setTitle('');
+          setBody('');
+        },
+      }
+    );
+  };
+
+  return (
+    &lt;View style={{ padding: 16 }}&gt;
+      &lt;TextInput placeholder="Title" value={title} onChangeText={setTitle} /&gt;
+      &lt;TextInput placeholder="Body" value={body} onChangeText={setBody} multiline /&gt;
+      &lt;Button
+        title={createPost.isLoading ? 'Creating...' : 'Create Post'}
+        onPress={handleSubmit}
+        disabled={createPost.isLoading}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Query Invalidation</h2>
+      <p>Invalidating a query forces a re-fetch. This is essential after mutations to keep the cache in sync.</p>
+
+      <pre><code>// Invalidate a specific query
+queryClient.invalidateQueries({ queryKey: ['posts'] });
+
+// Invalidate multiple queries
+queryClient.invalidateQueries({ queryKey: ['posts', 'comments'] });
+
+// Invalidate all queries
+queryClient.invalidateQueries();</code></pre>
+
+      <h2>Optimistic Updates</h2>
+      <p>Update the cache before the server responds. If the mutation fails, roll back to the previous state.</p>
+
+      <pre><code>// Optimistic mutation example
+export function useToggleTodo() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (todo) =&gt; {
+      const response = await fetch(`/api/todos/${todo.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ done: !todo.done }),
+      });
+      return response.json();
+    },
+    onMutate: async (todo) =&gt; {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+
+      // Snapshot previous value
+      const previousTodos = queryClient.getQueryData(['todos']);
+
+      // Optimistically update
+      queryClient.setQueryData(['todos'], (old) =&gt;
+        old.map((t) =&gt; (t.id === todo.id ? { ...t, done: !t.done } : t))
+      );
+
+      return { previousTodos };
+    },
+    onError: (err, todo, context) =&gt; {
+      // Rollback on error
+      queryClient.setQueryData(['todos'], context.previousTodos);
+    },
+    onSettled: () =&gt; {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
+  });
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What does staleTime control in React Query?</strong></p>
+        <label><input type="radio" name="q1" value="a"> How long data stays in cache after unmount</label>
+        <label><input type="radio" name="q1" value="b"> How long data is considered fresh before re-fetching</label>
+        <label><input type="radio" name="q1" value="c"> How long to wait before showing loading state</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. What happens when you call queryClient.invalidateQueries()?</strong></p>
+        <label><input type="radio" name="q2" value="a"> It deletes all cached data</label>
+        <label><input type="radio" name="q2" value="b"> It marks matching queries as stale and triggers a refetch</label>
+        <label><input type="radio" name="q2" value="c"> It pauses all active queries</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What is the purpose of optimistic updates?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To make the server respond faster</label>
+        <label><input type="radio" name="q3" value="b"> To update the UI before the server confirms the change</label>
+        <label><input type="radio" name="q3" value="c"> To skip validation on the server</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Data Fetcher with React Query</h3>
+        <p>Create a post listing app with React Query that fetches data, supports pull-to-refresh, and allows creating new posts.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install: <code>npm install @tanstack/react-query</code></li>
+          <li>Set up QueryClient with custom default options</li>
+          <li>Create a <code>usePosts</code> hook with useQuery</li>
+          <li>Create a <code>useCreatePost</code> hook with useMutation</li>
+          <li>Build a screen with FlatList and pull-to-refresh</li>
+          <li>Add a form screen to create new posts</li>
+          <li>Implement optimistic updates for toggling post state</li>
+        </ol>
+        <pre><code>// Bonus: Add a usePost hook for single post detail
+export function usePost(id) {
+  return useQuery({
+    queryKey: ['post', id],
+    queryFn: () =&gt; fetchPost(id),
+    enabled: !!id,
+  });
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>QueryClient</strong> manages the cache and global query configuration</li>
+        <li><strong>useQuery</strong> fetches and caches data with automatic loading/error states</li>
+        <li><strong>useMutation</strong> handles create/update/delete operations</li>
+        <li><strong>staleTime</strong> controls data freshness; <strong>cacheTime</strong> controls memory retention</li>
+        <li><strong>Query invalidation</strong> forces re-fetching after mutations</li>
+        <li><strong>Optimistic updates</strong> provide instant UI feedback with rollback on error</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>TanStack React Query Docs</strong> — Complete guide with examples, recipes, and migration guides. <a href="https://tanstack.com/query/latest" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 43: Native Modules</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 43: Native Modules</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Understand native modules in React Native — what they are, how to bridge JavaScript to native code, when to create custom modules versus using existing libraries, and basics of Swift/Kotlin integration.</div>
+
+      <h2>What are Native Modules?</h2>
+      <p>Native modules allow you to access platform-specific APIs that aren't available in React Native's JavaScript layer. They are written in Swift (iOS) or Kotlin (Android) and exposed to JavaScript through a bridge.</p>
+
+      <h3>Why use native modules?</h3>
+      <ul>
+        <li>Access platform-specific features (Bluetooth, NFC, biometrics)</li>
+        <li>Performance-critical operations that can't be done in JS</li>
+        <li>Wrapping existing native SDKs and libraries</li>
+        <li>Platform-specific UI components not available in React Native</li>
+      </ul>
+
+      <h2>When to Use Native Modules vs Libraries</h2>
+      <table>
+        <tr><th>Use Native Modules When</th><th>Use Existing Libraries When</th></tr>
+        <tr><td>No existing library covers your use case</td><td>A well-maintained library already exists</td></tr>
+        <tr><td>You need platform-specific optimizations</td><td>The library is well-tested and community-adopted</td></tr>
+        <tr><td>You're wrapping a proprietary SDK</td><td>You don't need to modify the native behavior</td></tr>
+        <tr><td>You want full control over the implementation</td><td>The library handles complex edge cases</td></tr>
+      </table>
+
+      <h2>The Bridge Architecture (Legacy)</h2>
+      <p>In React Native's old architecture, communication between JavaScript and native code happens through an asynchronous "bridge". JS sends messages, and native code processes them.</p>
+
+      <pre><code>// JavaScript side
+import { NativeModules } from 'react-native';
+const { DeviceInfo } = NativeModules;
+
+// Call native method
+const deviceName = await DeviceInfo.getDeviceName();
+console.log(deviceName);</code></pre>
+
+      <h3>How the Bridge Works</h3>
+      <ol>
+        <li>JavaScript calls a native method through the bridge</li>
+        <li>The call is serialized into JSON and sent to the native thread</li>
+        <li>Native code processes the request</li>
+        <li>Result is serialized and sent back through the bridge</li>
+        <li>JavaScript receives the result asynchronously</li>
+      </ol>
+      <p>This is inherently <strong>asynchronous</strong> — you can't get synchronous results from native code through the bridge.</p>
+
+      <h2>Creating a Simple Native Module (Expo)</h2>
+      <p>With Expo, you can create native modules using the Expo Modules API, which is simpler than the old bridge approach.</p>
+
+      <h3>iOS (Swift)</h3>
+      <pre><code>// ios/MyModule.swift
+import ExpoModulesCore
+
+public class MyModule: Module {
+  public func definition() -&gt; ModuleDefinition {
+    Name("MyModule")
+
+    AsyncFunction("getDeviceName") { () -&gt; String in
+      return UIDevice.current.name
+    }
+
+    AsyncFunction("isRunningInSimulator") { () -&gt; Bool in
+      #if targetEnvironment(simulator)
+        return true
+      #else
+        return false
+      #endif
+    }
+
+    Function("getPlatform") { () -&gt; String in
+      return "iOS"
+    }
+  }
+}</code></pre>
+
+      <h3>Android (Kotlin)</h3>
+      <pre><code>// android/src/main/java/xyz/myapp/mymodule/MyModule.kt
+package xyz.myapp.mymodule
+
+import expo.modules.kotlin.modules.Module
+import expo.modules.kotlin.modules.ModuleDefinition
+import android.os.Build
+
+class MyModule : Module() {
+  override fun definition() = ModuleDefinition {
+    Name("MyModule")
+
+    AsyncFunction("getDeviceName") {
+      Build.MODEL
+    }
+
+    AsyncFunction("isRunningInSimulator") {
+      Build.FINGERPRINT.contains("generic")
+    }
+
+    Function("getPlatform") {
+      "Android"
+    }
+  }
+}</code></pre>
+
+      <h3>Using in JavaScript</h3>
+      <pre><code>// JavaScript
+import MyModule from './expo-module/my-module';
+
+const deviceName = await MyModule.getDeviceName();
+const isSim = await MyModule.isRunningInSimulator();
+const platform = MyModule.getPlatform();</code></pre>
+
+      <h2>Common Native Module Examples</h2>
+
+      <h3>Battery Status</h3>
+      <pre><code>// Native module exposes battery level
+const batteryLevel = await BatteryModule.getBatteryLevel();
+// Returns: 0.85 (85%)</code></pre>
+
+      <h3>Device Information</h3>
+      <pre><code>// Get comprehensive device info
+const info = await DeviceInfoModule.getDeviceInfo();
+// Returns: { model: 'iPhone 14', osVersion: '16.0', ... }</code></pre>
+
+      <h3>Haptic Feedback</h3>
+      <pre><code>// Trigger haptic feedback
+await HapticsModule.impactAsync('medium');
+await HapticsModule.notificationAsync('success');</code></pre>
+
+      <h2>Understanding the Native Layer</h2>
+      <p>When you write native modules, you need to understand the basics of iOS and Android development:</p>
+
+      <h3>Swift Basics (iOS)</h3>
+      <ul>
+        <li>Swift is iOS's modern programming language</li>
+        <li>Classes and structs define data structures</li>
+        <li>Protocols define contracts for behavior</li>
+        <li>Error handling uses do/try/catch</li>
+      </ul>
+
+      <h3>Kotlin Basics (Android)</h3>
+      <ul>
+        <li>Kotlin is Android's preferred language (replaces Java)</li>
+        <li>Null safety prevents null pointer exceptions</li>
+        <li>Coroutines handle async operations</li>
+        <li>Extension functions add methods to existing classes</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What is the main limitation of the old React Native bridge?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It only works on Android</label>
+        <label><input type="radio" name="q1" value="b"> It is asynchronous — you can't get synchronous results</label>
+        <label><input type="radio" name="q1" value="c"> It requires Swift knowledge</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. When should you create a native module instead of using an existing library?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Always, for better performance</label>
+        <label><input type="radio" name="q2" value="b"> When no existing library covers your specific use case</label>
+        <label><input type="radio" name="q2" value="c"> Only when the library has bugs</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What language is used for iOS native modules?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Java</label>
+        <label><input type="radio" name="q3" value="b"> Swift</label>
+        <label><input type="radio" name="q3" value="c"> Objective-C only</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Research When to Use Native Modules</h3>
+        <p>Research and document scenarios where native modules are necessary versus using existing libraries.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Research 5 React Native libraries that wrap native functionality (e.g., react-native-camera, react-native-maps)</li>
+          <li>For each library, document what native APIs it wraps</li>
+          <li>Identify 3 scenarios where you would need a custom native module</li>
+          <li>Compare the Expo Modules API approach vs the old bridge approach</li>
+          <li>Create a simple native module using Expo that returns the device's current time</li>
+        </ol>
+        <pre><code>// Example: Create a TimeModule native module
+// Native side returns the current timestamp
+// JavaScript side:
+const currentTime = await TimeModule.getCurrentTime();
+console.log(new Date(currentTime));</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>Native modules</strong> bridge JavaScript to platform-specific native code</li>
+        <li>The <strong>old bridge</strong> is asynchronous; Turbo Modules (new architecture) are synchronous via JSI</li>
+        <li><strong>Expo Modules API</strong> simplifies creating native modules with Swift/Kotlin</li>
+        <li>Use native modules when <strong>no existing library</strong> covers your use case</li>
+        <li>iOS uses <strong>Swift</strong>; Android uses <strong>Kotlin</strong> for native modules</li>
+        <li>Always check for existing libraries before writing custom native code</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Expo Modules API</strong> — Official guide for creating native modules with Expo. <a href="https://docs.expo.dev/modules/overview/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

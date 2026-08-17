@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 37: Redux Toolkit</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 37: Redux Toolkit</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Master Redux Toolkit for predictable state management in React Native apps, including configureStore, createSlice, RTK Query for API calls, and connecting components with useSelector and useDispatch.</div>
+
+      <h2>What is Redux Toolkit?</h2>
+      <p>Redux Toolkit (RTK) is the official, opinionated toolset for Redux. It simplifies store setup, reduces boilerplate, and includes best practices by default. It replaces the old pattern of writing reducers, action types, and action creators manually.</p>
+
+      <h3>Why Redux Toolkit over plain Redux?</h3>
+      <ul>
+        <li><strong>Less boilerplate</strong> — No more switch/case reducers or action type constants</li>
+        <li><strong>Immer integration</strong> — Write "mutating" logic that produces immutable updates</li>
+        <li><strong>Built-in DevTools</strong> — Time-travel debugging out of the box</li>
+        <li><strong>RTK Query</strong> — Data fetching and caching built into the toolkit</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <pre><code>npm install @reduxjs/toolkit react-redux</code></pre>
+
+      <h2>Setting Up the Store with configureStore</h2>
+      <p><code>configureStore</code> replaces <code>createStore</code>. It automatically combines reducers, sets up middleware, and enables Redux DevTools.</p>
+
+      <pre><code>// store.js
+import { configureStore } from '@reduxjs/toolkit';
+import counterReducer from './features/counter/counterSlice';
+
+const store = configureStore({
+  reducer: {
+    counter: counterReducer,
+  },
+});
+
+export default store;</code></pre>
+
+      <h3>Root Level Provider</h3>
+      <pre><code>// App.js
+import { Provider } from 'react-redux';
+import store from './store';
+import HomeScreen from './screens/HomeScreen';
+
+export default function App() {
+  return (
+    &lt;Provider store={store}&gt;
+      &lt;HomeScreen /&gt;
+    &lt;/Provider&gt;
+  );
+}</code></pre>
+
+      <h2>Creating Slices with createSlice</h2>
+      <p>A "slice" contains the reducer logic and actions for a specific feature. RTK uses Immer under the hood, so you can write mutating code safely.</p>
+
+      <pre><code>// features/counter/counterSlice.js
+import { createSlice } from '@reduxjs/toolkit';
+
+const counterSlice = createSlice({
+  name: 'counter',
+  initialState: { value: 0 },
+  reducers: {
+    increment: (state) => { state.value += 1; },
+    decrement: (state) => { state.value -= 1; },
+    incrementByAmount: (state, action) => { state.value += action.payload; },
+    reset: (state) => { state.value = 0; },
+  },
+});
+
+export const { increment, decrement, incrementByAmount, reset } = counterSlice.actions;
+export default counterSlice.reducer;</code></pre>
+
+      <h3>How Immer Works</h3>
+      <p>Inside <code>createSlice</code>, you write code like <code>state.value += 1</code> which looks like mutation, but Immer creates a new immutable state behind the scenes. Never return a new state object manually — just mutate the draft.</p>
+
+      <h2>Connecting Components: useSelector and useDispatch</h2>
+      <p><code>useSelector</code> reads values from the store. <code>useDispatch</code> sends actions to update state.</p>
+
+      <pre><code>// screens/HomeScreen.js
+import { useSelector, useDispatch } from 'react-redux';
+import { increment, decrement, incrementByAmount, reset } from '../features/counter/counterSlice';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function HomeScreen() {
+  const count = useSelector((state) => state.counter.value);
+  const dispatch = useDispatch();
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={() =&gt; dispatch(increment())} /&gt;
+      &lt;Button title="Decrement" onPress={() =&gt; dispatch(decrement())} /&gt;
+      &lt;Button title="Add 5" onPress={() =&gt; dispatch(incrementByAmount(5))} /&gt;
+      &lt;Button title="Reset" onPress={() =&gt; dispatch(reset())} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
+  count: { fontSize: 32, fontWeight: 'bold' },
+});</code></pre>
+
+      <h2>RTK Query for API Calls</h2>
+      <p>RTK Query replaces manual fetch calls with a declarative, cached data-fetching layer. Define endpoints once and get automatic loading states, caching, and re-fetching.</p>
+
+      <pre><code>// services/api.js
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: 'https://jsonplaceholder.typicode.com' }),
+  endpoints: (builder) => ({
+    getPosts: builder.query({
+      query: () =&gt; '/posts',
+    }),
+    getPostById: builder.query({
+      query: (id) =&gt; `/posts/${id}`,
+    }),
+  }),
+});
+
+export const { useGetPostsQuery, useGetPostByIdQuery } = api;</code></pre>
+
+      <h3>Add API to Store</h3>
+      <pre><code>// store.js
+import { configureStore } from '@reduxjs/toolkit';
+import { api } from './services/api';
+
+const store = configureStore({
+  reducer: {
+    [api.reducerPath]: api.reducer,
+  },
+  middleware: (getDefault) =&gt; getDefault().concat(api.middleware),
+});
+
+export default store;</code></pre>
+
+      <h3>Using RTK Query Hooks</h3>
+      <pre><code>// screens/PostsScreen.js
+import { useGetPostsQuery } from '../services/api';
+import { View, Text, FlatList, ActivityIndicator } from 'react-native';
+
+export default function PostsScreen() {
+  const { data: posts, isLoading, error } = useGetPostsQuery();
+
+  if (isLoading) return &lt;ActivityIndicator size="large" /&gt;;
+  if (error) return &lt;Text&gt;Error loading posts&lt;/Text&gt;;
+
+  return (
+    &lt;FlatList
+      data={posts}
+      keyExtractor={(item) =&gt; item.id.toString()}
+      renderItem={({ item }) =&gt; (
+        &lt;View style={{ padding: 16 }}&gt;
+          &lt;Text style={{ fontWeight: 'bold' }}&gt;{item.title}&lt;/Text&gt;
+          &lt;Text&gt;{item.body}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>Putting It All Together</h2>
+      <p>A complete Redux Toolkit setup in React Native involves: creating slices for each feature, connecting the store with Provider, and using selectors and dispatch in components. RTK Query handles all server state.</p>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What does createSlice use under the hood for immutable updates?</strong></p>
+        <label><input type="radio" name="q1" value="a"> lodash</label>
+        <label><input type="radio" name="q1" value="b"> Immer</label>
+        <label><input type="radio" name="q1" value="c"> Object.assign</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. Which hook reads data from the Redux store?</strong></p>
+        <label><input type="radio" name="q2" value="a"> useDispatch</label>
+        <label><input type="radio" name="q2" value="b"> useSelector</label>
+        <label><input type="radio" name="q2" value="c"> useStore</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What replaces manual fetch calls in Redux Toolkit?</strong></p>
+        <label><input type="radio" name="q3" value="a"> useEffect</label>
+        <label><input type="radio" name="q3" value="b"> RTK Query</label>
+        <label><input type="radio" name="q3" value="c"> axios interceptors</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Counter with Redux Toolkit</h3>
+        <p>Create a full counter app with Redux Toolkit that includes increment, decrement, add by amount, and reset functionality.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install dependencies: <code>npm install @reduxjs/toolkit react-redux</code></li>
+          <li>Create <code>store.js</code> with configureStore</li>
+          <li>Create <code>features/counter/counterSlice.js</code> with all actions</li>
+          <li>Wrap your App in Provider</li>
+          <li>Build a screen with buttons for each action</li>
+          <li>Add a text input to enter a custom amount for incrementByAmount</li>
+        </ol>
+        <pre><code>// Example: Adding text input for custom amount
+const [amount, setAmount] = useState('');
+
+&lt;TextInput
+  value={amount}
+  onChangeText={setAmount}
+  keyboardType="numeric"
+  placeholder="Enter amount"
+/&gt;
+&lt;Button
+  title="Add Amount"
+  onPress={() =&gt; {
+    const num = parseInt(amount) || 0;
+    dispatch(incrementByAmount(num));
+    setAmount('');
+  }}
+/&gt;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>configureStore</strong> simplifies store setup with automatic middleware and DevTools</li>
+        <li><strong>createSlice</strong> generates actions and reducers from a single object using Immer</li>
+        <li><strong>Provider</strong> connects the Redux store to your React Native component tree</li>
+        <li><strong>useSelector</strong> reads state; <strong>useDispatch</strong> sends actions</li>
+        <li><strong>RTK Query</strong> handles server state with automatic caching and re-fetching</li>
+        <li>Never mutate state outside of createSlice — use reducers only</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Redux Toolkit Official Docs</strong> — Complete guide to RTK including tutorials, API reference, and examples. <a href="https://redux-toolkit.js.org/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 42: File System</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 42: File System</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Master the expo-file-system API to read, write, and manage files on the device. Learn about directories, file operations, downloading files, and file permissions.</div>
+
+      <h2>What is expo-file-system?</h2>
+      <p>expo-file-system provides access to the local file system on the device. You can read, write, move, copy, and delete files, as well as download files from the internet.</p>
+
+      <h3>Key Directories</h3>
+      <ul>
+        <li><strong>documentDirectory</strong> — Persistent storage (backed up, survives app uninstall reinstall)</li>
+        <li><strong>cacheDirectory</strong> — Temporary storage (can be cleared by the OS)</li>
+        <li><strong>bundledResources</strong> — Read-only files from your app bundle</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <pre><code>npx expo install expo-file-system</code></pre>
+
+      <h2>Reading and Writing Files</h2>
+      <p>The two main operations are <code>readAsStringAsync</code> and <code>writeAsStringAsync</code>.</p>
+
+      <pre><code>// utils/fileUtils.js
+import * as FileSystem from 'expo-file-system';
+
+const { documentDirectory, cacheDirectory } = FileSystem;
+
+// Build file paths
+const getFilePath = (filename) =&gt; `${documentDirectory}${filename}`;
+
+// WRITE - Save text to a file
+export async function saveToFile(filename, content) {
+  const filePath = getFilePath(filename);
+  try {
+    await FileSystem.writeAsStringAsync(filePath, content, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    console.log('File saved to:', filePath);
+    return filePath;
+  } catch (error) {
+    console.error('Error writing file:', error);
+    throw error;
+  }
+}
+
+// READ - Load text from a file
+export async function readFromFile(filename) {
+  const filePath = getFilePath(filename);
+  try {
+    const content = await FileSystem.readAsStringAsync(filePath, {
+      encoding: FileSystem.EncodingType.UTF8,
+    });
+    return content;
+  } catch (error) {
+    console.error('Error reading file:', error);
+    return null;
+  }
+}</code></pre>
+
+      <h2>File Info and Existence Checks</h2>
+      <pre><code>// Check if a file exists
+export async function fileExists(filename) {
+  const filePath = getFilePath(filename);
+  const info = await FileSystem.getInfoAsync(filePath);
+  return info.exists;
+}
+
+// Get file information
+export async function getFileInfo(filename) {
+  const filePath = getFilePath(filename);
+  const info = await FileSystem.getInfoAsync(filePath);
+
+  if (info.exists) {
+    console.log('File exists:', info.exists);
+    console.log('Is directory:', info.isDirectory);
+    console.log('Size (bytes):', info.size);
+    console.log('Last modified:', info.modificationTime);
+  }
+
+  return info;
+}
+
+// List all files in document directory
+export async function listFiles() {
+  const files = await FileSystem.readDirectoryAsync(documentDirectory);
+  console.log('Files:', files);
+  return files;
+}</code></pre>
+
+      <h2>Deleting and Moving Files</h2>
+      <pre><code>// Delete a file
+export async function deleteFile(filename) {
+  const filePath = getFilePath(filename);
+  try {
+    await FileSystem.deleteAsync(filePath);
+    console.log('File deleted');
+  } catch (error) {
+    console.error('Error deleting file:', error);
+  }
+}
+
+// Move a file
+export async function moveFile(source, destination) {
+  const sourcePath = getFilePath(source);
+  const destPath = getFilePath(destination);
+
+  try {
+    await FileSystem.moveAsync({ from: sourcePath, to: destPath });
+    console.log('File moved from', source, 'to', destination);
+  } catch (error) {
+    console.error('Error moving file:', error);
+  }
+}
+
+// Copy a file
+export async function copyFile(source, destination) {
+  const sourcePath = getFilePath(source);
+  const destPath = getFilePath(destination);
+
+  try {
+    await FileSystem.copyAsync({ from: sourcePath, to: destPath });
+    console.log('File copied');
+  } catch (error) {
+    console.error('Error copying file:', error);
+  }
+}
+
+// Create a directory
+export async function createDirectory(dirname) {
+  const dirPath = `${documentDirectory}${dirname}`;
+  await FileSystem.makeDirectoryAsync(dirPath, { intermediates: true });
+}</code></pre>
+
+      <h2>Downloading Files</h2>
+      <p><code>downloadAsync</code> downloads a file from a URL to a local path with progress tracking.</p>
+
+      <pre><code>// Download a file
+export async function downloadFile(url, filename) {
+  const fileUri = `${documentDirectory}${filename}`;
+
+  try {
+    const { uri } = await FileSystem.downloadAsync(url, fileUri, {
+      headers: {
+        Authorization: 'Bearer your-token',
+      },
+    });
+    console.log('Downloaded to:', uri);
+    return uri;
+  } catch (error) {
+    console.error('Download error:', error);
+    throw error;
+  }
+}
+
+// Download with progress tracking
+export async function downloadWithProgress(url, filename, onProgress) {
+  const fileUri = `${documentDirectory}${filename}`;
+
+  const downloadResumable = FileSystem.createDownloadResumable(
+    url,
+    fileUri,
+    {
+      headers: { Authorization: 'Bearer token' },
+    },
+    (downloadProgress) =&gt; {
+      const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+      onProgress(progress);
+    }
+  );
+
+  try {
+    const result = await downloadResumable.downloadAsync();
+    return result.uri;
+  } catch (error) {
+    console.error('Download error:', error);
+    throw error;
+  }
+}
+
+// Pause and resume downloads
+export async function pauseDownload(downloadResumable) {
+  await downloadResumable.pauseAsync();
+}
+
+export async function resumeDownload(downloadResumable) {
+  await downloadResumable.resumeAsync();
+}</code></pre>
+
+      <h3>Using Downloads in Components</h3>
+      <pre><code>// screens/DownloadScreen.js
+import { useState } from 'react';
+import { View, Text, Button, ProgressViewIOS, Alert } from 'react-native';
+import { downloadWithProgress } from '../utils/fileUtils';
+
+export default function DownloadScreen() {
+  const [progress, setProgress] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () =&gt; {
+    setDownloading(true);
+    setProgress(0);
+
+    try {
+      await downloadWithProgress(
+        'https://example.com/large-file.pdf',
+        'document.pdf',
+        (p) =&gt; setProgress(p)
+      );
+      Alert.alert('Success', 'File downloaded!');
+    } catch (error) {
+      Alert.alert('Error', 'Download failed');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  return (
+    &lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+      &lt;Text&gt;Download Progress: {Math.round(progress * 100)}%&lt;/Text&gt;
+      &lt;ProgressViewIOS progress={progress} /&gt;
+      &lt;Button
+        title={downloading ? 'Downloading...' : 'Download File'}
+        onPress={handleDownload}
+        disabled={downloading}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What is the difference between documentDirectory and cacheDirectory?</strong></p>
+        <label><input type="radio" name="q1" value="a"> documentDirectory is faster</label>
+        <label><input type="radio" name="q1" value="b"> documentDirectory persists; cacheDirectory can be cleared by the OS</label>
+        <label><input type="radio" name="q1" value="c"> cacheDirectory supports encryption</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. Which method downloads a file from a URL in expo-file-system?</strong></p>
+        <label><input type="radio" name="q2" value="a"> fetchAsync</label>
+        <label><input type="radio" name="q2" value="b"> downloadAsync</label>
+        <label><input type="radio" name="q2" value="c"> requestAsync</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What does getInfoAsync return?</strong></p>
+        <label><input type="radio" name="q3" value="a"> The file contents as a string</label>
+        <label><input type="radio" name="q3" value="b"> An object with exists, size, isDirectory, and modificationTime</label>
+        <label><input type="radio" name="q3" value="c"> A boolean indicating if the file exists</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a File Logger</h3>
+        <p>Create a file logger app that writes timestamps and log entries to a file, reads them back, and displays them.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install: <code>npx expo install expo-file-system</code></li>
+          <li>Create utility functions for read/write/delete operations</li>
+          <li>Create a log function that appends timestamped entries to a file</li>
+          <li>Build a screen with buttons to add log entries</li>
+          <li>Display all log entries from the file in a ScrollView</li>
+          <li>Add a clear log button that deletes the file</li>
+        </ol>
+        <pre><code>// Bonus: Append to existing file
+export async function appendToFile(filename, content) {
+  const filePath = getFilePath(filename);
+  const existing = await readFromFile(filename) || '';
+  await saveToFile(filename, existing + content + '\n');
+}
+
+// Log function with timestamp
+export async function log(message) {
+  const timestamp = new Date().toISOString();
+  await appendToFile('app.log', `[${timestamp}] ${message}`);
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>documentDirectory</strong> is for persistent files; <strong>cacheDirectory</strong> is temporary</li>
+        <li>Use <strong>writeAsStringAsync</strong> and <strong>readAsStringAsync</strong> for text files</li>
+        <li><strong>getInfoAsync</strong> returns file metadata including size and existence</li>
+        <li><strong>downloadAsync</strong> fetches files from URLs with progress tracking via createDownloadResumable</li>
+        <li>Use <strong>deleteAsync</strong>, <strong>moveAsync</strong>, and <strong>copyAsync</strong> for file management</li>
+        <li>Always handle errors when working with the file system</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>expo-file-system Documentation</strong> — Official Expo docs with API reference and examples. <a href="https://docs.expo.dev/versions/latest/sdk/filesystem/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

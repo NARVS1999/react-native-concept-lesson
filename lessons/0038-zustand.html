@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 38: Zustand</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 38: Zustand</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn Zustand — a minimal, fast state management library that requires no providers, supports middleware like persistence and devtools, and uses selectors for optimal re-renders.</div>
+
+      <h2>What is Zustand?</h2>
+      <p>Zustand (German for "state") is a small, fast, and scalable state management solution. Unlike Redux, it requires no providers, no boilerplate, and no context. You create a store and use it directly in any component.</p>
+
+      <h3>Why Zustand over Redux?</h3>
+      <ul>
+        <li><strong>No Provider needed</strong> — Just import and use the store hook</li>
+        <li><strong>Minimal API</strong> — One function to create the store</li>
+        <li><strong>Bundle size</strong> — Under 2KB gzipped</li>
+        <li><strong>No boilerplate</strong> — No action types, action creators, or reducer switch statements</li>
+      </ul>
+
+      <h3>Installation</h3>
+      <pre><code>npm install zustand</code></pre>
+
+      <h2>Creating a Store</h2>
+      <p>A Zustand store is created with the <code>create</code> function. It takes a function that returns the initial state and any actions you want.</p>
+
+      <pre><code>// store/useCounterStore.js
+import { create } from 'zustand';
+
+const useCounterStore = create((set) =&gt; ({
+  count: 0,
+  increment: () =&gt; set((state) =&gt; ({ count: state.count + 1 })),
+  decrement: () =&gt; set((state) =&gt; ({ count: state.count - 1 })),
+  reset: () =&gt; set({ count: 0 }),
+}));
+
+export default useCounterStore;</code></pre>
+
+      <h3>Using the Store in Components</h3>
+      <pre><code>// screens/HomeScreen.js
+import { View, Text, Button, StyleSheet } from 'react-native';
+import useCounterStore from '../store/useCounterStore';
+
+export default function HomeScreen() {
+  const count = useCounterStore((state) =&gt; state.count);
+  const increment = useCounterStore((state) =&gt; state.increment);
+  const decrement = useCounterStore((state) =&gt; state.decrement);
+  const reset = useCounterStore((state) =&gt; state.reset);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={increment} /&gt;
+      &lt;Button title="Decrement" onPress={decrement} /&gt;
+      &lt;Button title="Reset" onPress={reset} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
+  count: { fontSize: 32, fontWeight: 'bold' },
+});</code></pre>
+
+      <h2>Selectors for Performance</h2>
+      <p>Zustand uses selectors to prevent unnecessary re-renders. Only the selected state triggers a re-render, not the entire store.</p>
+
+      <pre><code>// Bad: Re-renders on any store change
+const store = useCounterStore();
+
+// Good: Only re-renders when count changes
+const count = useCounterStore((state) =&gt; state.count);
+
+// Good: Only re-renders when increment function reference changes
+const increment = useCounterStore((state) =&gt; state.increment);</code></pre>
+
+      <h3>Multiple Selectors</h3>
+      <pre><code>// You can select multiple values at once
+const count = useCounterStore((state) =&gt; state.count);
+const name = useCounterStore((state) =&gt; state.name);
+
+// Or use shallow comparison for objects
+import { shallow } from 'zustand/shallow';
+
+const { count, name } = useCounterStore(
+  (state) =&gt; ({ count: state.count, name: state.name }),
+  shallow
+);</code></pre>
+
+      <h2>Middleware: Persistence and DevTools</h2>
+      <p>Zustand supports middleware that can persist state to storage or connect to Redux DevTools.</p>
+
+      <h3>Persist Middleware</h3>
+      <pre><code>// store/useTodoStore.js
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const useTodoStore = create(
+  persist(
+    (set) =&gt; ({
+      todos: [],
+      addTodo: (text) =&gt; set((state) =&gt; ({
+        todos: [...state.todos, { id: Date.now(), text, done: false }],
+      })),
+      toggleTodo: (id) =&gt; set((state) =&gt; ({
+        todos: state.todos.map((t) =&gt;
+          t.id === id ? { ...t, done: !t.done } : t
+        ),
+      })),
+      removeTodo: (id) =&gt; set((state) =&gt; ({
+        todos: state.todos.filter((t) =&gt; t.id !== id),
+      })),
+    }),
+    {
+      name: 'todo-storage',
+      storage: createJSONStorage(() =&gt; AsyncStorage),
+    }
+  )
+);
+
+export default useTodoStore;</code></pre>
+
+      <h3>DevTools Middleware</h3>
+      <pre><code>// store/useCounterStore.js
+import { create } from 'zustand';
+import { devtools } from 'zustand/middleware';
+
+const useCounterStore = create(
+  devtools((set) =&gt; ({
+    count: 0,
+    increment: () =&gt; set((state) =&gt; ({ count: state.count + 1 }), false, 'increment'),
+    decrement: () =&gt; set((state) =&gt; ({ count: state.count - 1 }), false, 'decrement'),
+  }))
+);
+
+export default useCounterStore;</code></pre>
+
+      <h2>Building a Todo App</h2>
+      <pre><code>// screens/TodoScreen.js
+import { useState } from 'react';
+import { View, Text, TextInput, Button, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import useTodoStore from '../store/useTodoStore';
+
+export default function TodoScreen() {
+  const [text, setText] = useState('');
+  const todos = useTodoStore((state) =&gt; state.todos);
+  const addTodo = useTodoStore((state) =&gt; state.addTodo);
+  const toggleTodo = useTodoStore((state) =&gt; state.toggleTodo);
+  const removeTodo = useTodoStore((state) =&gt; state.removeTodo);
+
+  const handleAdd = () =&gt; {
+    if (text.trim()) {
+      addTodo(text.trim());
+      setText('');
+    }
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;TextInput
+        style={styles.input}
+        value={text}
+        onChangeText={setText}
+        placeholder="Add a todo..."
+      /&gt;
+      &lt;Button title="Add" onPress={handleAdd} /&gt;
+      &lt;FlatList
+        data={todos}
+        keyExtractor={(item) =&gt; item.id.toString()}
+        renderItem={({ item }) =&gt; (
+          &lt;TouchableOpacity onPress={() =&gt; toggleTodo(item.id)}&gt;
+            &lt;View style={styles.todoItem}&gt;
+              &lt;Text style={item.done ? styles.done : styles.pending}&gt;
+                {item.done ? '✓ ' : '○ '}{item.text}
+              &lt;/Text&gt;
+              &lt;Button title="X" onPress={() =&gt; removeTodo(item.id)} /&gt;
+            &lt;/View&gt;
+          &lt;/TouchableOpacity&gt;
+        )}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, marginTop: 50 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10, borderRadius: 5 },
+  todoItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 10, borderBottomWidth: 1 },
+  done: { textDecorationLine: 'line-through', color: 'gray' },
+  pending: { color: 'black' },
+});</code></pre>
+
+      <h2>Zustand vs Redux Toolkit</h2>
+      <table>
+        <tr><th>Feature</th><th>Zustand</th><th>Redux Toolkit</th></tr>
+        <tr><td>Provider</td><td>Not required</td><td>Required</td></tr>
+        <tr><td>Bundle Size</td><td>~1KB</td><td>~11KB</td></tr>
+        <tr><td>Boilerplate</td><td>Minimal</td><td>Moderate</td></tr>
+        <tr><td>DevTools</td><td>Optional middleware</td><td>Built-in</td></tr>
+        <tr><td>Learning Curve</td><td>Low</td><td>Moderate</td></tr>
+      </table>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What is a key advantage of Zustand over Redux?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It uses TypeScript by default</label>
+        <label><input type="radio" name="q1" value="b"> It requires no Provider component</label>
+        <label><input type="radio" name="q1" value="c"> It has built-in middleware</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. What does the persist middleware in Zustand use for storage by default?</strong></p>
+        <label><input type="radio" name="q2" value="a"> localStorage</label>
+        <label><input type="radio" name="q2" value="b"> AsyncStorage (via createJSONStorage)</label>
+        <label><input type="radio" name="q2" value="c"> MMKV</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. How do you prevent unnecessary re-renders in Zustand?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Using React.memo on all components</label>
+        <label><input type="radio" name="q3" value="b"> Using selectors to subscribe to specific state slices</label>
+        <label><input type="radio" name="q3" value="c"> Using useCallback on all functions</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Todo App with Zustand</h3>
+        <p>Create a todo app with Zustand that persists data to AsyncStorage and supports add, toggle, and remove operations.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Install dependencies: <code>npm install zustand @react-native-async-storage/async-storage</code></li>
+          <li>Create a store with addTodo, toggleTodo, and removeTodo actions</li>
+          <li>Add persist middleware to save todos to AsyncStorage</li>
+          <li>Build a screen with TextInput and FlatList</li>
+          <li>Use selectors to subscribe to only the parts of state each component needs</li>
+        </ol>
+        <pre><code>// Bonus: Add a clear completed button
+const clearCompleted = useTodoStore((state) =&gt; state.clearCompleted);
+
+// Add to store
+clearCompleted: () =&gt; set((state) =&gt; ({
+  todos: state.todos.filter((t) =&gt; !t.done),
+}));</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>Zustand</strong> is a minimal state management library with no providers needed</li>
+        <li>Use <strong>selectors</strong> to prevent unnecessary re-renders</li>
+        <li><strong>Persist middleware</strong> saves state to AsyncStorage or other storage</li>
+        <li><strong>DevTools middleware</strong> enables time-travel debugging</li>
+        <li>Zustand is ideal for small to medium apps that need simple state management</li>
+        <li>Combine with React Query for server state, Zustand for client state</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Zustand GitHub & Docs</strong> — Official documentation with examples and middleware guides. <a href="https://github.com/pmndrs/zustand" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

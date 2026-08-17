@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 44: Turbo Modules</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 44: Turbo Modules</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Understand React Native's new architecture with Turbo Modules — learn about JSI, lazy loading, synchronous calls, TurboModuleRegistry, and codegen specifications.</div>
+
+      <h2>What are Turbo Modules?</h2>
+      <p>Turbo Modules are the new type of native modules in React Native's new architecture. They replace the old bridge-based modules with a faster, more efficient system using JSI (JavaScript Interface).</p>
+
+      <h3>Old Architecture vs New Architecture</h3>
+      <table>
+        <tr><th>Feature</th><th>Old (Bridge)</th><th>New (Turbo Modules)</th></tr>
+        <tr><td>Communication</td><td>Asynchronous JSON</td><td>Synchronous JSI</td></tr>
+        <tr><td>Loading</td><td>All modules at startup</td><td>Lazy loading on demand</td></tr>
+        <tr><td>Type Safety</td><td>None</td><td>Codegen specs</td></tr>
+        <tr><td>Performance</td><td>Slower (serialization)</td><td>Faster (direct calls)</td></tr>
+        <tr><td>Memory</td><td>All modules loaded</td><td>Only used modules loaded</td></tr>
+      </table>
+
+      <h2>JSI: JavaScript Interface</h2>
+      <p>JSI is a lightweight, synchronous bridge that allows JavaScript to call native methods directly. Unlike the old bridge, JSI doesn't serialize/deserialize data — it passes references directly.</p>
+
+      <h3>How JSI Works</h3>
+      <ol>
+        <li>JavaScript holds a direct reference to a C++ host object</li>
+        <li>When JS calls a native method, JSI invokes the C++ function directly</li>
+        <li>C++ calls the native platform code (Swift/Kotlin)</li>
+        <li>Result is returned synchronously without serialization</li>
+      </ol>
+
+      <pre><code>// With JSI, this is now synchronous!
+const result = NativeModules.MyModule.doSomethingSync();
+// No need for callbacks or Promises for simple operations</code></pre>
+
+      <h2>Lazy Loading</h2>
+      <p>Turbo Modules are loaded on demand, not all at startup. This significantly reduces app launch time when you have many native modules.</p>
+
+      <pre><code>// Old architecture: ALL modules loaded at startup
+// Even if you only use 2 out of 20 modules
+
+// New architecture: Modules loaded when first accessed
+import { TurboModuleRegistry } from 'react-native';
+
+// This module is only loaded when getMyModule() is called
+function getMyModule() {
+  return TurboModuleRegistry.getEnforcing('MyModule');
+}
+
+// If you never call getMyModule(), it's never loaded</code></pre>
+
+      <h2>TurboModuleRegistry</h2>
+      <p><code>TurboModuleRegistry</code> is the API for accessing Turbo Modules. It provides two methods: <code>get</code> and <code>getEnforcing</code>.</p>
+
+      <pre><code>import { TurboModuleRegistry, type TurboModule } from 'react-native';
+
+// getEnforcing - throws if module not found
+export function getMyModule(): MyModuleSpec {
+  return TurboModuleRegistry.getEnforcing&lt;MyModuleSpec&gt;('MyModule');
+}
+
+// get - returns null if module not found (safer)
+export function getMyModuleSafe(): MyModuleSpec | null {
+  return TurboModuleRegistry.get&lt;MyModuleSpec&gt;('MyModule');
+}
+
+// Usage
+const myModule = getMyModule();
+const result = await myModule.doSomething('data');</code></pre>
+
+      <h2>Codegen Specifications</h2>
+      <p>Codegen generates type-safe native code from JavaScript specifications. This ensures your native modules match the JS interface exactly.</p>
+
+      <h3>Creating a Spec File</h3>
+      <pre><code>// specs/MyModule.ts
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  // Synchronous method
+  getConstants(): {
+    PI: number;
+    VERSION: string;
+  };
+
+  // Async method
+  getData(key: string): Promise&lt;string&gt;;
+
+  // Method with callback
+  subscribe(
+    event: string,
+    callback: (data: string) =&gt; void
+  ): void;
+}
+
+export default TurboModuleRegistry.getEnforcing&lt;Spec&gt;('MyModule');</code></pre>
+
+      <h3>Codegen Output</h3>
+      <p>When you run codegen, it generates:</p>
+      <ul>
+        <li><strong>iOS:</strong> Swift/Obj-C++ protocol that your native module must implement</li>
+        <li><strong>Android:</strong> Kotlin/Java abstract class that your native module must extend</li>
+      </ul>
+
+      <pre><code>// Run codegen
+npx react-native codegen
+
+// Output for iOS (generated):
+@objc public protocol MyModuleSpec {
+  func getConstants() -&gt; NSDictionary
+  func getData(_ key: String) async throws -&gt; String
+}
+
+// Your native module implements this spec
+@objc(MyModule)
+public class MyModule: NSObject, MyModuleSpec {
+  public func getConstants() -&gt; NSDictionary {
+    return ["PI": 3.14159, "VERSION": "1.0"]
+  }
+
+  public func getData(_ key: String) async throws -&gt; String {
+    return "value for \(key)"
+  }
+}</code></pre>
+
+      <h2>Building a Turbo Module</h2>
+      <pre><code>// Step 1: Create the spec
+// specs/BatteryModule.ts
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  getBatteryLevel(): Promise&lt;number&gt;;
+  isCharging(): Promise&lt;boolean&gt;;
+  getConstants(): {
+    LOW_BATTERY_THRESHOLD: number;
+  };
+}
+
+export default TurboModuleRegistry.getEnforcing&lt;Spec&gt;('BatteryModule');</code></pre>
+
+      <pre><code>// Step 2: Implement native module
+// ios/BatteryModule.swift
+import ExpoModulesCore
+
+public class BatteryModule: Module {
+  public func definition() -&gt; ModuleDefinition {
+    Name("BatteryModule")
+
+    AsyncFunction("getBatteryLevel") { () -&gt; Double in
+      UIDevice.current.isBatteryMonitoringEnabled = true
+      return Double(UIDevice.current.batteryLevel)
+    }
+
+    AsyncFunction("isCharging") { () -&gt; Bool in
+      UIDevice.current.isBatteryMonitoringEnabled = true
+      return UIDevice.current.batteryState == .charging
+    }
+
+    Constants {
+      return [
+        "LOW_BATTERY_THRESHOLD": 0.2
+      ]
+    }
+  }
+}</code></pre>
+
+      <pre><code>// Step 3: Use in JavaScript
+// screens/BatteryScreen.js
+import { View, Text, StyleSheet } from 'react-native';
+import BatteryModule from '../specs/BatteryModule';
+
+export default function BatteryScreen() {
+  const [battery, setBattery] = useState(null);
+
+  useEffect(() =&gt; {
+    async function load() {
+      const level = await BatteryModule.getBatteryLevel();
+      setBattery(level);
+    }
+    load();
+  }, []);
+
+  const threshold = BatteryModule.getConstants().LOW_BATTERY_THRESHOLD;
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.level}&gt;
+        Battery: {battery !== null ? `${Math.round(battery * 100)}%` : 'Loading...'}
+      &lt;/Text&gt;
+      {battery !== null &amp;&amp; battery &lt; threshold &amp;&amp; (
+        &lt;Text style={styles.warning}&gt;Low Battery Warning!&lt;/Text&gt;
+      )}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Migration Checklist</h2>
+      <ul>
+        <li>Enable the new architecture in <code>gradle.properties</code> and <code>Podfile</code></li>
+        <li>Create TypeScript spec files for all native modules</li>
+        <li>Run codegen to generate type-safe interfaces</li>
+        <li>Update native module implementations to match specs</li>
+        <li>Test thoroughly — behavior may differ slightly</li>
+        <li>Use <code>TurboModuleRegistry</code> instead of <code>NativeModules</code></li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What is the key improvement of JSI over the old bridge?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It uses JSON for faster serialization</label>
+        <label><input type="radio" name="q1" value="b"> It enables synchronous calls without serialization</label>
+        <label><input type="radio" name="q1" value="c"> It supports more data types</label>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. What does lazy loading mean for Turbo Modules?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Modules are loaded in the background while app runs</label>
+        <label><input type="radio" name="q2" value="b"> Modules are only loaded when first accessed, not at startup</label>
+        <label><input type="radio" name="q2" value="c"> Modules are loaded from the server on demand</label>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What is the purpose of codegen in Turbo Modules?</strong></p>
+        <label><input type="radio" name="q3" value="a"> It compiles JavaScript to native code</label>
+        <label><input type="radio" name="q3" value="b"> It generates type-safe native interfaces from TypeScript specs</label>
+        <label><input type="radio" name="q3" value="c"> It optimizes bundle size</label>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Compare Old Bridge vs Turbo Modules Architecture</h3>
+        <p>Research and document the differences between the old bridge and new Turbo Modules architecture.</p>
+        <p><strong>Steps:</strong></p>
+        <ol>
+          <li>Read the React Native New Architecture documentation</li>
+          <li>Create a comparison table covering: performance, memory usage, startup time, developer experience</li>
+          <li>Document the migration steps from NativeModules to TurboModuleRegistry</li>
+          <li>Create a simple Turbo Module with a spec file</li>
+          <li>Compare the code differences between old bridge module and new Turbo Module</li>
+          <li>Test both approaches and document performance differences</li>
+        </ol>
+        <pre><code>// Document the key differences:
+
+// OLD: NativeModules approach
+import { NativeModules } from 'react-native';
+const { MyModule } = NativeModules;
+
+// NEW: TurboModuleRegistry approach
+import { TurboModuleRegistry } from 'react-native';
+const MyModule = TurboModuleRegistry.getEnforcing('MyModule');
+
+// Key differences:
+// 1. Type safety with codegen specs
+// 2. Lazy loading instead of eager loading
+// 3. Synchronous calls via JSI
+// 4. Better performance and memory usage</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>Turbo Modules</strong> replace the old bridge with JSI for faster, synchronous communication</li>
+        <li><strong>JSI</strong> enables direct JavaScript-to-native calls without JSON serialization</li>
+        <li><strong>Lazy loading</strong> reduces startup time by loading modules only when needed</li>
+        <li><strong>TurboModuleRegistry</strong> provides <code>get</code> and <code>getEnforcing</code> to access modules</li>
+        <li><strong>Codegen</strong> generates type-safe interfaces from TypeScript spec files</li>
+        <li>The new architecture improves performance, memory usage, and developer experience</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native New Architecture</strong> — Official documentation on the new architecture, Turbo Modules, and migration guide. <a href="https://reactnative.dev/docs/the-new-architecture/landing-page" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
