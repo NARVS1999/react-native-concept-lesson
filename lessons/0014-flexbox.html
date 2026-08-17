@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 14: Flexbox</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 14: Flexbox</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to master Flexbox layout in React Native, understand the column-first default direction, and build responsive layouts using justifyContent, alignItems, flex, and position properties.
+      </div>
+
+      <h2>Flexbox in React Native</h2>
+      <p>Flexbox is the primary layout system in React Native. It is used to arrange and align elements within a container. If you are coming from web development, there is one critical difference: <strong>React Native defaults to flexDirection: column, not row.</strong></p>
+
+      <h3>Web vs React Native Default</h3>
+      <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+        <thead>
+          <tr style="background: #ecf0f1;">
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">Property</th>
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">Web (CSS)</th>
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">React Native</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">flexDirection default</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">row</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px; font-weight: bold; color: #e74c3c;">column</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">display: flex default</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">block</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">flex</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">box-sizing</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">border-box</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">border-box</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>flexDirection</h2>
+      <p><code>flexDirection</code> controls the direction in which child elements are laid out.</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.row}&gt;
+      &lt;View style={styles.box}&gt;&lt;Text&gt;1&lt;/Text&gt;&lt;/View&gt;
+      &lt;View style={styles.box}&gt;&lt;Text&gt;2&lt;/Text&gt;&lt;/View&gt;
+      &lt;View style={styles.box}&gt;&lt;Text&gt;3&lt;/Text&gt;&lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  box: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});</code></pre>
+      <p>The four flexDirection options are: <code>column</code> (default), <code>column-reverse</code>, <code>row</code>, and <code>row-reverse</code>.</p>
+
+      <h2>justifyContent</h2>
+      <p><code>justifyContent</code> aligns children along the main axis (the direction of flexDirection):</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={[styles.row, { justifyContent: 'flex-start' }]}&gt;
+        &lt;Text&gt;flex-start&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { justifyContent: 'center' }]}&gt;
+        &lt;Text&gt;center&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { justifyContent: 'flex-end' }]}&gt;
+        &lt;Text&gt;flex-end&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { justifyContent: 'space-between' }]}&gt;
+        &lt;Text&gt;between&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { justifyContent: 'space-around' }]}&gt;
+        &lt;Text&gt;around&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { justifyContent: 'space-evenly' }]}&gt;
+        &lt;Text&gt;evenly&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { gap: 10, padding: 10 },
+  row: {
+    flexDirection: 'row',
+    height: 50,
+    backgroundColor: '#ecf0f1',
+  },
+});</code></pre>
+      <p>The options are: <code>flex-start</code>, <code>center</code>, <code>flex-end</code>, <code>space-between</code>, <code>space-around</code>, and <code>space-evenly</code>.</p>
+
+      <h2>alignItems</h2>
+      <p><code>alignItems</code> aligns children along the cross axis (perpendicular to flexDirection):</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={[styles.row, { alignItems: 'flex-start', height: 100 }]}&gt;
+        &lt;Text&gt;flex-start&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { alignItems: 'center', height: 100 }]}&gt;
+        &lt;Text&gt;center&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.row, { alignItems: 'flex-end', height: 100 }]}&gt;
+        &lt;Text&gt;flex-end&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { gap: 10, padding: 10 },
+  row: {
+    flexDirection: 'row',
+    backgroundColor: '#ecf0f1',
+    gap: 10,
+  },
+});</code></pre>
+
+      <h2>alignSelf</h2>
+      <p><code>alignSelf</code> overrides alignItems for a single child element:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.row}&gt;
+        &lt;View style={styles.box}&gt;&lt;Text&gt;Default&lt;/Text&gt;&lt;/View&gt;
+        &lt;View style={[styles.box, { alignSelf: 'flex-start' }]}&gt;
+          &lt;Text&gt;flex-start&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={[styles.box, { alignSelf: 'center' }]}&gt;
+          &lt;Text&gt;center&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 10 },
+  row: {
+    flexDirection: 'row',
+    height: 120,
+    backgroundColor: '#ecf0f1',
+    gap: 10,
+    alignItems: 'stretch',
+  },
+  box: {
+    width: 60,
+    height: 40,
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});</code></pre>
+
+      <h2>flex Property</h2>
+      <p>The <code>flex</code> property controls how much space a child takes up relative to its siblings:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={[styles.box, { flex: 1 }]}&gt;
+        &lt;Text&gt;flex: 1&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.box, { flex: 2 }]}&gt;
+        &lt;Text&gt;flex: 2&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.box, { flex: 1 }]}&gt;
+        &lt;Text&gt;flex: 1&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    height: 100,
+    gap: 4,
+  },
+  box: {
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});</code></pre>
+      <p>With flex: 1, 2, and 1, the middle box takes up twice as much space as the others.</p>
+
+      <h2>gap Property</h2>
+      <p>The <code>gap</code> property adds consistent spacing between children without using margins:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.card}&gt;&lt;Text&gt;Card 1&lt;/Text&gt;&lt;/View&gt;
+      &lt;View style={styles.card}&gt;&lt;Text&gt;Card 2&lt;/Text&gt;&lt;/View&gt;
+      &lt;View style={styles.card}&gt;&lt;Text&gt;Card 3&lt;/Text&gt;&lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 16,
+  },
+  card: {
+    flex: 1,
+    backgroundColor: '#ecf0f1',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+});</code></pre>
+
+      <h2>Position: Absolute and Relative</h2>
+      <p>React Native supports both relative (default) and absolute positioning:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.parent}&gt;
+        &lt;Text&gt;Parent Container&lt;/Text&gt;
+        &lt;View style={styles.absoluteBox}&gt;
+          &lt;Text&gt;Absolute&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 16 },
+  parent: {
+    backgroundColor: '#ecf0f1',
+    padding: 20,
+    height: 150,
+  },
+  absoluteBox: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: '#e74c3c',
+    padding: 10,
+  },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What is the default flexDirection in React Native?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) row</label>
+        <label><input type="radio" name="q1" value="b"> b) column</label>
+        <label><input type="radio" name="q1" value="c"> c) column-reverse</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Which property aligns children along the cross axis?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) justifyContent</label>
+        <label><input type="radio" name="q2" value="b"> b) alignItems</label>
+        <label><input type="radio" name="q2" value="c"> c) alignSelf</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What does the flex property control?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) The text alignment inside a container</label>
+        <label><input type="radio" name="q3" value="b"> b) How much space a child takes relative to siblings</label>
+        <label><input type="radio" name="q3" value="c"> c) The scrolling direction</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Responsive Layout Using Flexbox</h3>
+        <p>Create a responsive dashboard layout with Flexbox:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function Dashboard() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.headerTitle}&gt;Dashboard&lt;/Text&gt;
+        &lt;View style={styles.headerRight}&gt;
+          &lt;View style={styles.avatar}&gt;
+            &lt;Text style={styles.avatarText}&gt;JD&lt;/Text&gt;
+          &lt;/View&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.statsRow}&gt;
+        &lt;View style={[styles.statCard, { flex: 1 }]}&gt;
+          &lt;Text style={styles.statNumber}&gt;128&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Projects&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={[styles.statCard, { flex: 1 }]}&gt;
+          &lt;Text style={styles.statNumber}&gt;1.2k&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Followers&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={[styles.statCard, { flex: 1 }]}&gt;
+          &lt;Text style={styles.statNumber}&gt;42&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Following&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.contentRow}&gt;
+        &lt;View style={styles.mainContent}&gt;
+          &lt;Text style={styles.sectionTitle}&gt;Recent Activity&lt;/Text&gt;
+          &lt;View style={styles.activityItem}&gt;
+            &lt;View style={styles.activityDot} /&gt;
+            &lt;Text&gt;Completed project Alpha&lt;/Text&gt;
+          &lt;/View&gt;
+          &lt;View style={styles.activityItem}&gt;
+            &lt;View style={styles.activityDot} /&gt;
+            &lt;Text&gt;Started project Beta&lt;/Text&gt;
+          &lt;/View&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.sidebar}&gt;
+          &lt;Text style={styles.sectionTitle}&gt;Quick Actions&lt;/Text&gt;
+          &lt;View style={styles.actionButton}&gt;
+            &lt;Text style={styles.actionText}&gt;New Project&lt;/Text&gt;
+          &lt;/View&gt;
+          &lt;View style={styles.actionButton}&gt;
+            &lt;Text style={styles.actionText}&gt;Settings&lt;/Text&gt;
+          &lt;/View&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f6fa' },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#2c3e50',
+    padding: 16,
+  },
+  headerTitle: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  headerRight: { flexDirection: 'row', alignItems: 'center' },
+  avatar: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#3498db', justifyContent: 'center', alignItems: 'center',
+  },
+  avatarText: { color: '#fff', fontWeight: 'bold' },
+  statsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 16,
+  },
+  statCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  statNumber: { fontSize: 24, fontWeight: 'bold', color: '#2c3e50' },
+  statLabel: { fontSize: 12, color: '#7f8c8d', marginTop: 4 },
+  contentRow: {
+    flexDirection: 'row',
+    flex: 1,
+    gap: 12,
+    padding: 16,
+  },
+  mainContent: {
+    flex: 2,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+  },
+  sidebar: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+  },
+  sectionTitle: { fontSize: 16, fontWeight: 'bold', marginBottom: 12 },
+  activityItem: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+  activityDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#3498db' },
+  actionButton: {
+    backgroundColor: '#3498db',
+    padding: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  actionText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+        <p>This creates a dashboard layout with a header, stats row, and a two-column content area using Flexbox for responsive sizing.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>React Native defaults to <code>flexDirection: column</code>, unlike web CSS which defaults to row</li>
+        <li><code>justifyContent</code> aligns children along the main axis</li>
+        <li><code>alignItems</code> aligns children along the cross axis</li>
+        <li><code>alignSelf</code> overrides alignItems for individual children</li>
+        <li><code>flex</code> controls how much space a child takes relative to siblings</li>
+        <li><code>gap</code> adds consistent spacing between children</li>
+        <li>Position <code>absolute</code> positions relative to the nearest positioned ancestor</li>
+        <li>Position <code>relative</code> (default) offsets the element from its normal position</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Layout with Flexbox</strong> — Official guide to using Flexbox in React Native. <a href="https://reactnative.dev/docs/flexbox" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

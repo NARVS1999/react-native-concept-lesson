@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 18: Platform.select</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 18: Platform.select</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to use Platform.select to apply platform-specific styles and behavior inline, use Platform.OS for conditional logic, and understand when to use file extensions versus Platform.select.
+      </div>
+      <h2>What is Platform?</h2>
+      <p>The <code>Platform</code> API in React Native gives you information about the running platform (iOS, Android, web) and lets you apply platform-specific code.</p>
+      <pre><code>import { Platform } from 'react-native';
+
+console.log(Platform.OS);      // "ios" or "android"
+console.log(Platform.Version); // iOS version number or Android API level</code></pre>
+      <h2>Platform.OS</h2>
+      <p>The simplest way to check the platform is using <code>Platform.OS</code>:</p>
+      <pre><code>import React from 'react';
+import { View, Text, Platform, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.text}&gt;Running on: {Platform.OS}&lt;/Text&gt;
+      &lt;Text style={styles.text}&gt;Version: {Platform.Version}&lt;/Text&gt;
+      {Platform.OS === 'ios' &amp;&amp; &lt;Text&gt;This only shows on iOS&lt;/Text&gt;}
+      {Platform.OS === 'android' &amp;&amp; &lt;Text&gt;This only shows on Android&lt;/Text&gt;}
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  text: { fontSize: 16, marginBottom: 8 },
+});</code></pre>
+      <h2>Platform.select</h2>
+      <p><code>Platform.select</code> takes an object with platform keys and returns the value for the current platform. This is perfect for inline platform-specific styling:</p>
+      <pre><code>import React from 'react';
+import { View, Text, Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  container: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+      default: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+    }),
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 8,
+  },
+});
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text&gt;Platform-specific shadows!&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      <p>iOS uses <code>shadow*</code> properties, while Android uses <code>elevation</code>. Platform.select lets you handle both cleanly.</p>
+      <h2>Platform.select with Values</h2>
+      <p>You can use Platform.select for any value, not just styles:</p>
+      <pre><code>import { Platform } from 'react-native';
+
+// Platform-specific API endpoints
+const API_URL = Platform.select({
+  ios: 'https://api.ios.example.com',
+  android: 'https://api.android.example.com',
+  web: 'https://api.web.example.com',
+});
+
+// Platform-specific strings
+const appName = Platform.select({
+  ios: 'MyApp for iOS',
+  android: 'MyApp for Android',
+  default: 'MyApp',
+});
+
+// Platform-specific configurations
+const config = Platform.select({
+  ios: { analyticsId: 'ios-123', featureFlags: ['darkMode', 'haptics'] },
+  android: { analyticsId: 'android-456', featureFlags: ['darkMode', 'widgets'] },
+});</code></pre>
+      <h2>Platform-specific File Extensions</h2>
+      <p>React Native supports platform-specific file extensions for entire components:</p>
+      <pre><code>// These files will be resolved automatically based on platform:
+// Button.ios.js     - Used on iOS
+// Button.android.js - Used on Android
+// Button.js         - Fallback for other platforms
+
+// Import statement (same for all platforms):
+import Button from './Button';
+
+// React Native will automatically pick the right file</code></pre>
+      <div class="info">
+        <strong>When to use file extensions vs Platform.select:</strong>
+        <ul>
+          <li><strong>File extensions:</strong> Use when the entire component is different between platforms</li>
+          <li><strong>Platform.select:</strong> Use when only a few props or styles differ</li>
+        </ul>
+      </div>
+      <h2>Platform-specific Code Examples</h2>
+      <pre><code>import React from 'react';
+import { View, Text, Platform, Pressable, Alert, StyleSheet } from 'react-native';
+
+export default function App() {
+  const handlePress = () =&gt; {
+    if (Platform.OS === 'ios') {
+      Alert.alert('iOS Alert', 'This is a native iOS alert');
+    } else {
+      Alert.alert('Android Alert', 'This is a native Android alert');
+    }
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Platform Demo&lt;/Text&gt;
+      &lt;View style={styles.card}&gt;
+        &lt;Text style={styles.cardTitle}&gt;Platform Info&lt;/Text&gt;
+        &lt;Text&gt;OS: {Platform.OS}&lt;/Text&gt;
+        &lt;Text&gt;Version: {Platform.Version}&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;Pressable style={styles.button} onPress={handlePress}&gt;
+        &lt;Text style={styles.buttonText}&gt;Show Platform Alert&lt;/Text&gt;
+      &lt;/Pressable&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  card: {
+    backgroundColor: '#fff', padding: 16, borderRadius: 8, marginBottom: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  button: { backgroundColor: '#3498db', padding: 14, borderRadius: 8, alignItems: 'center' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});</code></pre>
+      <h2>Platform Version Checks</h2>
+      <p>You can check the platform version for features that require specific OS versions:</p>
+      <pre><code>import { Platform } from 'react-native';
+
+// Check for specific iOS version
+const supportsHaptics = Platform.OS === 'ios' &amp;&amp; Platform.Version &gt;= 13;
+
+// Check for specific Android API level
+const supportsPictureInPicture = Platform.OS === 'android' &amp;&amp; Platform.Version &gt;= 26;</code></pre>
+      <h2>Platform.select in StyleSheet</h2>
+      <p>Here is a comprehensive example showing how to use Platform.select within StyleSheet:</p>
+      <pre><code>import { Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  text: {
+    fontSize: 16,
+    ...Platform.select({
+      ios: { fontFamily: 'System' },
+      android: { fontFamily: 'Roboto' },
+    }),
+  },
+  header: {
+    paddingTop: Platform.select({ ios: 44, android: 0 }),
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 4 },
+      android: { elevation: 4 },
+    }),
+    backgroundColor: '#ffffff',
+  },
+  button: {
+    paddingVertical: Platform.select({ ios: 12, android: 10 }),
+    paddingHorizontal: Platform.select({ ios: 24, android: 20 }),
+    borderRadius: Platform.select({ ios: 8, android: 4 }),
+  },
+});</code></pre>
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What does Platform.OS return on an iPhone?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) "iphone"</label>
+        <label><input type="radio" name="q1" value="b"> b) "ios"</label>
+        <label><input type="radio" name="q1" value="c"> c) "iOS"</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. When should you use platform-specific file extensions instead of Platform.select?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) When you need to change a single style property</label>
+        <label><input type="radio" name="q2" value="b"> b) When the entire component implementation differs between platforms</label>
+        <label><input type="radio" name="q2" value="c"> c) When you want better performance</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. What is the primary use case for Platform.select?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) Choosing which platform to build for</label>
+        <label><input type="radio" name="q3" value="b"> b) Applying inline platform-specific styles and values</label>
+        <label><input type="radio" name="q3" value="c"> c) Detecting if the app is in development mode</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+      <div class="project">
+        <h3>Mini-Project: Build a Card with Platform-Specific Shadows/Elevation</h3>
+        <p>Create a card component that handles platform differences for shadows and styling:</p>
+        <pre><code>import React from 'react';
+import { View, Text, Platform, StyleSheet } from 'react-native';
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: Platform.select({ ios: '#f2f2f7', android: '#fafafa', default: '#f5f5f5' }),
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: Platform.select({ ios: 12, android: 8 }),
+    padding: 16,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: { shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 8 },
+      android: { elevation: 4 },
+    }),
+  },
+  cardTitle: {
+    fontSize: Platform.select({ ios: 20, android: 18 }),
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  cardBody: { fontSize: 14, color: '#7f8c8d', lineHeight: 20 },
+  platformBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Platform.select({ ios: 12, android: 4 }),
+    backgroundColor: Platform.select({ ios: '#007AFF', android: '#4CAF50', default: '#999' }),
+    marginBottom: 12,
+  },
+  badgeText: { color: '#ffffff', fontSize: 12, fontWeight: '600' },
+  divider: {
+    height: 1,
+    backgroundColor: Platform.select({ ios: '#c6c6c8', android: '#e0e0e0', default: '#ddd' }),
+    marginVertical: 12,
+  },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  infoLabel: { fontSize: 14, color: '#95a5a6' },
+  infoValue: { fontSize: 14, fontWeight: '600', color: '#2c3e50' },
+});
+
+export default function PlatformCard() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.card}&gt;
+        &lt;View style={styles.platformBadge}&gt;
+          &lt;Text style={styles.badgeText}&gt;{Platform.OS.toUpperCase()}&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;Text style={styles.cardTitle}&gt;Platform-Aware Card&lt;/Text&gt;
+        &lt;Text style={styles.cardBody}&gt;
+          This card automatically adapts its styling based on the platform.
+          Shadows use different APIs on iOS and Android.
+        &lt;/Text&gt;
+        &lt;View style={styles.divider} /&gt;
+        &lt;View style={styles.infoRow}&gt;
+          &lt;Text style={styles.infoLabel}&gt;Border Radius&lt;/Text&gt;
+          &lt;Text style={styles.infoValue}&gt;{Platform.select({ ios: '12px', android: '8px' })}&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={[styles.divider, { marginVertical: 8 }]} /&gt;
+        &lt;View style={styles.infoRow}&gt;
+          &lt;Text style={styles.infoLabel}&gt;Shadow/Elevation&lt;/Text&gt;
+          &lt;Text style={styles.infoValue}&gt;{Platform.select({ ios: 'shadow*', android: 'elevation: 4' })}&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+        <p>This creates a card component that automatically adapts its styling based on the running platform using Platform.select.</p>
+      </div>
+      <h2>Summary</h2>
+      <ul>
+        <li><code>Platform.OS</code> returns the current platform as a string ("ios" or "android")</li>
+        <li><code>Platform.select</code> lets you define platform-specific values inline using an object</li>
+        <li><code>Platform.Version</code> gives you the OS version for feature compatibility checks</li>
+        <li>Use file extensions (.ios.js, .android.js) when the entire component differs between platforms</li>
+        <li>Use Platform.select when only a few styles or values need to be different</li>
+        <li>Common use cases: shadows/elevation, font families, padding, and API endpoints</li>
+        <li>The "default" key in Platform.select handles platforms other than ios/android</li>
+      </ul>
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Platform API Documentation</strong> — Official documentation for the Platform API including Platform.select and Platform.OS. <a href="https://reactnative.dev/docs/platform" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

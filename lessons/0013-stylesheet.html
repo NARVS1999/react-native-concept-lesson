@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 13: StyleSheet</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 13: StyleSheet</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to create and use StyleSheet for declarative styling, understand why StyleSheet is preferred over inline styles, compose styles using arrays, and optimize your React Native apps styling approach.
+      </div>
+
+      <h2>What is StyleSheet?</h2>
+      <p><code>StyleSheet</code> is a React Native API for creating style objects. It provides a declarative way to define styles similar to CSS classes. While you can use plain JavaScript objects for styles, StyleSheet offers important benefits.</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Hello StyleSheet!&lt;/Text&gt;
+      &lt;Text style={styles.subtitle}&gt;This is styled properly&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    marginTop: 8,
+  },
+});</code></pre>
+
+      <h2>Why Use StyleSheet Instead of Inline Styles?</h2>
+      <p>There are three key reasons to prefer StyleSheet over inline styles:</p>
+
+      <h3>1. Validation</h3>
+      <p>StyleSheet validates your styles at creation time. If you make a typo like <code>fotSize</code> instead of <code>fontSize</code>, you will get a clear warning in development. Inline styles would silently fail.</p>
+      <pre><code>// This will warn you about the typo
+const styles = StyleSheet.create({
+  title: {
+    fotSize: 24,  // Warning: "fotSize" is not a valid style property
+    fontSize: 24, // Correct
+  },
+});
+
+// This would fail silently with inline styles
+&lt;Text style={{ fotSize: 24 }}&gt;No warning!&lt;/Text&gt;</code></pre>
+
+      <h3>2. Optimization</h3>
+      <p>StyleSheet creates style IDs that are passed to the native layer. This reduces the amount of data sent over the bridge between JavaScript and native code, improving performance.</p>
+      <pre><code>// Inline styles create a new object every render
+&lt;Text style={{ fontSize: 24, color: 'red' }}&gt;Each render creates new object&lt;/Text&gt;
+
+// StyleSheet creates an ID reference - only the ID is sent over the bridge
+const styles = StyleSheet.create({
+  text: { fontSize: 24, color: 'red' }
+});
+&lt;Text style={styles.text}&gt;Only ID reference sent&lt;/Text&gt;</code></pre>
+
+      <h3>3. Readability and Organization</h3>
+      <p>StyleSheet separates styles from component logic, making your code cleaner and easier to maintain.</p>
+      <pre><code>// Hard to read - styles mixed with logic
+&lt;View style={{ flex: 1, backgroundColor: '#fff', padding: 20, borderRadius: 8 }}&gt;
+  &lt;Text style={{ fontSize: 18, fontWeight: 'bold', color: '#333' }}&gt;
+    Title
+  &lt;/Text&gt;
+&lt;/View&gt;
+
+// Clean and readable - styles separated
+&lt;View style={styles.card}&gt;
+  &lt;Text style={styles.cardTitle}&gt;Title&lt;/Text&gt;
+&lt;/View&gt;
+
+const styles = StyleSheet.create({
+  card: { flex: 1, backgroundColor: '#fff', padding: 20, borderRadius: 8 },
+  cardTitle: { fontSize: 18, fontWeight: 'bold', color: '#333' },
+});</code></pre>
+
+      <h2>Style Composition with Arrays</h2>
+      <p>You can combine multiple styles using an array syntax. This is useful for creating reusable base styles with variants:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={[styles.text, styles.bold]}&gt;Bold Text&lt;/Text&gt;
+      &lt;Text style={[styles.text, styles.italic]}&gt;Italic Text&lt;/Text&gt;
+      &lt;Text style={[styles.text, styles.bold, styles.italic]}&gt;Both&lt;/Text&gt;
+      &lt;Text style={[styles.text, styles.red]}&gt;Red Bold Text&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 20, gap: 10 },
+  text: { fontSize: 16 },
+  bold: { fontWeight: 'bold' },
+  italic: { fontStyle: 'italic' },
+  red: { color: '#e74c3c' },
+});</code></pre>
+      <p>Later styles in the array override earlier ones, so you can use this for conditional styling:</p>
+      <pre><code>&lt;Text style={[styles.text, isError &amp;&amp; styles.error]}&gt;
+  {isError ? 'Something went wrong' : 'All good!'}
+&lt;/Text&gt;</code></pre>
+
+      <h2>StyleSheet.create vs Plain Objects</h2>
+      <p>You can also define styles as plain JavaScript objects, but StyleSheet.create is preferred:</p>
+      <pre><code>// Plain object - works but not recommended
+const styles = {
+  container: { flex: 1, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold' },
+};
+
+// StyleSheet.create - recommended
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold' },
+});</code></pre>
+      <p>Both work the same way, but StyleSheet.create provides validation and optimization benefits.</p>
+
+      <h2>Dynamic Styles</h2>
+      <p>You can create styles dynamically based on props or state using conditional arrays:</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function Badge({ count, size = 'medium' }) {
+  const badgeStyle = [
+    styles.badge,
+    size === 'large' ? styles.badgeLarge : styles.badgeSmall,
+    count === 0 &amp;&amp; styles.badgeEmpty,
+  ];
+
+  return (
+    &lt;View style={badgeStyle}&gt;
+      &lt;Text style={styles.badgeText}&gt;{count}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  badge: {
+    borderRadius: 12,
+    backgroundColor: '#e74c3c',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgeLarge: { width: 32, height: 32 },
+  badgeSmall: { width: 24, height: 24 },
+  badgeEmpty: { backgroundColor: '#bdc3c7' },
+  badgeText: { color: '#fff', fontSize: 12, fontWeight: 'bold' },
+});</code></pre>
+
+      <h2>StyleSheet.flatten</h2>
+      <p>The <code>StyleSheet.flatten</code> method merges multiple style objects into a single object:</p>
+      <pre><code>import { StyleSheet } from 'react-native';
+
+const merged = StyleSheet.flatten([
+  { fontSize: 16, color: 'black' },
+  { fontSize: 20, fontWeight: 'bold' },
+]);
+// Result: { fontSize: 20, color: 'black', fontWeight: 'bold' }
+// Later values override earlier ones</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What are the three main benefits of using StyleSheet.create over inline styles?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) Faster rendering, smaller bundle size, dark mode support</label>
+        <label><input type="radio" name="q1" value="b"> b) Validation, optimization, and better code organization</label>
+        <label><input type="radio" name="q1" value="c"> c) Type safety, CSS compatibility, and hot reloading</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. How do you combine multiple styles in React Native?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) Use CSS classes</label>
+        <label><input type="radio" name="q2" value="b"> b) Use array syntax: style={[styles.base, styles.variant]}</label>
+        <label><input type="radio" name="q2" value="c"> c) Use the merge() function</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. When using array syntax for styles, which style takes precedence?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) The first style in the array</label>
+        <label><input type="radio" name="q3" value="b"> b) The last style in the array</label>
+        <label><input type="radio" name="q3" value="c"> c) They merge equally</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create a Styled Card Component Using StyleSheet</h3>
+        <p>Create a reusable card component with styled variants using StyleSheet:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function Card({ title, description, variant = 'default' }) {
+  return (
+    &lt;View style={[styles.card, styles[variant]]}&gt;
+      &lt;View style={[styles.badge, styles[variant + 'Badge']]}&gt;
+        &lt;Text style={styles.badgeText}&gt;{variant.toUpperCase()}&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+      &lt;Text style={styles.description}&gt;{description}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  default: { borderLeftWidth: 4, borderLeftColor: '#3498db' },
+  success: { borderLeftWidth: 4, borderLeftColor: '#27ae60' },
+  warning: { borderLeftWidth: 4, borderLeftColor: '#f39c12' },
+  danger: { borderLeftWidth: 4, borderLeftColor: '#e74c3c' },
+  badge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  defaultBadge: { backgroundColor: '#ebf5fb' },
+  successBadge: { backgroundColor: '#eafaf1' },
+  warningBadge: { backgroundColor: '#fef9e7' },
+  dangerBadge: { backgroundColor: '#fdedec' },
+  badgeText: { fontSize: 10, fontWeight: 'bold', color: '#333' },
+  title: { fontSize: 18, fontWeight: 'bold', color: '#2c3e50', marginBottom: 4 },
+  description: { fontSize: 14, color: '#7f8c8d', lineHeight: 20 },
+});</code></pre>
+        <p>This creates a card component with different color variants, all defined using StyleSheet.create for validation and optimization.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>StyleSheet.create</code> provides validation, optimization, and better code organization</li>
+        <li>Use array syntax <code>[style1, style2]</code> to combine multiple styles</li>
+        <li>Later styles in an array override earlier ones, enabling conditional styling</li>
+        <li>StyleSheet creates style IDs that are more efficient over the React Native bridge</li>
+        <li>Plain JavaScript objects work but miss the validation and optimization benefits</li>
+        <li><code>StyleSheet.flatten</code> merges multiple style objects into one</li>
+        <li>Always prefer StyleSheet.create for static styles in your components</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native StyleSheet Documentation</strong> — Official documentation for the StyleSheet API with all methods and examples. <a href="https://reactnative.dev/docs/stylesheet" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 9: View</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 9: View</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to use the View component to build layouts, nest Views for complex structures, handle touch events, and apply styles to container elements in React Native.
+      </div>
+
+      <h2>What is a View?</h2>
+      <p>The <code>View</code> component is the most fundamental building block in React Native. Think of it as the equivalent of an HTML <code>&lt;div&gt;</code>. It is a container that supports layout with Flexbox, styling, touch handling, and accessibility.</p>
+      <p>Every screen in your app is built using Views. You will never build a React Native app without using View — it is everywhere.</p>
+
+      <h3>Basic View Usage</h3>
+      <p>At its simplest, a View is a container you put things inside:</p>
+      <pre><code>import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Hello World&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      <p>Even this simple example uses a View. In React Native, every component must be inside a View for proper layout.</p>
+
+      <h2>Styling a View</h2>
+      <p>Views accept a <code>style</code> prop. You can style background color, dimensions, margins, padding, borders, and more.</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.text}&gt;Styled Box&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#3498db',
+    padding: 20,
+    margin: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  text: {
+    color: '#ffffff',
+    fontSize: 18,
+  },
+});</code></pre>
+      <p>This creates a blue box with white text, centered content, rounded corners, and spacing around it.</p>
+
+      <h2>Nesting Views</h2>
+      <p>You can nest Views inside other Views to create complex layouts. This is the core pattern of React Native UI development.</p>
+      <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.outer}&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.headerText}&gt;Header&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={styles.content}&gt;
+        &lt;View style={styles.card}&gt;
+          &lt;Text&gt;Card 1&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.card}&gt;
+          &lt;Text&gt;Card 2&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+      &lt;View style={styles.footer}&gt;
+        &lt;Text&gt;Footer&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  outer: { flex: 1 },
+  header: { backgroundColor: '#2c3e50', padding: 20 },
+  headerText: { color: 'white', fontSize: 20 },
+  content: { flex: 1, padding: 10 },
+  card: { backgroundColor: '#ecf0f1', padding: 15, marginBottom: 10, borderRadius: 5 },
+  footer: { backgroundColor: '#2c3e50', padding: 10, alignItems: 'center' },
+});</code></pre>
+      <p>This creates a layout with a header, scrollable content area with cards, and a footer — all using nested Views.</p>
+
+      <h2>View with Touch Handling</h2>
+      <p>Views can respond to touch events using the <code>onStartShouldSetResponder</code> family of props. However, for most touch interactions, you should use <code>Pressable</code> or <code>TouchableOpacity</code> instead.</p>
+      <pre><code>import React from 'react';
+import { View, Text, Alert, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View
+      style={styles.touchable}
+      onStartShouldSetResponder={() =&gt; true}
+      onResponderGrant={() =&gt; Alert.alert('View Pressed!')}
+    &gt;
+      &lt;Text&gt;Tap Me&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  touchable: {
+    backgroundColor: '#e74c3c',
+    padding: 20,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+});</code></pre>
+      <p>While this works, prefer <code>Pressable</code> for touch interactions — it provides better feedback and more features.</p>
+
+      <h2>View Accessibility</h2>
+      <p>Views support accessibility props that help screen readers understand your app. Use <code>accessibilityLabel</code>, <code>accessibilityRole</code>, and <code>accessibilityHint</code>.</p>
+      <pre><code>import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View
+      accessibilityLabel="Profile section"
+      accessibilityRole="header"
+      accessibilityHint="Contains user profile information"
+    &gt;
+      &lt;Text&gt;My Profile&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>View Props Summary</h2>
+      <p>Here are the key props that View supports:</p>
+      <ul>
+        <li><code>style</code> — Style object for the View</li>
+        <li><code>children</code> — Nested components</li>
+        <li><code>onStartShouldSetResponder</code> — Handle touch start</li>
+        <li><code>onResponderGrant</code> — Called when touch is granted</li>
+        <li><code>onResponderRelease</code> — Called when touch is released</li>
+        <li><code>accessibilityLabel</code> — Label for screen readers</li>
+        <li><code>accessibilityRole</code> — Role (header, button, etc.)</li>
+        <li><code>accessible</code> — Whether the View is an accessible element</li>
+      </ul>
+
+      <h2>Common Patterns</h2>
+      <p>Here are some common View patterns you will use frequently:</p>
+      <pre><code>// Centering content
+&lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+  &lt;Text&gt;Centered!&lt;/Text&gt;
+&lt;/View&gt;
+
+// Creating a divider
+&lt;View style={{ height: 1, backgroundColor: '#ccc', marginVertical: 10 }} /&gt;
+
+// Creating a row layout
+&lt;View style={{ flexDirection: 'row', gap: 10 }}&gt;
+  &lt;View style={{ width: 50, height: 50, backgroundColor: 'red' }} /&gt;
+  &lt;View style={{ width: 50, height: 50, backgroundColor: 'blue' }} /&gt;
+&lt;/View&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What is the View component equivalent to in web development?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) &lt;span&gt;</label>
+        <label><input type="radio" name="q1" value="b"> b) &lt;div&gt;</label>
+        <label><input type="radio" name="q1" value="c"> c) &lt;section&gt;</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Which prop should you use for most touch interactions instead of View's responder system?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) onTouchStart</label>
+        <label><input type="radio" name="q2" value="b"> b) Pressable</label>
+        <label><input type="radio" name="q2" value="c"> c) onClick</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What does the View component NOT support?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) Flexbox layout</label>
+        <label><input type="radio" name="q3" value="b"> b) Rendering text directly without a Text component</label>
+        <label><input type="radio" name="q3" value="c"> c) Accessibility props</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Layout with Nested Views</h3>
+        <p>Create a profile card layout using nested Views with the following structure:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function ProfileCard() {
+  return (
+    &lt;View style={styles.card}&gt;
+      &lt;View style={styles.avatar}&gt;
+        &lt;View style={styles.avatarCircle}&gt;
+          &lt;Text style={styles.avatarText}&gt;JD&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+      &lt;View style={styles.info}&gt;
+        &lt;Text style={styles.name}&gt;John Doe&lt;/Text&gt;
+        &lt;Text style={styles.role}&gt;React Native Developer&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={styles.stats}&gt;
+        &lt;View style={styles.statItem}&gt;
+          &lt;Text style={styles.statNumber}&gt;128&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Projects&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.statItem}&gt;
+          &lt;Text style={styles.statNumber}&gt;1.2k&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Followers&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.statItem}&gt;
+          &lt;Text style={styles.statNumber}&gt;540&lt;/Text&gt;
+          &lt;Text style={styles.statLabel}&gt;Following&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+    alignItems: 'center',
+  },
+  avatar: {
+    marginBottom: 12,
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#3498db',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: '#ffffff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  info: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  name: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  role: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginTop: 4,
+  },
+  stats: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#ecf0f1',
+    paddingTop: 12,
+    width: '100%',
+    justifyContent: 'space-around',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#95a5a6',
+    marginTop: 2,
+  },
+});</code></pre>
+        <p>This creates a professional profile card with an avatar, user info, and statistics — all built with nested Views.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>View is the fundamental container component in React Native, equivalent to <code>&lt;div&gt;</code> in web</li>
+        <li>Views support Flexbox layout, styling, touch handling, and accessibility</li>
+        <li>You can nest Views inside other Views to create complex layouts</li>
+        <li>For touch interactions, prefer <code>Pressable</code> over View's responder system</li>
+        <li>Views accept styles through the <code>style</code> prop</li>
+        <li>Use accessibility props like <code>accessibilityLabel</code> and <code>accessibilityRole</code></li>
+        <li>Every screen in your app is composed of Views</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native View Documentation</strong> — Official documentation for the View component with all props and examples. <a href="https://reactnative.dev/docs/view" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

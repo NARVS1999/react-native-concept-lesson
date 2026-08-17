@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 10: Text</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 10: Text</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to display and format text in React Native, use nested Text components for inline styling, control text overflow, and handle text selection and font sizing.
+      </div>
+
+      <h2>What is a Text Component?</h2>
+      <p>The <code>Text</code> component is used to display text in React Native. Unlike the web where you can put text anywhere, in React Native, <strong>all text must be wrapped in a Text component</strong>. You cannot place a string directly inside a View.</p>
+      <pre><code>import React from 'react';
+import { View, Text } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Hello World!&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      <p>If you try to put a string directly in a View without wrapping it in Text, you will get an error.</p>
+
+      <h2>Styling Text</h2>
+      <p>Text supports a wide range of style props for controlling appearance:</p>
+      <pre><code>import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Text style={styles.title}&gt;
+      Welcome to React Native
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    textAlign: 'center',
+    fontFamily: 'Roboto',
+    letterSpacing: 1,
+    lineHeight: 32,
+  },
+});</code></pre>
+      <p>Common text style properties include: <code>fontSize</code>, <code>fontWeight</code>, <code>color</code>, <code>fontFamily</code>, <code>textAlign</code>, <code>lineHeight</code>, <code>letterSpacing</code>, <code>textDecorationLine</code>, and <code>textTransform</code>.</p>
+
+      <h2>Nesting Text Components</h2>
+      <p>You can nest Text components inside each other to apply inline formatting. This is similar to using <code>&lt;span&gt;</code> tags in HTML.</p>
+      <pre><code>import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Text style={styles.paragraph}&gt;
+      This is &lt;Text style={styles.bold}&gt;bold&lt;/Text&gt; text and
+      this is &lt;Text style={styles.italic}&gt;italic&lt;/Text&gt; text.
+      You can also use &lt;Text style={styles.colored}&gt;colors&lt;/Text&gt;.
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  paragraph: { fontSize: 16, color: '#333' },
+  bold: { fontWeight: 'bold' },
+  italic: { fontStyle: 'italic' },
+  colored: { color: '#e74c3c', fontWeight: 'bold' },
+});</code></pre>
+      <p>This pattern is extremely useful for creating rich text content with mixed formatting.</p>
+
+      <h2>numberOfLines and ellipsizeMode</h2>
+      <p>You can limit the number of lines displayed and control how overflow text is truncated:</p>
+      <pre><code>import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Text
+      style={styles.truncated}
+      numberOfLines={2}
+      ellipsizeMode="tail"
+    &gt;
+      This is a very long text that will be truncated after
+      two lines. The remaining text will be replaced with
+      an ellipsis character at the end.
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  truncated: {
+    fontSize: 16,
+    lineHeight: 22,
+  },
+});</code></pre>
+      <p>The <code>ellipsizeMode</code> options are: <code>"head"</code>, <code>"middle"</code>, <code>"tail"</code> (default), and <code>"clip"</code>.</p>
+
+      <h2>Selectable Text</h2>
+      <p>By default, text in React Native is not selectable. You can enable text selection with the <code>selectable</code> prop:</p>
+      <pre><code>import React from 'react';
+import { Text } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Text selectable={true}&gt;
+      You can long-press this text to select and copy it.
+    &lt;/Text&gt;
+  );
+}</code></pre>
+
+      <h2>adjustsFontSizeToFit</h2>
+      <p>This prop automatically scales down the font size to fit the text within its container:</p>
+      <pre><code>import React from 'react';
+import { Text, View, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text
+        style={styles.autoSize}
+        adjustsFontSizeToFit
+        numberOfLines={1}
+      &gt;
+        This text will shrink to fit!
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { width: 200, height: 50, backgroundColor: '#ecf0f1' },
+  autoSize: { fontSize: 24 },
+});</code></pre>
+
+      <h2>Pressable Text</h2>
+      <p>Text components can be made pressable by wrapping them in Pressable or by using the <code>onPress</code> prop (which is actually from a wrapping touchable):</p>
+      <pre><code>import React from 'react';
+import { Text, Alert, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Text
+      style={styles.link}
+      onPress={() =&gt; Alert.alert('Link Pressed!')}
+    &gt;
+      Click here for more info
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  link: {
+    color: '#3498db',
+    textDecorationLine: 'underline',
+    fontSize: 16,
+  },
+});</code></pre>
+
+      <h2>Text Props Summary</h2>
+      <ul>
+        <li><code>numberOfLines</code> — Limits the number of displayed lines</li>
+        <li><code>ellipsizeMode</code> — How truncated text is shown (head, middle, tail, clip)</li>
+        <li><code>selectable</code> — Enables text selection</li>
+        <li><code>adjustsFontSizeToFit</code> — Auto-scales font to fit container</li>
+        <li><code>minimumFontScale</code> — Minimum scale factor when adjustsFontSizeToFit is true</li>
+        <li><code>onPress</code> — Called when text is pressed</li>
+        <li><code>style</code> — Style object for the text</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What happens if you put a string directly inside a View without wrapping it in Text?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) It renders normally</label>
+        <label><input type="radio" name="q1" value="b"> b) It causes an error</label>
+        <label><input type="radio" name="q1" value="c"> c) It is ignored silently</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. How do you limit text to 2 lines with an ellipsis at the end?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) maxLines={2} overflow="ellipsis"</label>
+        <label><input type="radio" name="q2" value="b"> b) numberOfLines={2} ellipsizeMode="tail"</label>
+        <label><input type="radio" name="q2" value="c"> c) truncate={2}</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. Which prop allows users to select and copy text?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) copyable={true}</label>
+        <label><input type="radio" name="q3" value="b"> b) selectable={true}</label>
+        <label><input type="radio" name="q3" value="c"> c) editable={true}</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Text Component with Nested Formatting</h3>
+        <p>Create a rich text component that demonstrates nested Text styling:</p>
+        <pre><code>import React from 'react';
+import { Text, StyleSheet, View } from 'react-native';
+
+export default function RichTextExample() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;
+        React Native &lt;Text style={styles.highlight}&gt;Text&lt;/Text&gt; Formatting
+      &lt;/Text&gt;
+
+      &lt;Text style={styles.paragraph}&gt;
+        You can combine &lt;Text style={styles.bold}&gt;bold&lt;/Text&gt;,{' '}
+        &lt;Text style={styles.italic}&gt;italic&lt;/Text&gt;, and{' '}
+        &lt;Text style={styles.underline}&gt;underline&lt;/Text&gt; styles
+        in a single line of text.
+      &lt;/Text&gt;
+
+      &lt;Text style={styles.paragraph}&gt;
+        &lt;Text style={styles.lead}&gt;This is a lead paragraph&lt;/Text&gt; that
+        uses a larger font size to draw attention to important information.
+      &lt;/Text&gt;
+
+      &lt;Text style={styles.paragraph}&gt;
+        You can also use{' '}
+        &lt;Text style={styles.code}&gt;monospace fonts&lt;/Text&gt;{' '}
+        for code snippets and{' '}
+        &lt;Text style={{ color: '#e74c3c' }}&gt;colors&lt;/Text&gt;{' '}
+        to highlight specific words.
+      &lt;/Text&gt;
+
+      &lt;Text
+        style={styles.truncated}
+        numberOfLines={2}
+        ellipsizeMode="middle"
+      &gt;
+        This text will be truncated in the middle after two lines.
+        The middle ellipsizeMode shows an ellipsis where the text was cut.
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    backgroundColor: '#ffffff',
+    flex: 1,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 16,
+  },
+  highlight: {
+    color: '#3498db',
+    fontWeight: 'bold',
+  },
+  paragraph: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
+    marginBottom: 12,
+  },
+  bold: {
+    fontWeight: 'bold',
+  },
+  italic: {
+    fontStyle: 'italic',
+  },
+  underline: {
+    textDecorationLine: 'underline',
+  },
+  lead: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  code: {
+    fontFamily: 'monospace',
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 3,
+  },
+  truncated: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    lineHeight: 20,
+    marginTop: 8,
+  },
+});</code></pre>
+        <p>This creates a comprehensive text formatting showcase with nested styles, lead paragraphs, code-style text, and truncated text.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>The <code>Text</code> component is required to display any visible text in React Native</li>
+        <li>All strings must be wrapped in Text components — you cannot place raw strings in Views</li>
+        <li>You can nest Text components to apply inline formatting like bold, italic, and colors</li>
+        <li>Use <code>numberOfLines</code> and <code>ellipsizeMode</code> to control text overflow</li>
+        <li>Enable <code>selectable</code> to allow users to copy text</li>
+        <li>Use <code>adjustsFontSizeToFit</code> to automatically scale text to fit its container</li>
+        <li>Text supports a wide range of style properties including font, color, alignment, and decoration</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Text Documentation</strong> — Official documentation for the Text component with all props and styling options. <a href="https://reactnative.dev/docs/text" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

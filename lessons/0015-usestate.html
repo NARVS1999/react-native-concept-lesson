@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 15: useState</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 15: useState</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to manage local component state using useState, handle state updates correctly with functional updates, and follow immutability rules for React Native state management.
+      </div>
+
+      <h2>What is useState?</h2>
+      <p><code>useState</code> is a React hook that lets you add state to functional components. State is data that changes over time and triggers a re-render when updated.</p>
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={() =&gt; setCount(count + 1)} /&gt;
+      &lt;Button title="Decrement" onPress={() =&gt; setCount(count - 1)} /&gt;
+      &lt;Button title="Reset" onPress={() =&gt; setCount(0)} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  count: { fontSize: 32, fontWeight: 'bold' },
+});</code></pre>
+      <p><code>useState(0)</code> returns an array with two elements: the current state value and a function to update it.</p>
+
+      <h2>Array Destructuring</h2>
+      <p>The useState return value is destructured using array destructuring. You can name the variables whatever you want:</p>
+      <pre><code>// Basic destructuring
+const [count, setCount] = useState(0);
+const [name, setName] = useState('John');
+const [isVisible, setIsVisible] = useState(true);
+const [items, setItems] = useState([]);
+
+// You can also name them differently
+const [counterValue, updateCounter] = useState(0);</code></pre>
+      <p>The naming convention is <code>[value, setValue]</code> — use the state name prefixed with "set".</p>
+
+      <h2>Lazy Initialization</h2>
+      <p>If your initial state requires an expensive computation, you can pass a function to useState instead of a value:</p>
+      <pre><code>import React, { useState } from 'react';
+
+// Expensive computation - only runs once
+const [data, setData] = useState(() =&gt; {
+  console.log('This runs only once!');
+  return computeExpensiveInitialData();
+});
+
+// Without lazy initialization - runs every render
+const [data2, setData2] = useState(computeExpensiveInitialData());
+// This would recalculate on every render even though the result is ignored</code></pre>
+
+      <h2>Functional Updates</h2>
+      <p>When your new state depends on the previous state, use a function to ensure you always have the latest value:</p>
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  // BAD - may use stale count value
+  const incrementBad = () =&gt; {
+    setCount(count + 1);
+    setCount(count + 1); // Only adds 1, not 2!
+  };
+
+  // GOOD - always uses latest count
+  const incrementGood = () =&gt; {
+    setCount(prev =&gt; prev + 1);
+    setCount(prev =&gt; prev + 1); // Adds 2 correctly!
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Bad Increment" onPress={incrementBad} /&gt;
+      &lt;Button title="Good Increment" onPress={incrementGood} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  count: { fontSize: 32, fontWeight: 'bold' },
+});</code></pre>
+
+      <h2>State Batching</h2>
+      <p>React batches multiple state updates into a single re-render for performance:</p>
+      <pre><code>import React, { useState } from 'react';
+
+export default function Form() {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [age, setAge] = useState(0);
+
+  // These three updates will cause only ONE re-render
+  const handleSubmit = () =&gt; {
+    setName('John');
+    setEmail('john@example.com');
+    setAge(25);
+  };
+
+  return ( /* ... form JSX */ );
+}</code></pre>
+
+      <h2>State Immutability Rules</h2>
+      <p>You must never mutate state directly. Always create a new value when updating:</p>
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function TodoList() {
+  const [todos, setTodos] = useState(['Learn React Native']);
+
+  // BAD - mutating state directly
+  const addTodoBad = (text) =&gt; {
+    todos.push(text);  // Mutation! React may not detect the change
+    setTodos(todos);   // This might not trigger a re-render
+  };
+
+  // GOOD - creating new array
+  const addTodoGood = (text) =&gt; {
+    setTodos([...todos, text]);  // New array, triggers re-render
+  };
+
+  // GOOD - updating objects immutably
+  const [user, setUser] = useState({ name: 'John', age: 25 });
+  const updateAge = () =&gt; {
+    setUser({ ...user, age: 26 });  // Spread existing, override age
+  };
+
+  // GOOD - removing items immutably
+  const removeTodo = (index) =&gt; {
+    setTodos(todos.filter((_, i) =&gt; i !== index));
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      {todos.map((todo, index) =&gt; (
+        &lt;Text key={index}&gt;{todo}&lt;/Text&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', padding: 20 },
+});</code></pre>
+
+      <h2>Object State</h2>
+      <p>When working with object state, spread the previous object and override only the properties you want to change:</p>
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+
+export default function UserProfile() {
+  const [profile, setProfile] = useState({
+    name: 'John Doe',
+    email: 'john@example.com',
+    avatar: null,
+  });
+
+  const updateName = (newName) =&gt; {
+    setProfile(prev =&gt; ({ ...prev, name: newName }));
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text&gt;Name: {profile.name}&lt;/Text&gt;
+      &lt;TextInput
+        style={styles.input}
+        value={profile.name}
+        onChangeText={updateName}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', padding: 20 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginTop: 10 },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What does useState return?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) A single state value</label>
+        <label><input type="radio" name="q1" value="b"> b) An array with the state value and an update function</label>
+        <label><input type="radio" name="q1" value="c"> c) An object with state and setter methods</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. When should you use a functional update?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) When setting state to a string</label>
+        <label><input type="radio" name="q2" value="b"> b) When the new state depends on the previous state</label>
+        <label><input type="radio" name="q2" value="c"> c) When you want to skip the first render</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What is the correct way to update array state?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) Use array.push() and set the same array</label>
+        <label><input type="radio" name="q3" value="b"> b) Create a new array with the spread operator or filter</label>
+        <label><input type="radio" name="q3" value="c"> c) Use array.pop() and set the same array</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Multi-Step Form with useState</h3>
+        <p>Create a multi-step form that tracks progress and form data:</p>
+        <pre><code>import React, { useState } from 'react';
+import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+
+export default function MultiStepForm() {
+  const [step, setStep] = useState(1);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+  });
+
+  const updateField = (field, value) =&gt; {
+    setFormData(prev =&gt; ({ ...prev, [field]: value }));
+  };
+
+  const nextStep = () =&gt; {
+    if (step &lt; 3) setStep(step + 1);
+  };
+
+  const prevStep = () =&gt; {
+    if (step &gt; 1) setStep(step - 1);
+  };
+
+  const renderStep = () =&gt; {
+    switch (step) {
+      case 1:
+        return (
+          &lt;View style={styles.stepContainer}&gt;
+            &lt;Text style={styles.stepTitle}&gt;Step 1: Personal Info&lt;/Text&gt;
+            &lt;TextInput
+              style={styles.input}
+              placeholder="Full Name"
+              value={formData.name}
+              onChangeText={(v) =&gt; updateField('name', v)}
+            /&gt;
+            &lt;TextInput
+              style={styles.input}
+              placeholder="Email"
+              value={formData.email}
+              onChangeText={(v) =&gt; updateField('email', v)}
+            /&gt;
+            &lt;TextInput
+              style={styles.input}
+              placeholder="Phone"
+              value={formData.phone}
+              onChangeText={(v) =&gt; updateField('phone', v)}
+            /&gt;
+          &lt;/View&gt;
+        );
+      case 2:
+        return (
+          &lt;View style={styles.stepContainer}&gt;
+            &lt;Text style={styles.stepTitle}&gt;Step 2: Address&lt;/Text&gt;
+            &lt;TextInput
+              style={styles.input}
+              placeholder="Street Address"
+              value={formData.address}
+              onChangeText={(v) =&gt; updateField('address', v)}
+            /&gt;
+            &lt;TextInput
+              style={styles.input}
+              placeholder="City"
+              value={formData.city}
+              onChangeText={(v) =&gt; updateField('city', v)}
+            /&gt;
+          &lt;/View&gt;
+        );
+      case 3:
+        return (
+          &lt;View style={styles.stepContainer}&gt;
+            &lt;Text style={styles.stepTitle}&gt;Step 3: Review&lt;/Text&gt;
+            &lt;Text style={styles.reviewItem}&gt;Name: {formData.name}&lt;/Text&gt;
+            &lt;Text style={styles.reviewItem}&gt;Email: {formData.email}&lt;/Text&gt;
+            &lt;Text style={styles.reviewItem}&gt;Phone: {formData.phone}&lt;/Text&gt;
+            &lt;Text style={styles.reviewItem}&gt;Address: {formData.address}&lt;/Text&gt;
+            &lt;Text style={styles.reviewItem}&gt;City: {formData.city}&lt;/Text&gt;
+          &lt;/View&gt;
+        );
+    }
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.progress}&gt;Step {step} of 3&lt;/Text&gt;
+      {renderStep()}
+      &lt;View style={styles.buttons}&gt;
+        {step &gt; 1 &amp;&amp; (
+          &lt;Pressable style={styles.button} onPress={prevStep}&gt;
+            &lt;Text style={styles.buttonText}&gt;Previous&lt;/Text&gt;
+          &lt;/Pressable&gt;
+        )}
+        {step &lt; 3 ? (
+          &lt;Pressable style={styles.button} onPress={nextStep}&gt;
+            &lt;Text style={styles.buttonText}&gt;Next&lt;/Text&gt;
+          &lt;/Pressable&gt;
+        ) : (
+          &lt;Pressable
+            style={[styles.button, styles.submitButton]}
+            onPress={() =&gt; alert('Form submitted!')}
+          &gt;
+            &lt;Text style={styles.buttonText}&gt;Submit&lt;/Text&gt;
+          &lt;/Pressable&gt;
+        )}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  progress: { textAlign: 'center', fontSize: 16, color: '#7f8c8d', marginBottom: 20 },
+  stepContainer: { marginBottom: 20 },
+  stepTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+  input: {
+    borderWidth: 1, borderColor: '#ddd', borderRadius: 8,
+    padding: 12, marginBottom: 12, fontSize: 16,
+  },
+  reviewItem: { fontSize: 16, marginBottom: 8, color: '#333' },
+  buttons: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  button: {
+    flex: 1, backgroundColor: '#3498db', padding: 14,
+    borderRadius: 8, alignItems: 'center',
+  },
+  submitButton: { backgroundColor: '#27ae60' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});</code></pre>
+        <p>This creates a multi-step form that uses useState to track the current step and form data.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useState</code> returns an array with the current state value and an update function</li>
+        <li>Use functional updates <code>(prev =&gt; newValue)</code> when new state depends on previous state</li>
+        <li>React batches multiple state updates into a single re-render</li>
+        <li>Never mutate state directly — always create new arrays or objects</li>
+        <li>Use the spread operator <code>...</code> to copy existing state when updating</li>
+        <li>Lazy initialization with a function avoids expensive computations on every render</li>
+        <li>State updates trigger re-renders, which update the UI</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React useState Hook Documentation</strong> — Official React documentation for the useState hook. <a href="https://react.dev/reference/react/useState" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

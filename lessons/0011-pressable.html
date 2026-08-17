@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 11: Pressable</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 11: Pressable</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to handle touch interactions using Pressable, create custom buttons with visual feedback, and implement accessible press handlers in React Native.
+      </div>
+
+      <h2>What is Pressable?</h2>
+      <p><code>Pressable</code> is a core component for handling touch interactions in React Native. It is the recommended way to make any part of your UI respond to taps and long presses. Pressable wraps its children and provides callbacks for various touch states.</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, Alert } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Pressable onPress={() =&gt; Alert.alert('Pressed!')}&gt;
+      &lt;Text&gt;Tap Me&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}</code></pre>
+
+      <h2>onPress Handler</h2>
+      <p>The <code>onPress</code> callback is called when the user taps the component. This is the most commonly used event handler.</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, Alert, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Pressable
+      style={styles.button}
+      onPress={() =&gt; Alert.alert('Button Pressed!')}
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;Click Me&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#3498db',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});</code></pre>
+
+      <h2>onLongPress Handler</h2>
+      <p>The <code>onLongPress</code> callback is called when the user holds down on the component. You can set a duration threshold with <code>delayLongPress</code> (default 500ms).</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, Alert, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Pressable
+      style={styles.button}
+      onPress={() =&gt; Alert.alert('Short press')}
+      onLongPress={() =&gt; Alert.alert('Long press detected!')}
+      delayLongPress={750}
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;Hold Me&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#e74c3c',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});</code></pre>
+
+      <h2>onPressIn and onPressOut</h2>
+      <p>These callbacks let you respond to the exact moment a press starts and ends, which is useful for creating visual feedback:</p>
+      <pre><code>import React, { useState } from 'react';
+import { Pressable, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  const [isPressed, setIsPressed] = useState(false);
+
+  return (
+    &lt;Pressable
+      style={[styles.button, isPressed &amp;&amp; styles.pressed]}
+      onPressIn={() =&gt; setIsPressed(true)}
+      onPressOut={() =&gt; setIsPressed(false)}
+      onPress={() =&gt; console.log('Released!')}
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;
+        {isPressed ? 'Pressed!' : 'Press Me'}
+      &lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#27ae60',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  pressed: {
+    backgroundColor: '#2ecc71',
+    transform: [{ scale: 0.98 }],
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+});</code></pre>
+
+      <h2>Style Function with Pressed State</h2>
+      <p>Pressable supports a function as the <code>style</code> prop, which receives the pressed state as an argument. This is the cleanest way to apply press-based styling:</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Pressable
+      style={({ pressed }) =&gt; [
+        styles.button,
+        pressed &amp;&amp; styles.pressed,
+      ]}
+      onPress={() =&gt; console.log('Pressed!')}
+    &gt;
+      {({ pressed }) =&gt; (
+        &lt;Text style={[styles.text, pressed &amp;&amp; styles.textPressed]}&gt;
+          {pressed ? 'Loading...' : 'Submit'}
+        &lt;/Text&gt;
+      )}
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#8e44ad',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  pressed: {
+    backgroundColor: '#9b59b6',
+    opacity: 0.8,
+  },
+  text: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+  textPressed: {
+    color: '#f1c40f',
+  },
+});</code></pre>
+      <p>Note that Pressable also supports a function as <code>children</code>, giving you access to the pressed state for rendering.</p>
+
+      <h2>Accessibility Props</h2>
+      <p>Pressable includes built-in accessibility support. Add these props to make your buttons accessible to screen readers:</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;Pressable
+      style={styles.button}
+      onPress={() =&gt; console.log('Deleted!')}
+      accessibilityLabel="Delete item"
+      accessibilityRole="button"
+      accessibilityHint="Permanently removes the selected item"
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;Delete&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#e74c3c',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+});</code></pre>
+
+      <h2>Disabled State</h2>
+      <p>You can disable a Pressable to prevent interactions:</p>
+      <pre><code>import React from 'react';
+import { Pressable, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  const isDisabled = true;
+
+  return (
+    &lt;Pressable
+      style={[styles.button, isDisabled &amp;&amp; styles.disabled]}
+      onPress={() =&gt; console.log('Pressed!')}
+      disabled={isDisabled}
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;Disabled Button&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#3498db',
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  disabled: {
+    backgroundColor: '#bdc3c7',
+    opacity: 0.6,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+  },
+});</code></pre>
+
+      <h2>Pressable vs TouchableOpacity vs TouchableHighlight</h2>
+      <p>React Native has older touchable components, but Pressable is the recommended replacement:</p>
+      <ul>
+        <li><code>Pressable</code> — Modern, flexible, recommended for new apps</li>
+        <li><code>TouchableOpacity</code> — Fades opacity on press (legacy)</li>
+        <li><code>TouchableHighlight</code> — Darkens background on press (legacy)</li>
+        <li><code>TouchableWithoutFeedback</code> — No visual feedback (legacy, avoid)</li>
+      </ul>
+      <p>Use Pressable for all new code. It provides the same functionality with a more flexible API.</p>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. Which callback is called when the user first touches down on a Pressable?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) onPress</label>
+        <label><input type="radio" name="q1" value="b"> b) onPressIn</label>
+        <label><input type="radio" name="q1" value="c"> c) onResponderGrant</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. How do you apply different styles based on the pressed state?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) Use useState and toggle styles</label>
+        <label><input type="radio" name="q2" value="b"> b) Pass a function to the style prop that receives pressed state</label>
+        <label><input type="radio" name="q2" value="c"> c) Use the pressedStyle prop</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What is the default delay for onLongPress to trigger?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) 200ms</label>
+        <label><input type="radio" name="q3" value="b"> b) 500ms</label>
+        <label><input type="radio" name="q3" value="c"> c) 1000ms</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Custom Button with Press States</h3>
+        <p>Create a reusable button component with multiple press states:</p>
+        <pre><code>import React from 'react';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
+
+export default function CustomButton({ title, onPress, variant = 'primary' }) {
+  const getButtonStyle = ({ pressed }) =&gt; {
+    const base = [styles.button, styles[variant]];
+    if (pressed) base.push(styles.pressed);
+    return base;
+  };
+
+  const getTextStyle = ({ pressed }) =&gt; {
+    const base = [styles.buttonText, styles[variant + 'Text']];
+    if (pressed) base.push(styles.textPressed);
+    return base;
+  };
+
+  return (
+    &lt;Pressable
+      style={getButtonStyle}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+    &gt;
+      {({ pressed }) =&gt; (
+        &lt;Text style={getTextStyle({ pressed })}&gt;{title}&lt;/Text&gt;
+      )}
+    &lt;/Pressable&gt;
+  );
+}
+
+// Usage
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;CustomButton
+        title="Primary Button"
+        variant="primary"
+        onPress={() =&gt; console.log('Primary pressed')}
+      /&gt;
+      &lt;CustomButton
+        title="Danger Button"
+        variant="danger"
+        onPress={() =&gt; console.log('Danger pressed')}
+      /&gt;
+      &lt;CustomButton
+        title="Success Button"
+        variant="success"
+        onPress={() =&gt; console.log('Success pressed')}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+    gap: 12,
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.97 }],
+  },
+  primary: { backgroundColor: '#3498db' },
+  danger: { backgroundColor: '#e74c3c' },
+  success: { backgroundColor: '#27ae60' },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  primaryText: { color: '#ffffff' },
+  dangerText: { color: '#ffffff' },
+  successText: { color: '#ffffff' },
+  textPressed: {
+    opacity: 0.9,
+  },
+});</code></pre>
+        <p>This creates a reusable button component that supports multiple variants with press feedback.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>Pressable</code> is the recommended component for handling touch interactions in React Native</li>
+        <li><code>onPress</code> is called when the user taps, <code>onLongPress</code> when they hold down</li>
+        <li><code>onPressIn</code> and <code>onPressOut</code> give you precise control over press states</li>
+        <li>Use the style function pattern <code>({ pressed }) =&gt; [style, pressed &amp;&amp; pressedStyle]</code> for clean press styling</li>
+        <li>Pressable also supports a children function for conditional rendering based on pressed state</li>
+        <li>Add accessibility props like <code>accessibilityLabel</code> and <code>accessibilityRole</code></li>
+        <li>Use <code>disabled</code> prop to prevent interactions when needed</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Pressable Documentation</strong> — Official documentation for the Pressable component with all props and examples. <a href="https://reactnative.dev/docs/pressable" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

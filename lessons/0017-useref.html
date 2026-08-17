@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 17: useRef</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 17: useRef</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to use useRef to store mutable values that persist across renders, access components imperatively, track previous values, and store timer IDs without triggering re-renders.
+      </div>
+      <h2>What is useRef?</h2>
+      <p><code>useRef</code> is a React hook that creates a mutable reference object. Unlike useState, updating a ref does NOT trigger a re-render. This makes it perfect for storing values that need to persist across renders but should not cause the UI to update.</p>
+      <pre><code>import React, { useRef } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  const myRef = useRef('initial value');
+
+  console.log(myRef.current); // "initial value"
+  myRef.current = 'new value'; // No re-render!
+  console.log(myRef.current); // "new value"
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text&gt;useRef example&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+});</code></pre>
+      <p>A ref is an object with a single property: <code>current</code>. You can read and write to <code>current</code> freely.</p>
+      <h2>No Re-render on Update</h2>
+      <p>The key difference between useState and useRef is that useRef does not cause a re-render when updated:</p>
+      <pre><code>import React, { useState, useRef } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function App() {
+  const [stateCount, setStateCount] = useState(0);
+  const refCount = useRef(0);
+
+  const incrementState = () =&gt; {
+    setStateCount(stateCount + 1); // Triggers re-render
+  };
+
+  const incrementRef = () =&gt; {
+    refCount.current += 1; // No re-render!
+    console.log('Ref count:', refCount.current);
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text&gt;State: {stateCount} (re-renders)&lt;/Text&gt;
+      &lt;Text&gt;Ref: {refCount.current} (no re-render)&lt;/Text&gt;
+      &lt;Button title="Increment State" onPress={incrementState} /&gt;
+      &lt;Button title="Increment Ref" onPress={incrementRef} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+});</code></pre>
+      <h2>Accessing Components Imperatively</h2>
+      <p>In React Native, useRef is commonly used to access component instances like TextInput for focusing, measuring, or other imperatively:</p>
+      <pre><code>import React, { useRef } from 'react';
+import { View, TextInput, Pressable, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  const inputRef = useRef(null);
+
+  const focusInput = () =&gt; {
+    inputRef.current?.focus();
+  };
+
+  const clearInput = () =&gt; {
+    inputRef.current?.clear();
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;TextInput
+        ref={inputRef}
+        style={styles.input}
+        placeholder="Type something..."
+      /&gt;
+      &lt;Pressable style={styles.button} onPress={focusInput}&gt;
+        &lt;Text style={styles.buttonText}&gt;Focus Input&lt;/Text&gt;
+      &lt;/Pressable&gt;
+      &lt;Pressable style={styles.button} onPress={clearInput}&gt;
+        &lt;Text style={styles.buttonText}&gt;Clear Input&lt;/Text&gt;
+      &lt;/Pressable&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', padding: 20, gap: 12 },
+  input: { borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 12, fontSize: 16 },
+  button: { backgroundColor: '#3498db', padding: 12, borderRadius: 8, alignItems: 'center' },
+  buttonText: { color: '#fff', fontSize: 16 },
+});</code></pre>
+      <h2>Storing Previous Values</h2>
+      <p>useRef is perfect for tracking the previous value of a state variable:</p>
+      <pre><code>import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function App() {
+  const [count, setCount] = useState(0);
+  const prevCountRef = useRef(count);
+
+  useEffect(() =&gt; {
+    prevCountRef.current = count;
+  });
+
+  const prevCount = prevCountRef.current;
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.text}&gt;Current: {count}&lt;/Text&gt;
+      &lt;Text style={styles.text}&gt;Previous: {prevCount}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={() =&gt; setCount(c =&gt; c + 1)} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  text: { fontSize: 20 },
+});</code></pre>
+      <h2>Storing Timer IDs</h2>
+      <p>useRef is ideal for storing interval and timeout IDs so you can clear them later:</p>
+      <pre><code>import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+
+export default function Timer() {
+  const [seconds, setSeconds] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const intervalRef = useRef(null);
+
+  useEffect(() =&gt; {
+    if (isRunning) {
+      intervalRef.current = setInterval(() =&gt; {
+        setSeconds(prev =&gt; prev + 1);
+      }, 1000);
+    }
+    return () =&gt; {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isRunning]);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.timer}&gt;{seconds}s&lt;/Text&gt;
+      &lt;Pressable style={styles.button} onPress={() =&gt; setIsRunning(!isRunning)}&gt;
+        &lt;Text style={styles.buttonText}&gt;{isRunning ? 'Pause' : 'Start'}&lt;/Text&gt;
+      &lt;/Pressable&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 16 },
+  timer: { fontSize: 48, fontWeight: 'bold' },
+  button: { backgroundColor: '#3498db', paddingVertical: 12, paddingHorizontal: 32, borderRadius: 8 },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+});</code></pre>
+      <h2>useRef vs useState</h2>
+      <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+        <thead>
+          <tr style="background: #ecf0f1;">
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">Feature</th>
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">useState</th>
+            <th style="border: 1px solid #bdc3c7; padding: 8px; text-align: left;">useRef</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Triggers re-render</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Yes</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">No</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Use for</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">UI data</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Mutable values, DOM access</td>
+          </tr>
+          <tr>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Persists across renders</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Yes</td>
+            <td style="border: 1px solid #bdc3c7; padding: 8px;">Yes</td>
+          </tr>
+        </tbody>
+      </table>
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <p><strong>1. What happens when you update a useRef value?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) It triggers a re-render</label>
+        <label><input type="radio" name="q1" value="b"> b) It does NOT trigger a re-render</label>
+        <label><input type="radio" name="q1" value="c"> c) It throws an error</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>2. What is the property name used to access a refs value?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) ref.value</label>
+        <label><input type="radio" name="q2" value="b"> b) ref.current</label>
+        <label><input type="radio" name="q2" value="c"> c) ref.state</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-item">
+        <p><strong>3. Which is a common use case for useRef?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) Triggering re-renders when data changes</label>
+        <label><input type="radio" name="q3" value="b"> b) Storing timer IDs for cleanup</label>
+        <label><input type="radio" name="q3" value="c"> c) Managing form validation state</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+      <div class="project">
+        <h3>Mini-Project: Build a Stopwatch Using useRef</h3>
+        <p>Create a full-featured stopwatch with lap tracking using useRef:</p>
+        <pre><code>import React, { useState, useRef } from 'react';
+import { View, Text, Pressable, FlatList, StyleSheet } from 'react-native';
+
+export default function Stopwatch() {
+  const [time, setTime] = useState(0);
+  const [isRunning, setIsRunning] = useState(false);
+  const [laps, setLaps] = useState([]);
+  const intervalRef = useRef(null);
+  const startTimeRef = useRef(0);
+  const elapsedTimeRef = useRef(0);
+
+  const start = () =&gt; {
+    setIsRunning(true);
+    startTimeRef.current = Date.now() - elapsedTimeRef.current;
+    intervalRef.current = setInterval(() =&gt; {
+      setTime(Date.now() - startTimeRef.current);
+    }, 10);
+  };
+
+  const stop = () =&gt; {
+    setIsRunning(false);
+    clearInterval(intervalRef.current);
+    elapsedTimeRef.current = time;
+  };
+
+  const reset = () =&gt; {
+    setIsRunning(false);
+    clearInterval(intervalRef.current);
+    setTime(0);
+    elapsedTimeRef.current = 0;
+    setLaps([]);
+  };
+
+  const addLap = () =&gt; {
+    if (isRunning) setLaps(prev =&gt; [time, ...prev]);
+  };
+
+  const formatTime = (ms) =&gt; {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    const centiseconds = Math.floor((ms % 1000) / 10);
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}.${centiseconds.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.display}&gt;{formatTime(time)}&lt;/Text&gt;
+      &lt;View style={styles.buttonRow}&gt;
+        &lt;Pressable style={[styles.button, styles.secondaryButton]} onPress={isRunning ? addLap : reset}&gt;
+          &lt;Text style={styles.buttonText}&gt;{isRunning ? 'Lap' : 'Reset'}&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable style={[styles.button, isRunning ? styles.stopButton : styles.startButton]} onPress={isRunning ? stop : start}&gt;
+          &lt;Text style={styles.buttonText}&gt;{isRunning ? 'Stop' : 'Start'}&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+      {laps.length &gt; 0 &amp;&amp; (
+        &lt;View style={styles.lapsContainer}&gt;
+          &lt;Text style={styles.lapsTitle}&gt;Laps&lt;/Text&gt;
+          &lt;FlatList
+            data={laps}
+            keyExtractor={(item, index) =&gt; index.toString()}
+            renderItem={({ item, index }) =&gt; (
+              &lt;View style={styles.lapItem}&gt;
+                &lt;Text style={styles.lapNumber}&gt;Lap {laps.length - index}&lt;/Text&gt;
+                &lt;Text style={styles.lapTime}&gt;{formatTime(item)}&lt;/Text&gt;
+              &lt;/View&gt;
+            )}
+          /&gt;
+        &lt;/View&gt;
+      )}
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  display: { fontSize: 56, fontWeight: '200', fontVariant: ['tabular-nums'], color: '#2c3e50', marginBottom: 40 },
+  buttonRow: { flexDirection: 'row', gap: 16, marginBottom: 30 },
+  button: { paddingVertical: 14, paddingHorizontal: 32, borderRadius: 8, minWidth: 120, alignItems: 'center' },
+  startButton: { backgroundColor: '#27ae60' },
+  stopButton: { backgroundColor: '#e74c3c' },
+  secondaryButton: { backgroundColor: '#95a5a6' },
+  buttonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  lapsContainer: { width: '100%', maxHeight: 200 },
+  lapsTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: '#2c3e50' },
+  lapItem: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#ecf0f1' },
+  lapNumber: { fontSize: 16, color: '#7f8c8d' },
+  lapTime: { fontSize: 16, fontVariant: ['tabular-nums'], color: '#2c3e50' },
+});</code></pre>
+        <p>This creates a full-featured stopwatch with start/stop/reset, lap tracking, and precise timing using useRef for timer management.</p>
+      </div>
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useRef</code> creates a mutable object with a <code>current</code> property that persists across renders</li>
+        <li>Updating a ref does NOT trigger a re-render, unlike useState</li>
+        <li>Use useRef for values that need to persist but should not cause UI updates</li>
+        <li>Common use cases: accessing TextInput, storing timer IDs, tracking previous values</li>
+        <li>The ref object is stable across renders — the same object is returned every time</li>
+        <li>Refs are ideal for imperative handles and mutable data that does not affect rendering</li>
+        <li>Access the value via <code>ref.current</code> and update it directly</li>
+      </ul>
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React useRef Documentation</strong> — Official React documentation for the useRef hook. <a href="https://react.dev/reference/react/useRef" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

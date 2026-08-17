@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 12: ScrollView</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 12: ScrollView</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will be able to create scrollable content, implement horizontal carousels, handle scroll events, and understand when to use ScrollView versus FlatList in React Native.
+      </div>
+
+      <h2>What is ScrollView?</h2>
+      <p><code>ScrollView</code> is a component that wraps content in a scrollable container. It is perfect for showing content that does not fit on a single screen, such as long forms, image galleries, or settings pages.</p>
+      <pre><code>import React from 'react';
+import { ScrollView, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;ScrollView&gt;
+      &lt;Text style={styles.item}&gt;Item 1&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 2&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 3&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 4&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 5&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 6&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 7&lt;/Text&gt;
+      &lt;Text style={styles.item}&gt;Item 8&lt;/Text&gt;
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  item: {
+    padding: 20,
+    fontSize: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+});</code></pre>
+      <p>The ScrollView renders all its children at once, which is fine for a moderate number of items but can cause performance issues with very large lists.</p>
+
+      <h2>Vertical Scrolling</h2>
+      <p>By default, ScrollView scrolls vertically. You can control the scroll behavior with several props:</p>
+      <pre><code>import React from 'react';
+import { ScrollView, View, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    &gt;
+      {Array.from({ length: 20 }, (_, i) =&gt; (
+        &lt;View key={i} style={styles.card}&gt;
+          &lt;Text style={styles.cardTitle}&gt;Card {i + 1}&lt;/Text&gt;
+          &lt;Text style={styles.cardContent}&gt;
+            This is the content of card number {i + 1}
+          &lt;/Text&gt;
+        &lt;/View&gt;
+      ))}
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    gap: 12,
+  },
+  card: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  cardContent: {
+    fontSize: 14,
+    color: '#666',
+  },
+});</code></pre>
+
+      <h2>Horizontal Scrolling</h2>
+      <p>Set <code>horizontal={true}</code> to create horizontal scrolling, which is perfect for carousels and horizontal lists:</p>
+      <pre><code>import React from 'react';
+import { ScrollView, View, Text, StyleSheet, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
+
+export default function App() {
+  return (
+    &lt;ScrollView
+      horizontal={true}
+      showsHorizontalScrollIndicator={false}
+      pagingEnabled={true}
+    &gt;
+      {['red', 'blue', 'green', 'orange', 'purple'].map((color, i) =&gt; (
+        &lt;View
+          key={i}
+          style={[styles.slide, { backgroundColor: color }]}
+        &gt;
+          &lt;Text style={styles.slideText}&gt;Slide {i + 1}&lt;/Text&gt;
+        &lt;/View&gt;
+      ))}
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  slide: {
+    width,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  slideText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+});</code></pre>
+      <p>Setting <code>pagingEnabled</code> makes the scroll snap to page boundaries, creating a carousel effect.</p>
+
+      <h2>contentContainerStyle</h2>
+      <p>Use <code>contentContainerStyle</code> to style the inner content container. This is different from the ScrollView's own style — it styles the area that contains all the children:</p>
+      <pre><code>import React from 'react';
+import { ScrollView, Text, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.content}
+    &gt;
+      &lt;Text&gt;Content with extra padding and centering&lt;/Text&gt;
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+    backgroundColor: '#ecf0f1',
+  },
+  content: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+});</code></pre>
+
+      <h2>Handling Scroll Events</h2>
+      <p>You can track the scroll position using <code>onScroll</code>:</p>
+      <pre><code>import React, { useState } from 'react';
+import { ScrollView, Text, View, StyleSheet } from 'react-native';
+
+export default function App() {
+  const [scrollY, setScrollY] = useState(0);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.header}&gt;Scroll Position: {Math.round(scrollY)}px&lt;/Text&gt;
+      &lt;ScrollView
+        onScroll={(e) =&gt; setScrollY(e.nativeEvent.contentOffset.y)}
+        scrollEventThrottle={16}
+      &gt;
+        {Array.from({ length: 30 }, (_, i) =&gt; (
+          &lt;View key={i} style={styles.item}&gt;
+            &lt;Text&gt;Item {i + 1}&lt;/Text&gt;
+          &lt;/View&gt;
+        ))}
+      &lt;/ScrollView&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { padding: 16, fontSize: 16, fontWeight: 'bold' },
+  item: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+});</code></pre>
+      <p>The <code>scrollEventThrottle</code> prop controls how often the scroll event fires (in milliseconds). Use 16 for smooth 60fps updates.</p>
+
+      <h2>Performance Warning</h2>
+      <div class="info">
+        <strong>Important:</strong> ScrollView renders ALL its children at once. If you have a long list of items (hundreds or thousands), use <code>FlatList</code> instead. FlatList renders items lazily as they come into view, which is much more performant for large datasets.
+      </div>
+      <p>Use ScrollView when:</p>
+      <ul>
+        <li>You have a small, fixed number of children</li>
+        <li>You need horizontal scrolling (like a carousel)</li>
+        <li>You need to scroll content that includes mixed components</li>
+      </ul>
+      <p>Use FlatList when:</p>
+      <ul>
+        <li>You have a long list of similar items</li>
+        <li>The data set could grow over time</li>
+        <li>You need pull-to-refresh or infinite scrolling</li>
+      </ul>
+
+      <h2>Key ScrollView Props</h2>
+      <ul>
+        <li><code>horizontal</code> — Enables horizontal scrolling</li>
+        <li><code>pagingEnabled</code> — Snaps to page boundaries</li>
+        <li><code>showsVerticalScrollIndicator</code> — Shows/hides the scroll bar</li>
+        <li><code>showsHorizontalScrollIndicator</code> — Shows/hides horizontal scroll bar</li>
+        <li><code>contentContainerStyle</code> — Style for the inner content container</li>
+        <li><code>onScroll</code> — Called during scroll with position data</li>
+        <li><code>scrollEventThrottle</code> — How often onScroll fires (ms)</li>
+        <li><code>bounces</code> — Whether content bounces at edges (iOS)</li>
+        <li><code>keyboardDismissMode</code> — How keyboard is dismissed (none, on-drag, interactive)</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What is the main difference between ScrollView and FlatList?</strong></p>
+        <label><input type="radio" name="q1" value="a"> a) ScrollView is for web, FlatList for mobile</label>
+        <label><input type="radio" name="q1" value="b"> b) ScrollView renders all children at once, FlatList renders lazily</label>
+        <label><input type="radio" name="q1" value="c"> c) FlatList does not support scrolling</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Which prop enables horizontal scrolling in ScrollView?</strong></p>
+        <label><input type="radio" name="q2" value="a"> a) direction="horizontal"</label>
+        <label><input type="radio" name="q2" value="b"> b) horizontal={true}</label>
+        <label><input type="radio" name="q2" value="c"> c) scrollAxis="x"</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What does the pagingEnabled prop do?</strong></p>
+        <label><input type="radio" name="q3" value="a"> a) Enables multiple pages of content</label>
+        <label><input type="radio" name="q3" value="b"> b) Makes scroll snap to page boundaries</label>
+        <label><input type="radio" name="q3" value="c"> c) Disables scrolling after one page</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Horizontal Image Carousel</h3>
+        <p>Create a horizontal carousel with paging and page indicators:</p>
+        <pre><code>import React, { useState, useRef } from 'react';
+import { ScrollView, View, Text, StyleSheet, Dimensions } from 'react-native';
+
+const { width } = Dimensions.get('window');
+
+const SLIDES = [
+  { id: '1', title: 'Welcome', color: '#3498db' },
+  { id: '2', title: 'Explore', color: '#e74c3c' },
+  { id: '3', title: 'Learn', color: '#27ae60' },
+  { id: '4', title: 'Build', color: '#9b59b6' },
+  { id: '5', title: 'Ship', color: '#f39c12' },
+];
+
+export default function Carousel() {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollViewRef = useRef(null);
+
+  const handleScroll = (e) =&gt; {
+    const index = Math.round(e.nativeEvent.contentOffset.x / width);
+    setActiveIndex(index);
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;ScrollView
+        ref={scrollViewRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      &gt;
+        {SLIDES.map((slide) =&gt; (
+          &lt;View
+            key={slide.id}
+            style={[styles.slide, { backgroundColor: slide.color }]}
+          &gt;
+            &lt;Text style={styles.slideTitle}&gt;{slide.title}&lt;/Text&gt;
+          &lt;/View&gt;
+        ))}
+      &lt;/ScrollView&gt;
+
+      &lt;View style={styles.indicators}&gt;
+        {SLIDES.map((_, index) =&gt; (
+          &lt;View
+            key={index}
+            style={[
+              styles.indicator,
+              activeIndex === index &amp;&amp; styles.activeIndicator,
+            ]}
+          /&gt;
+        ))}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  slide: {
+    width,
+    height: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  slideTitle: {
+    color: '#ffffff',
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  indicators: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    gap: 8,
+  },
+  indicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#bdc3c7',
+  },
+  activeIndicator: {
+    backgroundColor: '#2c3e50',
+    width: 24,
+  },
+});</code></pre>
+        <p>This creates a smooth horizontal carousel with paging, scroll tracking, and dynamic page indicators.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>ScrollView</code> makes content scrollable when it exceeds the screen size</li>
+        <li>Default scrolling is vertical; set <code>horizontal={true}</code> for horizontal scrolling</li>
+        <li>Use <code>pagingEnabled</code> for carousel-like snapping behavior</li>
+        <li><code>contentContainerStyle</code> styles the inner scrollable area</li>
+        <li><code>onScroll</code> provides access to the current scroll position</li>
+        <li>ScrollView renders all children at once — use FlatList for large lists</li>
+        <li>Set <code>scrollEventThrottle={16}</code> for smooth 60fps scroll tracking</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native ScrollView Documentation</strong> — Official documentation for ScrollView with all props and examples. <a href="https://reactnative.dev/docs/scrollview" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
