@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 65: Crash Reporting and Error Tracking</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 65: Crash Reporting and Error Tracking</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Set up crash reporting and error tracking in your React Native app using tools like Sentry, Crashlytics, and Bugsnag to monitor and fix issues in production.</div>
+
+      <h2>Why Crash Reporting Matters</h2>
+      <p>In development, you see every error immediately. In production, errors happen silently on thousands of devices you can't access. Crash reporting tools capture these errors and send them to a dashboard where you can analyze, prioritize, and fix them.</p>
+
+      <h2>Popular Crash Reporting Tools</h2>
+      <table>
+        <tr><th>Tool</th><th>Key Features</th><th>Pricing</th></tr>
+        <tr><td><strong>Sentry</strong></td><td>Error tracking, performance monitoring, source maps</td><td>Free tier available</td></tr>
+        <tr><td><strong>Crashlytics</strong></td><td>Google integration, real-time alerts, crash grouping</td><td>Free with Firebase</td></tr>
+        <tr><td><strong>Bugsnag</strong></td><td>Error stability scores, session tracking, breadcrumbs</td><td>Free tier available</td></tr>
+      </table>
+
+      <h2>Setting Up Sentry</h2>
+      <p>Sentry is the most popular choice for React Native crash reporting due to its excellent React Native SDK and source map support.</p>
+
+      <h3>Installation</h3>
+      <pre><code># Install Sentry SDK
+npx @sentry/wizard@latest -i reactNative
+
+# Or install manually
+npm install @sentry/react-native
+
+# For Expo projects
+npx expo install @sentry/react-native</code></pre>
+
+      <h3>Initialization</h3>
+      <pre><code>// App.js or App.tsx
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://YOUR_DSN@sentry.io/YOUR_PROJECT_ID',
+  tracesSampleRate: 1.0,
+  environment: __DEV__ ? 'development' : 'production',
+});
+
+export default function App() {
+  return (
+    // Your app content
+  );
+}
+
+// Wrap your app with Sentry
+export default Sentry.wrap(App);</code></pre>
+
+      <h3>Capturing errors manually</h3>
+      <pre><code>import * as Sentry from '@sentry/react-native';
+
+// Capture exceptions
+try {
+  // risky operation
+} catch (error) {
+  Sentry.captureException(error);
+}
+
+// Capture messages
+Sentry.captureMessage('Something important happened', 'info');
+
+// Add breadcrumbs for debugging context
+Sentry.addBreadcrumb({
+  category: 'navigation',
+  message: 'Navigated to Profile screen',
+  level: 'info',
+});
+
+// Set user context
+Sentry.setUser({
+  id: 'user-123',
+  email: 'user@example.com',
+});</code></pre>
+
+      <h2>Setting Up Crashlytics (Firebase)</h2>
+      <pre><code># Install Firebase
+npm install @react-native-firebase/app @react-native-firebase/crashlytics
+
+# Initialize Firebase (follow React Native Firebase docs)
+# Then use Crashlytics:
+
+import crashlytics from '@react-native-firebase/crashlytics';
+
+// Log non-fatal errors
+crashlytics().log('User attempted to upload large file');
+
+// Record errors
+try {
+  // operation
+} catch (error) {
+  crashlytics().recordError(error);
+}
+
+// Set custom attributes
+crashlytics().setAttribute('user_type', 'premium');
+
+// Force a crash (for testing only!)
+// crashlytics().crash();</code></pre>
+
+      <h2>Setting Up Bugsnag</h2>
+      <pre><code># Install Bugsnag
+npm install @bugsnag/react-native
+
+# Initialize in your app entry point
+import Bugsnag from '@bugsnag/react-native';
+
+Bugsnag.start({
+  apiKey: 'YOUR_BUGSNAG_API_KEY',
+  appVersion: '1.0.0',
+  releaseStage: 'production',
+});
+
+// Capture errors
+try {
+  // operation
+} catch (error) {
+  Bugsnag.notify(error);
+}</code></pre>
+
+      <h2>Source Maps for Readable Stack Traces</h2>
+      <p>React Native minifies JavaScript code in production builds, making stack traces hard to read. Source maps translate minified code back to your original source code.</p>
+
+      <h3>Generating source maps with EAS</h3>
+      <pre><code># Source maps are generated automatically with EAS Build
+# But you need to upload them to your crash reporting service
+
+# For Sentry
+npx @sentry/react-native expo-sourcemaps
+
+# Or configure in app.json
+{
+  "expo": {
+    "plugins": [
+      [
+        "@sentry/react-native/expo-plugin",
+        {
+          "organization": "your-org",
+          "project": "your-project",
+          "authToken": "your-auth-token"
+        }
+      ]
+    ]
+  }
+}</code></pre>
+
+      <h2>Alerts and Notifications</h2>
+      <p>Configure alerts to be notified of new issues:</p>
+      <ul>
+        <li><strong>Email alerts</strong> — Get notified when new issues appear</li>
+        <li><strong>Slack integration</strong> — Post errors to your team's Slack channel</li>
+        <li><strong>PagerDuty/OpsGenie</strong> — Page on-call engineers for critical errors</li>
+        <li><strong>Issue alerts</strong> — Trigger when error count exceeds thresholds</li>
+      </ul>
+
+      <pre><code>// Example: Sentry alert rules (configured in Sentry dashboard)
+// Alert when:
+// - New issue is created
+// - Error count > 100 in 1 hour
+// - Affected users > 50 in 24 hours</code></pre>
+
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Always upload source maps with production builds</li>
+        <li>Add meaningful context (user info, app version, device info) to error reports</li>
+        <li>Use breadcrumbs to track user actions leading up to errors</li>
+        <li>Set up alerts for critical errors that affect many users</li>
+        <li>Review and triage crash reports regularly as part of your sprint</li>
+        <li>Use error boundaries to catch and report React component errors</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. Why are source maps important for crash reporting?</strong></p>
+        <label><input type="radio" name="q1" value="a"> They make the app run faster</label>
+        <label><input type="radio" name="q1" value="b"> They translate minified production code back to readable source code</label>
+        <label><input type="radio" name="q1" value="c"> They compress error reports for faster upload</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. Which function is used to manually capture an error in Sentry?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Sentry.logError()</label>
+        <label><input type="radio" name="q2" value="b"> Sentry.captureException()</label>
+        <label><input type="radio" name="q2" value="c"> Sentry.reportCrash()</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What is the purpose of breadcrumbs in crash reporting?</strong></p>
+        <label><input type="radio" name="q3" value="a"> They delete old error logs automatically</label>
+        <label><input type="radio" name="q3" value="b"> They track user actions leading up to an error for debugging context</label>
+        <label><input type="radio" name="q3" value="c"> They speed up the error reporting process</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Add Sentry to Your App</h3>
+        <p>Integrate Sentry error tracking into your React Native project:</p>
+        <pre><code># Step 1: Install Sentry
+npx @sentry/wizard@latest -i reactNative
+
+# Step 2: Initialize Sentry in App.js
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'YOUR_DSN_HERE',
+  tracesSampleRate: 1.0,
+  environment: __DEV__ ? 'development' : 'production',
+  enableAutoSessionTracking: true,
+});
+
+export default Sentry.wrap(App);
+
+# Step 3: Add a test error button
+&lt;Button
+  title="Throw Test Error"
+  onPress={() => {
+    try {
+      throw new Error('Test crash from Sentry!');
+    } catch (error) {
+      Sentry.captureException(error);
+    }
+  }}
+/&gt;
+
+# Step 4: Add breadcrumbs to track navigation
+import { useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+
+function Screen() {
+  const navigation = useNavigation();
+  useEffect(() => {
+    Sentry.addBreadcrumb({
+      category: 'navigation',
+      message: `Navigated to ${navigation.getState().routeName}`,
+    });
+  }, []);
+  // ...
+}
+
+# Step 5: Build and test — verify errors appear in Sentry dashboard</code></pre>
+        <p>Visit your Sentry dashboard to see the captured error with full context and stack trace.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Crash reporting tools capture production errors that you can't reproduce locally</li>
+        <li>Sentry, Crashlytics, and Bugsnag are popular choices with React Native support</li>
+        <li>Source maps translate minified production code into readable stack traces</li>
+        <li>Breadcrumbs track user actions leading up to errors for better debugging context</li>
+        <li>Configure alerts to notify your team of critical errors in real time</li>
+        <li>Always upload source maps with production builds for meaningful error reports</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Sentry React Native Documentation</strong> — Complete guide to error tracking and performance monitoring for React Native. <a href="https://docs.sentry.io/platforms/react-native/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

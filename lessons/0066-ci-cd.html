@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 66: CI/CD for React Native</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 66: CI/CD for React Native</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn how to automate building, testing, and deploying your React Native app using CI/CD pipelines with GitHub Actions, EAS Build, and Fastlane.</div>
+
+      <h2>What is CI/CD?</h2>
+      <p><strong>Continuous Integration (CI)</strong> automatically runs tests and builds when code is pushed to your repository. <strong>Continuous Deployment (CD)</strong> automatically deploys verified builds to app stores or testing platforms.</p>
+
+      <ul>
+        <li><strong>CI Benefits:</strong> Catch bugs early, ensure code quality, automated testing on every push</li>
+        <li><strong>CD Benefits:</strong> Faster releases, reduced manual errors, consistent deployment process</li>
+      </ul>
+
+      <h2>GitHub Actions for React Native</h2>
+      <p>GitHub Actions is a free CI/CD platform that runs workflows directly from your GitHub repository.</p>
+
+      <h3>Basic workflow structure</h3>
+      <pre><code># .github/workflows/build.yml
+name: Build and Test
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint
+
+      - name: Run tests
+        run: npm test
+
+  build-android:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Android APK
+        run: npx eas-cli build --platform android --profile preview --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}</code></pre>
+
+      <h2>EAS Build in CI</h2>
+      <p>EAS Build integrates seamlessly with CI/CD pipelines through the CLI:</p>
+
+      <pre><code># Trigger EAS builds from CI
+npx eas-cli build --platform ios --profile production --non-interactive
+npx eas-cli build --platform android --profile production --non-interactive
+
+# Trigger EAS updates from CI
+npx eas-cli update --branch production --message "CI: automated update"
+
+# Submit builds from CI
+npx eas-cli submit --platform all --profile production --non-interactive</code></pre>
+
+      <h3>Setting up secrets in GitHub</h3>
+      <pre><code># Add these secrets in your GitHub repo settings:
+# Settings → Secrets and variables → Actions
+
+# Required secrets:
+# EXPO_TOKEN - Your Expo access token
+# SENTRY_AUTH_TOKEN - For source map uploads
+# ANDROID_KEYSTORE_BASE64 - Your keystore file (base64 encoded)
+# ANDROID_KEY_PASSWORD - Keystore password
+# ANDROID_KEY_ALIAS - Key alias
+
+# Generate base64 keystore for CI
+base64 -i my-release-key.keystore | tr -d '\n' &gt; keystore-base64.txt</code></pre>
+
+      <h2>Fastlane</h2>
+      <p>Fastlane automates building, testing, and releasing iOS and Android apps:</p>
+
+      <pre><code># Install Fastlane
+gem install fastlane
+
+# Initialize Fastlane in your project
+cd ios && fastlane init
+cd android && fastlane init</code></pre>
+
+      <h3>Fastlane configuration</h3>
+      <pre><code># ios/Fastfile
+default_platform(:ios)
+
+platform :ios do
+  desc "Push to TestFlight"
+  lane :beta do
+    build_app(scheme: "MyApp")
+    upload_to_testflight
+  end
+
+  desc "Push to App Store"
+  lane :release do
+    build_app(scheme: "MyApp")
+    upload_to_app_store(force: true)
+  end
+end
+
+# android/Fastfile
+default_platform(:android)
+
+platform :android do
+  desc "Build and upload to Play Store"
+  lane :beta do
+    gradle(task: "clean assembleRelease")
+    upload_to_play_store(track: "internal")
+  end
+
+  lane :release do
+    gradle(task: "clean bundleRelease")
+    upload_to_play_store
+  end
+end</code></pre>
+
+      <h2>Automated Testing in CI</h2>
+      <pre><code># .github/workflows/test.yml
+name: Test Suite
+
+on: [push, pull_request]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run test:unit -- --coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  e2e-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run build:ios
+      - run: npm run test:e2e -- --configuration ios.sim.debug</code></pre>
+
+      <h2>Build Triggers</h2>
+      <ul>
+        <li><strong>Push to main</strong> — Build and deploy to production</li>
+        <li><strong>Push to develop</strong> — Build and deploy to staging/internal testing</li>
+        <li><strong>Pull request</strong> — Run tests and build preview version</li>
+        <li><strong>Tag push (v1.0.0)</strong> — Trigger release build and store submission</li>
+        <li><strong>Schedule</strong> — Nightly builds for testing</li>
+      </ul>
+
+      <pre><code># Tag-based release trigger
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build iOS
+        run: npx eas-cli build --platform ios --profile production --non-interactive
+      - name: Build Android
+        run: npx eas-cli build --platform android --profile production --non-interactive</code></pre>
+
+      <h2>Deployment Automation</h2>
+      <pre><code># Complete CI/CD pipeline
+name: Release Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci && npm test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - name: Build both platforms
+        run: |
+          npx eas-cli build --platform ios --profile production --non-interactive
+          npx eas-cli build --platform android --profile production --non-interactive
+
+  submit:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Submit to stores
+        run: |
+          npx eas-cli submit --platform ios --non-interactive
+          npx eas-cli submit --platform android --non-interactive</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What does CI stand for in CI/CD?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Continuous Integration</label>
+        <label><input type="radio" name="q1" value="b"> Continuous Installation</label>
+        <label><input type="radio" name="q1" value="c"> Code Implementation</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. Which flag is used to run EAS builds non-interactively in CI?</strong></p>
+        <label><input type="radio" name="q2" value="a"> --auto</label>
+        <label><input type="radio" name="q2" value="b"> --non-interactive</label>
+        <label><input type="radio" name="q2" value="c"> --ci-mode</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What is the purpose of storing EXPO_TOKEN as a GitHub secret?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To encrypt your source code</label>
+        <label><input type="radio" name="q3" value="b"> To authenticate EAS CLI in CI without exposing credentials</label>
+        <label><input type="radio" name="q3" value="c"> To compress build artifacts</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create a GitHub Actions Workflow for Builds</h3>
+        <p>Set up a complete CI/CD pipeline for your React Native project:</p>
+        <pre><code># Step 1: Create the workflow directory
+mkdir -p .github/workflows
+
+# Step 2: Create the workflow file
+cat &lt;&lt;EOF &gt; .github/workflows/build.yml
+name: React Native CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+
+  build-android:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - name: Build Android
+        run: npx eas-cli build --platform android --profile production --non-interactive
+        env:
+          EXPO_TOKEN: \${{ secrets.EXPO_TOKEN }}
+EOF
+
+# Step 3: Add your Expo token as a GitHub secret
+# Go to repo Settings → Secrets → Actions → New repository secret
+# Name: EXPO_TOKEN
+# Value: your-expo-access-token
+
+# Step 4: Push the workflow to trigger your first build
+git add .github/workflows/build.yml
+git commit -m "ci: add GitHub Actions build workflow"
+git push</code></pre>
+        <p>Verify the workflow runs successfully in the Actions tab of your GitHub repository.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>CI/CD automates testing, building, and deploying your React Native app</li>
+        <li>GitHub Actions provides free CI/CD workflows triggered by code changes</li>
+        <li>EAS Build integrates with CI through the <code>--non-interactive</code> flag and EXPO_TOKEN</li>
+        <li>Fastlane automates native build and store submission processes</li>
+        <li>Store sensitive credentials (tokens, keystores) as encrypted secrets</li>
+        <li>Set up different pipelines for development, staging, and production environments</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>GitHub Actions Documentation</strong> — Complete guide to automating your development workflow with GitHub Actions. <a href="https://docs.github.com/en/actions" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

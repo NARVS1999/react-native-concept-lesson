@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 68: Build Configuration and Environment Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 68: Build Configuration and Environment Management</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn how to manage environment variables, create different build configurations for development, staging, and production, and use Expo constants to access environment-specific values.</div>
+
+      <h2>Why Environment Management Matters</h2>
+      <p>Your React Native app needs different configurations depending on where it runs: development, staging, and production. Using the wrong API endpoint or debug flags in production can cause serious issues.</p>
+
+      <h3>Common environment differences</h3>
+      <ul>
+        <li><strong>API URLs</strong> — localhost for dev, staging server for staging, production URL for prod</li>
+        <li><strong>API Keys</strong> — Test keys for development, live keys for production</li>
+        <li><strong>Feature Flags</strong> — Experimental features enabled in dev, disabled in prod</li>
+        <li><strong>Logging</strong> — Verbose logging in dev, minimal in production</li>
+        <li><strong>Analytics</strong> — Test analytics in dev, real tracking in production</li>
+      </ul>
+
+      <h2>Environment Variables with .env Files</h2>
+      <p>Use the <code>react-native-dotenv</code> or <code>react-native-config</code> package to load environment variables from .env files.</p>
+
+      <h3>Setup with react-native-dotenv</h3>
+      <pre><code># Install the package
+npm install react-native-dotenv
+
+# Create .env files
+touch .env .env.development .env.staging .env.production</code></pre>
+
+      <pre><code># .env.development
+API_URL=http://localhost:3000
+API_KEY=dev-test-key-123
+ENABLE_DEBUG=true
+LOG_LEVEL=debug
+SENTRY_DSN=
+
+# .env.staging
+API_URL=https://staging-api.myapp.com
+API_KEY=staging-key-456
+ENABLE_DEBUG=true
+LOG_LEVEL=info
+SENTRY_DSN=https://staging@sentry.io/123
+
+# .env.production
+API_URL=https://api.myapp.com
+API_KEY=prod-key-789
+ENABLE_DEBUG=false
+LOG_LEVEL=error
+SENTRY_DSN=https://prod@sentry.io/456</code></pre>
+
+      <h3>Configuring babel to use env files</h3>
+      <pre><code>// babel.config.js
+module.exports = {
+  presets: ['module:@react-native/babel-preset'],
+  plugins: [
+    ['module:react-native-dotenv', {
+      moduleName: '@env',
+      path: '.env',
+    }],
+  ],
+};</code></pre>
+
+      <h3>Using environment variables in code</h3>
+      <pre><code>// Import environment variables
+import { API_URL, API_KEY, ENABLE_DEBUG } from '@env';
+
+// Use in your app
+const apiClient = {
+  baseURL: API_URL,
+  headers: {
+    'Authorization': `Bearer ${API_KEY}`,
+  },
+};
+
+// Conditional features based on environment
+if (ENABLE_DEBUG === 'true') {
+  console.log('Debug mode enabled');
+  // Enable debug tools, verbose logging, etc.
+}
+
+export { apiClient };</code></pre>
+
+      <h2>app.config.js for Dynamic Configuration</h2>
+      <p>Expo supports <code>app.config.js</code> (or <code>app.config.ts</code>) for dynamic configuration based on environment:</p>
+
+      <pre><code>// app.config.js
+export default ({ config }) => {
+  const ENV = process.env.APP_ENV || 'development';
+
+  const envConfig = {
+    development: {
+      name: 'MyApp Dev',
+      extra: {
+        apiUrl: 'http://localhost:3000',
+        sentryDsn: '',
+      },
+      android: {
+        package: 'com.myapp.dev',
+      },
+      ios: {
+        bundleIdentifier: 'com.myapp.dev',
+      },
+    },
+    staging: {
+      name: 'MyApp Staging',
+      extra: {
+        apiUrl: 'https://staging-api.myapp.com',
+        sentryDsn: 'https://staging@sentry.io/123',
+      },
+      android: {
+        package: 'com.myapp.staging',
+      },
+      ios: {
+        bundleIdentifier: 'com.myapp.staging',
+      },
+    },
+    production: {
+      name: 'MyApp',
+      extra: {
+        apiUrl: 'https://api.myapp.com',
+        sentryDsn: 'https://prod@sentry.io/456',
+      },
+      android: {
+        package: 'com.myapp',
+      },
+      ios: {
+        bundleIdentifier: 'com.myapp',
+      },
+    },
+  };
+
+  return {
+    ...config,
+    ...envConfig[ENV],
+    extra: {
+      ...envConfig[ENV].extra,
+      env: ENV,
+    },
+  };
+};</code></pre>
+
+      <h2>Expo Constants for Accessing Config</h2>
+      <p>Use <code>expo-constants</code> to access the extra values defined in app.config.js:</p>
+
+      <pre><code># Install Expo Constants
+npx expo install expo-constants</code></pre>
+
+      <pre><code>import Constants from 'expo-constants';
+
+// Access environment-specific values
+const { apiUrl, sentryDsn, env } = Constants.expoConfig.extra;
+
+console.log('Running in:', env);
+console.log('API URL:', apiUrl);
+
+// Use in your app
+const API_CONFIG = {
+  baseURL: apiUrl,
+  timeout: env === 'production' ? 30000 : 60000,
+  retries: env === 'production' ? 3 : 0,
+};
+
+export { API_CONFIG };</code></pre>
+
+      <h2>Build Profiles for Different Environments</h2>
+      <p>Combine EAS Build profiles with environment variables:</p>
+
+      <pre><code>// eas.json
+{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "development"
+      }
+    },
+    "staging": {
+      "distribution": "internal",
+      "env": {
+        "APP_ENV": "staging"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "APP_ENV": "production"
+      }
+    }
+  }
+}</code></pre>
+
+      <pre><code># Build for different environments
+APP_ENV=development eas build --profile development --platform ios
+APP_ENV=staging eas build --profile staging --platform android
+APP_ENV=production eas build --profile production --platform all</code></pre>
+
+      <h2>Environment Configuration Module</h2>
+      <p>Create a centralized configuration module for your app:</p>
+
+      <pre><code>// config/environment.js
+import Constants from 'expo-constants';
+
+const ENV = {
+  dev: {
+    apiUrl: 'http://localhost:3000',
+    enableDebug: true,
+    sentryDsn: '',
+    analyticsId: 'dev-analytics-id',
+  },
+  staging: {
+    apiUrl: 'https://staging-api.myapp.com',
+    enableDebug: true,
+    sentryDsn: 'https://staging@sentry.io/123',
+    analyticsId: 'staging-analytics-id',
+  },
+  prod: {
+    apiUrl: 'https://api.myapp.com',
+    enableDebug: false,
+    sentryDsn: 'https://prod@sentry.io/456',
+    analyticsId: 'prod-analytics-id',
+  },
+};
+
+const getEnvVars = () => {
+  const env = Constants.expoConfig?.extra?.env || 'dev';
+  return ENV[env] || ENV.dev;
+};
+
+export default getEnvVars;</code></pre>
+
+      <pre><code>// Usage in your app
+import getEnvVars from '../config/environment';
+
+const { apiUrl, enableDebug, sentryDsn } = getEnvVars();
+
+if (enableDebug) {
+  console.log('Debug mode active');
+}
+
+// Initialize services with environment config
+Sentry.init({ dsn: sentryDsn });</code></pre>
+
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Never commit .env files with real secrets to version control — add them to .gitignore</li>
+        <li>Use .env.example to document required variables without actual values</li>
+        <li>Keep a .env.development file with safe default values for local development</li>
+        <li>Use EAS Build <code>env</code> field to inject secrets during cloud builds</li>
+        <li>Create separate app identifiers for dev, staging, and production builds</li>
+        <li>Centralize your configuration in one module to avoid scattered env var usage</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What is the primary purpose of .env files in React Native?</strong></p>
+        <label><input type="radio" name="q1" value="a"> To store app assets and images</label>
+        <label><input type="radio" name="q1" value="b"> To manage environment-specific configuration like API URLs and keys</label>
+        <label><input type="radio" name="q1" value="c"> To define CSS styles for the app</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. How do you access extra values from app.config.js at runtime?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Using process.env directly in JavaScript</label>
+        <label><input type="radio" name="q2" value="b"> Using expo-constants to read Constants.expoConfig.extra</label>
+        <label><input type="radio" name="q2" value="c"> Using AsyncStorage to persist values</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. Why should you create separate bundle identifiers for dev and production?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To make the app name shorter</label>
+        <label><input type="radio" name="q3" value="b"> To install dev and production builds side by side on the same device</label>
+        <label><input type="radio" name="q3" value="c"> To reduce the app binary size</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create Dev and Production Build Configs</h3>
+        <p>Set up environment management for your React Native project:</p>
+        <pre><code># Step 1: Install dependencies
+npx expo install expo-constants
+npm install react-native-dotenv
+
+# Step 2: Create environment files
+cat &lt;&lt;EOF &gt; .env.development
+API_URL=http://localhost:3000
+API_KEY=dev-test-key
+ENABLE_DEBUG=true
+EOF
+
+cat &lt;&lt;EOF &gt; .env.production
+API_URL=https://api.myapp.com
+API_KEY=prod-live-key
+ENABLE_DEBUG=false
+EOF
+
+# Step 3: Create config module
+mkdir -p src/config
+cat &lt;&lt;EOF &gt; src/config/environment.js
+import Constants from 'expo-constants';
+
+const ENV = {
+  development: {
+    apiUrl: 'http://localhost:3000',
+    enableDebug: true,
+  },
+  production: {
+    apiUrl: 'https://api.myapp.com',
+    enableDebug: false,
+  },
+};
+
+export default function getEnvVars() {
+  const env = Constants.expoConfig?.extra?.env || 'development';
+  return ENV[env];
+}
+EOF
+
+# Step 4: Update app.config.js with env-specific settings
+cat &lt;&lt;EOF &gt; app.config.js
+export default ({ config }) => {
+  const ENV = process.env.APP_ENV || 'development';
+  const envSettings = {
+    development: {
+      name: 'MyApp Dev',
+      android: { package: 'com.myapp.dev' },
+      ios: { bundleIdentifier: 'com.myapp.dev' },
+    },
+    production: {
+      name: 'MyApp',
+      android: { package: 'com.myapp' },
+      ios: { bundleIdentifier: 'com.myapp' },
+    },
+  };
+  return { ...config, ...envSettings[ENV], extra: { env: ENV } };
+};
+EOF
+
+# Step 5: Use in your app
+# import getEnvVars from './src/config/environment';
+# const { apiUrl, enableDebug } = getEnvVars();</code></pre>
+        <p>Build for both environments and verify each uses the correct configuration.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Environment variables manage different configurations for dev, staging, and production</li>
+        <li>.env files store environment-specific values like API URLs and keys</li>
+        <li>app.config.js provides dynamic configuration based on the build environment</li>
+        <li>expo-constants accesses runtime configuration from Constants.expoConfig.extra</li>
+        <li>Create separate bundle identifiers to install multiple environments on one device</li>
+        <li>Centralize configuration in one module to keep env var usage consistent across your app</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Expo Environment Variables Guide</strong> — Complete documentation for managing environment variables and build configurations in Expo projects. <a href="https://docs.exploy.dev/guides/environment-variables/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

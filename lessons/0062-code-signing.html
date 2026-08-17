@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 62: Code Signing for Mobile Apps</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 62: Code Signing for Mobile Apps</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand how code signing works on both iOS and Android, generate signing keys, and configure your React Native project for production builds.</div>
+
+      <h2>What is Code Signing?</h2>
+      <p>Code signing is a security mechanism that verifies the identity of the app developer and ensures the app hasn't been tampered with since it was signed. Both Apple and Google require signed apps before they can be installed on devices or distributed through app stores.</p>
+
+      <h2>iOS Code Signing</h2>
+      <p>iOS code signing involves three key components:</p>
+      <ul>
+        <li><strong>Certificates</strong> — Digital identities issued by Apple that prove you are the developer</li>
+        <li><strong>Provisioning Profiles</strong> — Bundle your certificate, app ID, and allowed devices together</li>
+        <li><strong>Apple Developer Account</strong> — Required to create certificates and provisioning profiles ($99/year)</li>
+      </ul>
+
+      <h3>Apple Developer Account Setup</h3>
+      <ol>
+        <li>Sign up at <a href="https://developer.apple.com" target="_blank">developer.apple.com</a></li>
+        <li>Join the Apple Developer Program</li>
+        <li>Create an App ID in the Identifiers section</li>
+        <li>Generate a Certificate Signing Request (CSR) from Keychain Access</li>
+        <li>Create a Distribution Certificate</li>
+        <li>Create a Provisioning Profile linking your certificate to your App ID</li>
+      </ol>
+
+      <h3>Using Fastlane for iOS Signing</h3>
+      <pre><code># Install Fastlane
+gem install fastlane
+
+# Initialize Fastlane in your project
+cd ios
+fastlane init
+
+# Use match for certificate management
+fastlane match development
+fastlane match appstore</code></pre>
+
+      <h2>Android Code Signing</h2>
+      <p>Android uses a keystore file to sign your app. The keystore contains your private key used to sign the APK or AAB (Android App Bundle).</p>
+
+      <h3>Generating a Keystore with keytool</h3>
+      <pre><code># Generate a new keystore
+keytool -genkeypair \
+  -v \
+  -storetype PKCS12 \
+  -keystore my-release-key.keystore \
+  -alias my-key-alias \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+# You'll be prompted for:
+# - Keystore password
+# - Your name and organization
+# - City, state, country
+# - Key password</code></pre>
+
+      <h3>Configuring signing in build.gradle</h3>
+      <pre><code>// android/app/build.gradle
+android {
+    signingConfigs {
+        release {
+            if (project.hasProperty('MYAPP_RELEASE_STORE_FILE')) {
+                storeFile file(MYAPP_RELEASE_STORE_FILE)
+                storePassword MYAPP_RELEASE_STORE_PASSWORD
+                keyAlias MYAPP_RELEASE_KEY_ALIAS
+                keyPassword MYAPP_RELEASE_KEY_PASSWORD
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+}</code></pre>
+
+      <h3>Storing credentials in gradle.properties</h3>
+      <pre><code># android/gradle.properties
+MYAPP_RELEASE_STORE_FILE=my-release-key.keystore
+MYAPP_RELEASE_KEY_ALIAS=my-key-alias
+MYAPP_RELEASE_STORE_PASSWORD=*****
+MYAPP_RELEASE_KEY_PASSWORD=*****</code></pre>
+      <div class="warning"><strong>Warning:</strong> Never commit gradle.properties with real passwords to version control. Add it to .gitignore or use environment variables.</div>
+
+      <h2>Expo / EAS Build Signing</h2>
+      <p>EAS Build simplifies the signing process for Expo projects:</p>
+      <pre><code># Configure EAS credentials
+eas credentials
+
+# For Android, EAS can generate and manage your keystore
+eas build:configure
+
+# Build with automatic credentials
+eas build --platform android
+eas build --platform ios</code></pre>
+
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Keep your keystore files and passwords in a secure location — losing them means you can't update your app</li>
+        <li>Use different keystores for development and production</li>
+        <li>For teams, consider using Fastlane match or EAS credentials to share signing info securely</li>
+        <li>Back up your keystore files and certificates immediately after creation</li>
+        <li>Never commit signing credentials to public repositories</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What are the three components of iOS code signing?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Keystore, password, and alias</label>
+        <label><input type="radio" name="q1" value="b"> Certificate, provisioning profile, and Apple Developer account</label>
+        <label><input type="radio" name="q1" value="c"> APK, AAB, and bundle ID</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. Which command-line tool is used to generate an Android keystore?</strong></p>
+        <label><input type="radio" name="q2" value="a"> adb keystore --generate</label>
+        <label><input type="radio" name="q2" value="b"> keytool -genkeypair</label>
+        <label><input type="radio" name="q2" value="c"> openssl genkey</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. Why should you never commit your keystore passwords to version control?</strong></p>
+        <label><input type="radio" name="q3" value="a"> It increases the repository size</label>
+        <label><input type="radio" name="q3" value="b"> It's a security risk — anyone could sign and distribute your app</label>
+        <label><input type="radio" name="q3" value="c"> Git doesn't support password files</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Generate an Android Keystore</h3>
+        <p>Generate a release keystore for your React Native app and configure it in build.gradle:</p>
+        <pre><code># Step 1: Generate the keystore
+keytool -genkeypair \
+  -v \
+  -storetype PKCS12 \
+  -keystore my-release-key.keystore \
+  -alias my-key-alias \
+  -keyalg RSA \
+  -keysize 2048 \
+  -validity 10000
+
+# Step 2: Move it to android/app/
+mv my-release-key.keystore android/app/
+
+# Step 3: Create android/key.properties
+cat &lt;&lt;EOF &gt; android/key.properties
+storePassword=your_store_password
+keyPassword=your_key_password
+keyAlias=my-key-alias
+storeFile=my-release-key.keystore
+EOF
+
+# Step 4: Update android/app/build.gradle
+# Add signing config using the key.properties file</code></pre>
+        <p>Verify your signing configuration by running a release build:</p>
+        <pre><code>cd android && ./gradlew assembleRelease</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Code signing verifies developer identity and app integrity for both iOS and Android</li>
+        <li>iOS requires certificates, provisioning profiles, and an Apple Developer account</li>
+        <li>Android uses keystore files generated with <code>keytool</code></li>
+        <li>Never commit signing credentials to version control — use environment variables or secure storage</li>
+        <li>Back up all keystore files and certificates immediately after creation</li>
+        <li>EAS Build and Fastlane can automate credential management for your projects</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Expo Credentials Documentation</strong> — Complete guide to managing app credentials for iOS and Android builds. <a href="https://docs.expo.dev/app-signing/app-credentials/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

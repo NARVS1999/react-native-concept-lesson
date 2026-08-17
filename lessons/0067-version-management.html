@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 67: Version Management</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 67: Version Management</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand semantic versioning, platform-specific version codes, and automate version management across your React Native project.</div>
+
+      <h2>Semantic Versioning (SemVer)</h2>
+      <p>Semantic versioning follows the format <strong>MAJOR.MINOR.PATCH</strong> and communicates the nature of changes in each release:</p>
+
+      <table>
+        <tr><th>Version</th><th>Format</th><th>When to Increment</th></tr>
+        <tr><td><strong>MAJOR</strong></td><td>x.0.0</td><td>Breaking changes that require user action</td></tr>
+        <tr><td><strong>MINOR</strong></td><td>0.x.0</td><td>New features that are backward-compatible</td></tr>
+        <tr><td><strong>PATCH</strong></td><td>0.0.x</td><td>Bug fixes that don't change functionality</td></tr>
+      </table>
+
+      <h3>Examples</h3>
+      <pre><code># Start at version 1.0.0
+1.0.0 → Initial release
+1.0.1 → Fixed a crash on login
+1.1.0 → Added push notifications
+1.1.1 → Fixed notification sound on Android
+2.0.0 → Redesigned UI (users must re-learn navigation)
+2.0.1 → Fixed typo in settings page</code></pre>
+
+      <h3>Versioning in package.json</h3>
+      <pre><code>{
+  "name": "my-react-native-app",
+  "version": "1.2.3",
+  "scripts": {
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
+  }
+}</code></pre>
+
+      <h2>Android Version Codes</h2>
+      <p>Android uses two version identifiers:</p>
+      <ul>
+        <li><strong>versionName</strong> — Displayed to users (e.g., "1.2.3")</li>
+        <li><strong>versionCode</strong> — Integer that must increase with each release (used by Play Store)</li>
+      </ul>
+
+      <pre><code>// android/app/build.gradle
+android {
+    defaultConfig {
+        versionCode 1        // Must increment with each release
+        versionName "1.2.3"  // Semantic version string
+    }
+}
+
+// Example versionCode scheme:
+// Major * 10000 + Minor * 100 + Patch
+// 1.2.3 → 10203
+// 2.0.0 → 20000
+// 1.3.1 → 10301</code></pre>
+
+      <h2>iOS Bundle Versions</h2>
+      <p>iOS uses two version identifiers in the Info.plist:</p>
+      <ul>
+        <li><strong>CFBundleShortVersionString</strong> — Marketing version shown to users (e.g., "1.2.3")</li>
+        <li><strong>CFBundleVersion</strong> — Build number, must increase with each upload to App Store Connect</li>
+      </ul>
+
+      <pre><code>// ios/MyApp/Info.plist
+&lt;key&gt;CFBundleShortVersionString&lt;/key&gt;
+&lt;string&gt;1.2.3&lt;/string&gt;
+
+&lt;key&gt;CFBundleVersion&lt;/key&gt;
+&lt;string&gt;42&lt;/string&gt;</code></pre>
+
+      <h3>Incrementing iOS build number</h3>
+      <pre><code># Using agvtool (Xcode command line tool)
+cd ios
+agvtool new-version -all 43
+
+# Using Fastlane
+increment_build_number(
+  build_number: 43,
+  xcodeproj: "./ios/MyApp.xcodeproj"
+)</code></pre>
+
+      <h2>Automated Version Bumping</h2>
+      <p>Manually updating versions across multiple files is error-prone. Automate it:</p>
+
+      <h3>Using npm version scripts</h3>
+      <pre><code># Bump patch version in package.json (without git tag)
+npm version patch --no-git-tag-version
+
+# Bump minor version
+npm version minor --no-git-tag-version
+
+# Bump major version
+npm version major --no-git-tag-version</code></pre>
+
+      <h3>Custom version bump script</h3>
+      <pre><code># scripts/bump-version.sh
+#!/bin/bash
+BUMP_TYPE=$1
+
+# Bump package.json
+npm version $BUMP_TYPE --no-git-tag-version
+
+# Get new version
+NEW_VERSION=$(node -p "require('./package.json').version")
+
+# Update Android version
+cd android
+./gradlew -PversionName=$NEW_VERSION updateVersion
+cd ..
+
+# Update iOS version (using agvtool)
+cd ios
+agvtool new-marketing-version $NEW_VERSION
+agvtool new-version -all $(($(agvtool what-version | tr -d ' ') + 1))
+cd ..
+
+echo "Version bumped to $NEW_VERSION"</code></pre>
+
+      <h3>EAS Build auto-increment</h3>
+      <pre><code>// eas.json
+{
+  "build": {
+    "production": {
+      "autoIncrement": true
+    }
+  }
+}
+
+# EAS Build automatically increments the build number
+# for each build on the same platform</code></pre>
+
+      <h2>Version Management Best Practices</h2>
+      <ul>
+        <li>Always bump versions before creating a release build</li>
+        <li>Use <code>--no-git-tag-version</code> when you want to manage git tags separately</li>
+        <li>Keep Android versionCode and iOS build number in sync with your release count</li>
+        <li>Consider using tools like <code>standard-version</code> or <code>semantic-release</code> for automated changelogs</li>
+        <li>Tag releases in git with the version number: <code>git tag v1.2.3</code></li>
+        <li>Test version bumping in CI before relying on it in production</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. In semantic versioning, what does incrementing the MINOR version indicate?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Breaking changes that require user action</label>
+        <label><input type="radio" name="q1" value="b"> New features that are backward-compatible</label>
+        <label><input type="radio" name="q1" value="c"> Bug fixes that don't change functionality</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. What is the Android versionCode used for?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Displaying the version to users</label>
+        <label><input type="radio" name="q2" value="b"> Identifying the build to the Play Store, must increase with each release</label>
+        <label><input type="radio" name="q2" value="c"> Encrypting the app binary</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What does the --no-git-tag-version flag do with npm version?</strong></p>
+        <label><input type="radio" name="q3" value="a"> It forces a version bump even if there are uncommitted changes</label>
+        <label><input type="radio" name="q3" value="b"> It bumps the version in package.json without creating a git tag or commit</label>
+        <label><input type="radio" name="q3" value="c"> It skips updating the lock file</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Set Up Version Management in Your Project</h3>
+        <p>Create scripts to automate version bumping across your React Native project:</p>
+        <pre><code># Step 1: Add version scripts to package.json
+cat &lt;&lt;EOF &gt; scripts/bump-version.sh
+#!/bin/bash
+set -e
+
+BUMP_TYPE=\${1:-patch}
+if [[ ! "$BUMP_TYPE" =~ ^(patch|minor|major)$ ]]; then
+  echo "Usage: ./scripts/bump-version.sh [patch|minor|major]"
+  exit 1
+fi
+
+echo "Bumping $BUMP_TYPE version..."
+
+# Bump version in package.json
+npm version $BUMP_TYPE --no-git-tag-version
+
+# Get the new version
+NEW_VERSION=$(node -p "require('./package.json').version")
+echo "New version: $NEW_VERSION"
+
+# Update Android
+cd android
+sed -i "s/versionName \".*\"/versionName \"$NEW_VERSION\"/" app/build.gradle
+echo "Android versionName updated to $NEW_VERSION"
+
+# Update iOS
+cd ../ios
+agvtool new-marketing-version $NEW_VERSION
+BUILD_NUM=$(($(agvtool what-version | tr -d ' ') + 1))
+agvtool new-version -all $BUILD_NUM
+echo "iOS version updated to $NEW_VERSION (build $BUILD_NUM)"
+
+cd ..
+echo "Version bump complete!"
+EOF
+
+chmod +x scripts/bump-version.sh
+
+# Step 2: Use the script
+./scripts/bump-version.sh patch   # 1.0.0 → 1.0.1
+./scripts/bump-version.sh minor   # 1.0.1 → 1.1.0
+./scripts/bump-version.sh major   # 1.1.0 → 2.0.0
+
+# Step 3: Verify changes
+cat package.json | grep version
+grep versionName android/app/build.gradle
+grep CFBundleShortVersionString ios/MyApp/Info.plist</code></pre>
+        <p>Run the script and verify all version files are updated consistently.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Semantic versioning (MAJOR.MINOR.PATCH) communicates the nature of changes</li>
+        <li>Android uses versionName for display and versionCode (integer) for Play Store</li>
+        <li>iOS uses CFBundleShortVersionString for marketing and CFBundleVersion for build number</li>
+        <li>Automate version bumping with npm scripts, shell scripts, or EAS auto-increment</li>
+        <li>Always bump versions before creating release builds</li>
+        <li>Keep all version files in sync across package.json, build.gradle, and Info.plist</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Semantic Versioning Specification</strong> — The official SemVer standard and detailed explanation of version numbering. <a href="https://semver.org/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

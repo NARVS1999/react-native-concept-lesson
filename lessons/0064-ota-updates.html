@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 64: Over-the-Air (OTA) Updates</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 64: Over-the-Air (OTA) Updates</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn how to push JavaScript-only updates to your React Native app without going through the app store review process using EAS Update.</div>
+
+      <h2>What are OTA Updates?</h2>
+      <p>Over-the-Air (OTA) updates allow you to push updates to your React Native app's JavaScript bundle directly to users' devices without requiring them to download a new version from the app store. This is possible because React Native separates the JavaScript code from the native shell.</p>
+
+      <div class="info"><strong>Key Limitation:</strong> OTA updates can only modify JavaScript code, images, and other JS-bundled assets. They cannot change native code, native modules, or update dependencies that require native compilation.</div>
+
+      <h2>OTA Updates vs Full Releases</h2>
+      <table>
+        <tr><th>Feature</th><th>OTA Update</th><th>Full App Store Release</th></tr>
+        <tr><td>What can change</td><td>JS code, assets, images</td><td>Everything (native + JS)</td></tr>
+        <tr><td>Review process</td><td>None — instant delivery</td><td>1-7 days for store review</td></tr>
+        <tr><td>User action required</td><td>None — automatic</td><td>Must download update</td></tr>
+        <tr><td>Rollback possible</td><td>Yes — immediately</td><td>No — must submit new version</td></tr>
+        <tr><td>Use case</td><td>Bug fixes, content updates, UI tweaks</td><td>New features, native changes</td></tr>
+      </table>
+
+      <h2>Setting Up EAS Update</h2>
+      <pre><code># Install EAS Update in your project
+npx eas-cli update --configure
+
+# Or add manually to app.json
+{
+  "expo": {
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD"
+    }
+  }
+}</code></pre>
+
+      <h3>Configure update behavior</h3>
+      <pre><code>// app.json or app.config.js
+{
+  "expo": {
+    "updates": {
+      "url": "https://u.expo.dev/YOUR_PROJECT_ID",
+      "fallbackToCacheTimeout": 0,
+      "checkAutomatically": "ON_LOAD",
+      "resourceHeaders": {
+        "expo-channel-name": "production"
+      }
+    }
+  }
+}</code></pre>
+
+      <h2>Using EAS Update</h2>
+      <pre><code># Install EAS Update
+npm install -g eas-cli
+
+# Create an update on the main branch
+eas update --branch production --message "Fix login bug"
+
+# Create an update on a preview branch
+eas update --branch preview --message "Test new feature"
+
+# Check for updates programmatically in your app
+npx expo install expo-updates</code></pre>
+
+      <h3>Checking for updates in code</h3>
+      <pre><code>import * as Updates from 'expo-updates';
+import { useEffect } from 'react';
+
+export default function App() {
+  useEffect(() => {
+    async function checkForUpdates() {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          // Reload the app to apply the update
+          await Updates.reloadAsync();
+        }
+      } catch (error) {
+        console.log('Error checking for updates:', error);
+      }
+    }
+
+    checkForUpdates();
+  }, []);
+
+  return (
+    // Your app component
+  );
+}</code></pre>
+
+      <h2>Branch Strategy for OTA Updates</h2>
+      <p>EAS Update uses branches to organize updates. Align your update branches with your release channels:</p>
+
+      <pre><code># Development updates (for dev builds)
+eas update --branch development --message "Dev: test new API"
+
+# Staging updates (for preview builds)
+eas update --branch staging --message "Staging: content update"
+
+# Production updates (for production builds)
+eas update --branch production --message "Fix: resolve crash on startup"</code></pre>
+
+      <h3>Mapping branches to build profiles</h3>
+      <pre><code>{
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "update": {
+    "development": { "channel": "development" },
+    "preview": { "channel": "staging" },
+    "production": { "channel": "production" }
+  }
+}</code></pre>
+
+      <h2>Rollback Capability</h2>
+      <p>One of the most powerful features of OTA updates is the ability to instantly roll back a problematic update:</p>
+
+      <pre><code># Rollback the latest update on a branch
+eas update:rollback --branch production
+
+# Or roll back to a specific update
+eas update --branch production --message "Rollback: revert to previous version"</code></pre>
+
+      <p>This is invaluable when a JavaScript update introduces a critical bug — you can roll back immediately without waiting for app store approval.</p>
+
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Test OTA updates in preview/staging environments before pushing to production</li>
+        <li>Use descriptive update messages for easy tracking and rollback decisions</li>
+        <li>Monitor update adoption rates using EAS Update analytics</li>
+        <li>Don't rely on OTA for critical security patches — use full releases for those</li>
+        <li>Keep your OTA updates small and focused on specific changes</li>
+        <li>Consider implementing a version check in your app to ensure compatibility</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What types of changes can be delivered via OTA updates?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Native code and JavaScript changes</label>
+        <label><input type="radio" name="q1" value="b"> JavaScript code, assets, and images only</label>
+        <label><input type="radio" name="q1" value="c"> Any changes to the app</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. What is the main advantage of OTA updates over app store releases?</strong></p>
+        <label><input type="radio" name="q2" value="a"> They can change native code</label>
+        <label><input type="radio" name="q2" value="b"> They don't require store review and are delivered instantly</label>
+        <label><input type="radio" name="q2" value="c"> They are always free to use</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What happens when you run eas update:rollback?</strong></p>
+        <label><input type="radio" name="q3" value="a"> The app is uninstalled from user devices</label>
+        <label><input type="radio" name="q3" value="b"> The previous OTA update is restored on affected devices</label>
+        <label><input type="radio" name="q3" value="c"> The app store listing is updated</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Push an OTA Update with EAS Update</h3>
+        <p>Practice pushing an over-the-air update to your React Native app:</p>
+        <pre><code># Step 1: Make a visible change in your app
+# Edit App.js to change the welcome message
+# Change "Welcome to My App" to "Updated! Welcome to My App v2"
+
+# Step 2: Push the OTA update
+eas update --branch production --message "Update: change welcome message"
+
+# Step 3: Verify the update was published
+eas update:list --branch production
+
+# Step 4: Test the update on a device
+# Open your app — the change should appear automatically
+
+# Step 5: Practice rollback
+eas update:rollback --branch production
+
+# Step 6: Verify rollback worked
+# The original message should be restored</code></pre>
+        <p>This exercise demonstrates how quickly you can deploy fixes without waiting for app store review.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>OTA updates deliver JavaScript-only changes directly to devices without app store review</li>
+        <li>They cannot modify native code, native modules, or dependencies requiring native compilation</li>
+        <li>EAS Update uses branches to organize and target updates to specific build channels</li>
+        <li>Rollbacks are instant and can be triggered with <code>eas update:rollback</code></li>
+        <li>OTA updates are ideal for bug fixes, content updates, and UI tweaks</li>
+        <li>Always test updates in staging environments before pushing to production</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>EAS Update Guide</strong> — Complete documentation for implementing OTA updates in your React Native app. <a href="https://docs.expo.dev/eas-update/introduction/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

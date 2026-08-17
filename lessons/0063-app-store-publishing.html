@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 63: App Store Publishing with EAS</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 63: App Store Publishing with EAS</h1>
+      <p><em>Phase 8 — Production Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn how to configure EAS Build, create optimized build profiles, and submit your React Native app to the Apple App Store and Google Play Store.</div>
+
+      <h2>Setting Up EAS Build</h2>
+      <p>EAS (Expo Application Services) Build is a cloud build service that compiles your React Native app into installable binaries for iOS and Android. It handles the complexity of native build environments so you don't need a Mac for iOS builds.</p>
+
+      <h3>Installation and Configuration</h3>
+      <pre><code># Install the EAS CLI globally
+npm install -g eas-cli
+
+# Log in to your Expo account
+eas login
+
+# Navigate to your project and configure EAS
+cd my-app
+eas build:configure</code></pre>
+
+      <p>This creates an <code>eas.json</code> file in your project root with default build profiles.</p>
+
+      <h2>Understanding Build Profiles</h2>
+      <p>Build profiles define different configurations for various purposes. The default eas.json includes three profiles:</p>
+
+      <pre><code>{
+  "cli": {
+    "version": "&gt;= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "ios": {
+        "simulator": true
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false
+      }
+    },
+    "production": {
+      "autoIncrement": true
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "your-apple-id@email.com",
+        "ascAppId": "your-app-store-connect-app-id"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./google-services.json"
+      }
+    }
+  }
+}</code></pre>
+
+      <h3>Profile Breakdown</h3>
+      <ul>
+        <li><strong>development</strong> — Dev client builds for internal testing with debugging tools enabled</li>
+        <li><strong>preview</strong> — TestFlight/Play Internal Testing builds for broader internal testing</li>
+        <li><strong>production</strong> — Final release builds optimized for App Store and Play Store submission</li>
+      </ul>
+
+      <h2>Building Your App</h2>
+      <pre><code># Development build (for testing with dev tools)
+eas build --profile development --platform ios
+eas build --profile development --platform android
+
+# Preview build (for TestFlight / Internal Testing)
+eas build --profile preview --platform all
+
+# Production build (for store submission)
+eas build --profile production --platform all</code></pre>
+
+      <h2>Store Listing Requirements</h2>
+      <p>Before submitting, prepare your store listings with:</p>
+
+      <h3>Apple App Store</h3>
+      <ul>
+        <li>App name (up to 30 characters)</li>
+        <li>Subtitle (up to 30 characters)</li>
+        <li>Description (up to 4000 characters)</li>
+        <li>Keywords (up to 100 characters, comma-separated)</li>
+        <li>Screenshots for all required device sizes</li>
+        <li>App icon (1024x1024px)</li>
+        <li>Privacy policy URL</li>
+        <li>Support URL</li>
+      </ul>
+
+      <h3>Google Play Store</h3>
+      <ul>
+        <li>App title (up to 30 characters)</li>
+        <li>Short description (up to 80 characters)</li>
+        <li>Full description (up to 4000 characters)</li>
+        <li>Screenshots (min 2, max 8 per device type)</li>
+        <li>Feature graphic (1024x500px)</li>
+        <li>App icon (512x512px)</li>
+        <li>Privacy policy URL</li>
+      </ul>
+
+      <h2>Submitting Your App</h2>
+      <pre><code># Submit to App Store Connect (iOS)
+eas submit --platform ios --profile production
+
+# Submit to Google Play Console (Android)
+eas submit --platform android --profile production
+
+# Submit to both stores
+eas submit --platform all --profile production</code></pre>
+
+      <h2>Submission Checklist</h2>
+      <ol>
+        <li>Run your app in production mode and test all features</li>
+        <li>Verify your app icon and splash screen look correct</li>
+        <li>Test on multiple device sizes and orientations</li>
+        <li>Ensure all required store listing assets are ready</li>
+        <li>Set up your app's privacy policy and support URLs</li>
+        <li>Configure in-app purchases if applicable</li>
+        <li>Review platform-specific guidelines (Apple Human Interface Guidelines, Material Design)</li>
+      </ol>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. Which EAS build profile is used for TestFlight testing?</strong></p>
+        <label><input type="radio" name="q1" value="a"> development</label>
+        <label><input type="radio" name="q1" value="b"> preview</label>
+        <label><input type="radio" name="q1" value="c"> production</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. What command initializes EAS Build configuration in your project?</strong></p>
+        <label><input type="radio" name="q2" value="a"> eas init</label>
+        <label><input type="radio" name="q2" value="b"> eas build:configure</label>
+        <label><input type="radio" name="q2" value="c"> expo setup</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What is the maximum character limit for an App Store app name?</strong></p>
+        <label><input type="radio" name="q3" value="a"> 50 characters</label>
+        <label><input type="radio" name="q3" value="b"> 30 characters</label>
+        <label><input type="radio" name="q3" value="c"> 100 characters</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Configure EAS Build for Your Project</h3>
+        <p>Set up EAS Build with custom build profiles for your React Native project:</p>
+        <pre><code># Step 1: Install EAS CLI
+npm install -g eas-cli
+
+# Step 2: Login to Expo
+eas login
+
+# Step 3: Initialize EAS in your project
+eas build:configure
+
+# Step 4: Customize eas.json with your profiles
+cat &lt;&lt;EOF &gt; eas.json
+{
+  "cli": { "version": "&gt;= 5.0.0" },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "staging": {
+      "env": {
+        "APP_ENV": "staging"
+      },
+      "distribution": "internal"
+    },
+    "production": {
+      "env": {
+        "APP_ENV": "production"
+      },
+      "autoIncrement": true
+    }
+  }
+}
+EOF
+
+# Step 5: Build a preview version
+eas build --profile preview --platform android</code></pre>
+        <p>Verify the build completes and download the installable binary from the EAS dashboard.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>EAS Build provides cloud-based compilation for React Native apps on iOS and Android</li>
+        <li>Build profiles (development, preview, production) configure builds for different purposes</li>
+        <li><code>eas build:configure</code> generates the eas.json configuration file</li>
+        <li>Prepare store listings with screenshots, descriptions, icons, and privacy policies before submission</li>
+        <li><code>eas submit</code> uploads your build directly to App Store Connect or Google Play Console</li>
+        <li>Always test thoroughly in preview mode before submitting to production</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>EAS Build Documentation</strong> — Official Expo guide for building and submitting apps with EAS. <a href="https://docs.expo.dev/build/introduction/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
