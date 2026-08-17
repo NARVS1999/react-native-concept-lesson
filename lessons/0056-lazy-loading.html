@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 56: Lazy Loading</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 56: Lazy Loading</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand React.lazy and Suspense for code splitting, learn dynamic imports, implement route-based splitting, and handle loading states effectively in React Native apps.</div>
+
+      <h2>Why Lazy Loading?</h2>
+      <p>In a typical React Native app, all screen components are bundled together. As the app grows, the initial bundle size increases, slowing down startup. Lazy loading defers loading of non-critical components until they're actually needed.</p>
+
+      <h2>React.lazy and Suspense</h2>
+      <p><code>React.lazy</code> lets you render a dynamic import as a regular component. <code>Suspense</code> shows a fallback UI while the lazy component loads.</p>
+
+<pre><code>import React, { Suspense, lazy } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+
+// Dynamic import — code is split into a separate bundle
+const HeavyScreen = lazy(() =&gt; import('./screens/HeavyScreen'));
+const SettingsScreen = lazy(() =&gt; import('./screens/SettingsScreen'));
+const ProfileScreen = lazy(() =&gt; import('./screens/ProfileScreen'));
+
+const App = () =&gt; (
+  &lt;Suspense fallback={
+    &lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+      &lt;ActivityIndicator size="large" color="#007AFF" /&gt;
+      &lt;Text&gt;Loading...&lt;/Text&gt;
+    &lt;/View&gt;
+  }&gt;
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Heavy" component={HeavyScreen} /&gt;
+        &lt;Stack.Screen name="Settings" component={SettingsScreen} /&gt;
+        &lt;Stack.Screen name="Profile" component={ProfileScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  &lt;/Suspense&gt;
+);</code></pre>
+
+      <h2>Dynamic Imports</h2>
+      <p>Dynamic imports use <code>import()</code> syntax which returns a Promise. React.lazy wraps this to create a lazy-loaded component.</p>
+
+<pre><code>// Static import (included in main bundle)
+import HeavyComponent from './HeavyComponent';
+
+// Dynamic import (split into separate chunk)
+const HeavyComponent = lazy(() =&gt; import('./HeavyComponent'));
+
+// Named exports with dynamic import
+const HeavyComponent = lazy(() =&gt;
+  import('./HeavyComponent').then(module =&gt; ({
+    default: module.HeavyComponent,
+  }))
+);
+
+// Multiple named exports
+const { HeavyComponent, LightComponent } = await import('./Components');</code></pre>
+
+      <h2>Code Splitting Strategy</h2>
+      <p>Identify which components are loaded upfront vs. on demand. Route-based splitting is the most common strategy.</p>
+
+<pre><code>// Split by route — only load screens when navigating to them
+const HomeScreen = lazy(() =&gt; import('./screens/HomeScreen'));
+const DetailScreen = lazy(() =&gt; import('./screens/DetailScreen'));
+const SettingsScreen = lazy(() =&gt; import('./screens/SettingsScreen'));
+const ProfileScreen = lazy(() =&gt; import('./screens/ProfileScreen'));
+
+// Split by feature — load feature modules on demand
+const ChatFeature = lazy(() =&gt; import('./features/Chat'));
+const PaymentFeature = lazy(() =&gt; import('./features/Payment'));
+const AnalyticsFeature = lazy(() =&gt; import('./features/Analytics'));</code></pre>
+
+      <h2>Loading States</h2>
+      <p>Handle loading and error states gracefully with Suspense boundaries and error boundaries.</p>
+
+<pre><code>import React, { Suspense, lazy, Component } from 'react';
+
+// Error boundary for lazy loading failures
+class LazyErrorBoundary extends Component {
+  state = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        &lt;View style={styles.errorContainer}&gt;
+          &lt;Text style={styles.errorText}&gt;Failed to load component&lt;/Text&gt;
+          &lt;Button
+            title="Retry"
+            onPress={() =&gt; this.setState({ hasError: false })}
+          /&gt;
+        &lt;/View&gt;
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const App = () =&gt; (
+  &lt;LazyErrorBoundary&gt;
+    &lt;Suspense fallback={&lt;LoadingSpinner /&gt;}&gt;
+      &lt;NavigationContainer&gt;
+        {/* ... routes ... */}
+      &lt;/NavigationContainer&gt;
+    &lt;/Suspense&gt;
+  &lt;/LazyErrorBoundary&gt;
+);</code></pre>
+
+      <h2>Route-Based Splitting with React Navigation</h2>
+<pre><code>import React, { Suspense, lazy } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+const HomeScreen = lazy(() =&gt; import('./screens/HomeScreen'));
+const DetailScreen = lazy(() =&gt; import('./screens/DetailScreen'));
+const SettingsScreen = lazy(() =&gt; import('./screens/SettingsScreen'));
+
+const AppNavigator = () =&gt; (
+  &lt;Suspense fallback={&lt;LoadingView /&gt;}&gt;
+    &lt;Stack.Navigator&gt;
+      &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+      &lt;Stack.Screen name="Detail" component={DetailScreen} /&gt;
+      &lt;Stack.Screen name="Settings" component={SettingsScreen} /&gt;
+    &lt;/Stack.Navigator&gt;
+  &lt;/Suspense&gt;
+);</code></pre>
+
+      <h2>Preloading Components</h2>
+      <p>You can preload lazy components during idle time to avoid loading delays.</p>
+
+<pre><code>// Preload a component (call this on app startup or during idle time)
+const preloadDetailScreen = () =&gt; {
+  // Trigger the dynamic import to start loading
+  import('./screens/DetailScreen');
+};
+
+// In a touchable component, preload on press-in
+&lt;TouchableOpacity
+  onPressIn={preloadDetailScreen}
+  onPress={() =&gt; navigation.navigate('Detail')}
+&gt;
+  &lt;Text&gt;View Details&lt;/Text&gt;
+&lt;/TouchableOpacity&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What does React.lazy do?</p>
+        <label><input type="radio" name="q1" value="a"> It makes components render faster</label>
+        <label><input type="radio" name="q1" value="b"> It lets you render a dynamic import as a regular component</label>
+        <label><input type="radio" name="q1" value="c"> It caches component state in memory</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. What component shows a fallback while a lazy component loads?</p>
+        <label><input type="radio" name="q2" value="a"> ErrorBoundary</label>
+        <label><input type="radio" name="q2" value="b"> Suspense</label>
+        <label><input type="radio" name="q2" value="c"> Fragment</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. Which approach defers loading of non-critical components?</p>
+        <label><input type="radio" name="q3" value="a"> Eager loading all components upfront</label>
+        <label><input type="radio" name="q3" value="b"> Lazy loading with React.lazy and dynamic imports</label>
+        <label><input type="radio" name="q3" value="c"> Static bundling of all screens</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Lazy Load a Heavy Screen</h3>
+<pre><code>import React, { Suspense, lazy, useState, Component } from 'react';
+import { View, Text, Button, ActivityIndicator, StyleSheet, FlatList } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+// Lazy load the heavy screen
+const HeavyScreen = lazy(() =&gt; import('./screens/HeavyScreen'));
+
+class LazyErrorBoundary extends Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) {
+      return (
+        &lt;View style={styles.center}&gt;
+          &lt;Text&gt;Failed to load. Please try again.&lt;/Text&gt;
+          &lt;Button title="Retry" onPress={() =&gt; this.setState({ hasError: false })} /&gt;
+        &lt;/View&gt;
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const HomeScreen = ({ navigation }) =&gt; (
+  &lt;View style={styles.center}&gt;
+    &lt;Text style={styles.title}&gt;Lazy Loading Demo&lt;/Text&gt;
+    &lt;Text style={styles.subtitle}&gt;HeavyScreen is loaded on demand&lt;/Text&gt;
+    &lt;Button
+      title="Open Heavy Screen"
+      onPress={() =&gt; navigation.navigate('Heavy')}
+    /&gt;
+  &lt;/View&gt;
+);
+
+const App = () =&gt; (
+  &lt;LazyErrorBoundary&gt;
+    &lt;Suspense fallback={
+      &lt;View style={styles.center}&gt;
+        &lt;ActivityIndicator size="large" color="#007AFF" /&gt;
+        &lt;Text style={{ marginTop: 10 }}&gt;Loading HeavyScreen...&lt;/Text&gt;
+      &lt;/View&gt;
+    }&gt;
+      &lt;NavigationContainer&gt;
+        &lt;Stack.Navigator&gt;
+          &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+          &lt;Stack.Screen name="Heavy" component={HeavyScreen} /&gt;
+        &lt;/Stack.Navigator&gt;
+      &lt;/NavigationContainer&gt;
+    &lt;/Suspense&gt;
+  &lt;/LazyErrorBoundary&gt;
+);
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  subtitle: { fontSize: 14, color: '#666', marginBottom: 20 },
+});
+
+export default App;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>React.lazy</code> enables code splitting by dynamically importing components</li>
+        <li><code>Suspense</code> provides a fallback UI while lazy components load</li>
+        <li>Route-based splitting is the most common code splitting strategy</li>
+        <li>Error boundaries handle lazy loading failures gracefully</li>
+        <li>Components can be preloaded during idle time for smoother navigation</li>
+        <li>Code splitting reduces initial bundle size and improves startup performance</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Docs: lazy</strong> — Official documentation on React.lazy with examples and best practices. <a href="https://react.dev/reference/react/lazy" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

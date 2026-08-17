@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 59: Memory Leaks</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 59: Memory Leaks</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Identify common causes of memory leaks in React Native (timers, listeners, subscriptions), learn proper cleanup in useEffect, understand the isMounted pattern, and profile memory usage to detect and fix leaks.</div>
+
+      <h2>What is a Memory Leak?</h2>
+      <p>A memory leak occurs when objects are allocated in memory but never released. In React Native, this commonly happens when components set up subscriptions, timers, or event listeners that aren't cleaned up when the component unmounts.</p>
+
+      <h2>Common Causes</h2>
+
+      <h3>1. Timers Not Cleared</h3>
+<pre><code>// Memory leak — timer keeps running after unmount
+const PollingComponent = () =&gt; {
+  const [data, setData] = useState(null);
+
+  useEffect(() =&gt; {
+    const fetchInterval = setInterval(() =&gt; {
+      fetch('/api/data').then(res =&gt; res.json()).then(setData);
+    }, 5000);
+
+    // Missing cleanup!
+  }, []);
+
+  return &lt;Text&gt;{data ? data.name : 'Loading...'}&lt;/Text&gt;;
+};
+
+// Fixed — timer is cleaned up
+const PollingComponent = () =&gt; {
+  const [data, setData] = useState(null);
+
+  useEffect(() =&gt; {
+    const fetchInterval = setInterval(() =&gt; {
+      fetch('/api/data').then(res =&gt; res.json()).then(setData);
+    }, 5000);
+
+    return () =&gt; clearInterval(fetchInterval);
+  }, []);
+
+  return &lt;Text&gt;{data ? data.name : 'Loading...'}&lt;/Text&gt;;
+};</code></pre>
+
+      <h3>2. Event Listeners Not Removed</h3>
+<pre><code>// Memory leak — listener persists after unmount
+const DimensionsComponent = () =&gt; {
+  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+
+  useEffect(() =&gt; {
+    const onChange = ({ window }) =&gt; setDimensions(window);
+    Dimensions.addEventListener('change', onChange);
+    // Missing cleanup!
+  }, []);
+
+  return &lt;Text&gt;{dimensions.width} x {dimensions.height}&lt;/Text&gt;;
+};
+
+// Fixed
+const DimensionsComponent = () =&gt; {
+  const [dimensions, setDimensions] = useState(Dimensions.get('window'));
+
+  useEffect(() =&gt; {
+    const subscription = Dimensions.addEventListener('change', ({ window }) =&gt; {
+      setDimensions(window);
+    });
+    return () =&gt; subscription.remove();
+  }, []);
+
+  return &lt;Text&gt;{dimensions.width} x {dimensions.height}&lt;/Text&gt;;
+};</code></pre>
+
+      <h3>3. Async Operations After Unmount</h3>
+<pre><code>// Memory leak — setState called after unmount
+const UserProfile = ({ userId }) =&gt; {
+  const [user, setUser] = useState(null);
+
+  useEffect(() =&gt; {
+    fetch(`/api/users/${userId}`)
+      .then(res =&gt; res.json())
+      .then(data =&gt; setUser(data)); // May run after unmount!
+  }, [userId]);
+
+  return user ? &lt;Text&gt;{user.name}&lt;/Text&gt; : &lt;ActivityIndicator /&gt;;
+};
+
+// Fixed — ignore updates if unmounted
+const UserProfile = ({ userId }) =&gt; {
+  const [user, setUser] = useState(null);
+
+  useEffect(() =&gt; {
+    let isMounted = true;
+
+    fetch(`/api/users/${userId}`)
+      .then(res =&gt; res.json())
+      .then(data =&gt; {
+        if (isMounted) setUser(data);
+      });
+
+    return () =&gt; { isMounted = false; };
+  }, [userId]);
+
+  return user ? &lt;Text&gt;{user.name}&lt;/Text&gt; : &lt;ActivityIndicator /&gt;;
+};</code></pre>
+
+      <h3>4. WebSocket Connections</h3>
+<pre><code>// Memory leak — WebSocket not closed
+const ChatComponent = () =&gt; {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() =&gt; {
+    const ws = new WebSocket('wss://example.com/chat');
+    ws.onmessage = (event) =&gt; {
+      setMessages(prev =&gt; [...prev, JSON.parse(event.data)]);
+    };
+    // Missing cleanup!
+  }, []);
+
+  return &lt;Text&gt;{messages.length} messages&lt;/Text&gt;;
+};
+
+// Fixed
+const ChatComponent = () =&gt; {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() =&gt; {
+    const ws = new WebSocket('wss://example.com/chat');
+    ws.onmessage = (event) =&gt; {
+      setMessages(prev =&gt; [...prev, JSON.parse(event.data)]);
+    };
+    return () =&gt; ws.close();
+  }, []);
+
+  return &lt;Text&gt;{messages.length} messages&lt;/Text&gt;;
+};</code></pre>
+
+      <h2>The Cleanup Function</h2>
+      <p>The useEffect cleanup function runs when the component unmounts or before the effect re-runs. Always return a cleanup function when your effect sets up subscriptions, timers, or connections.</p>
+
+<pre><code>useEffect(() =&gt; {
+  // Setup
+  const timer = setInterval(tick, 1000);
+  const unsubscribe = EventEmitter.on('event', handler);
+  const ws = new WebSocket(url);
+  const subscription = Keyboard.addListener('show', onShow);
+
+  // Cleanup — all of these will be called on unmount
+  return () =&gt; {
+    clearInterval(timer);
+    unsubscribe();
+    ws.close();
+    subscription.remove();
+  };
+}, [dependencies]);</code></pre>
+
+      <h2>Profiling Memory Usage</h2>
+      <p>Use the React Native Performance Monitor or Flipper to track memory usage over time.</p>
+
+<pre><code>// Monitor memory in development
+import { NativeModules } from 'react-native';
+
+// iOS: Use Instruments or Xcode Memory Graph
+// Android: Use Android Studio Profiler or adb commands
+
+// JavaScript memory profiling
+console.log('Memory usage:', performance.memory?.usedJSHeapSize);
+
+// Track component mount/unmount
+useEffect(() =&gt; {
+  console.log('Component mounted');
+  return () =&gt; console.log('Component unmounted — check for leaks');
+}, []);</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What is the most common cause of memory leaks in React Native?</p>
+        <label><input type="radio" name="q1" value="a"> Using too many components</label>
+        <label><input type="radio" name="q1" value="b"> Not cleaning up timers, listeners, and subscriptions in useEffect</label>
+        <label><input type="radio" name="q1" value="c"> Using Redux for state management</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. When does the useEffect cleanup function run?</p>
+        <label><input type="radio" name="q2" value="a"> Only when the component first mounts</label>
+        <label><input type="radio" name="q2" value="b"> When the component unmounts or before the effect re-runs</label>
+        <label><input type="radio" name="q2" value="c"> Every time the component re-renders</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. What is the isMounted pattern used for?</p>
+        <label><input type="radio" name="q3" value="a"> Preventing initial render</label>
+        <label><input type="radio" name="q3" value="b"> Avoiding setState calls after a component has unmounted</label>
+        <label><input type="radio" name="q3" value="c"> Tracking whether a component is visible on screen</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Fix Memory Leaks in a Component</h3>
+<pre><code>import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, TextInput, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+
+// Fixed component with proper cleanup
+const ChatScreen = () =&gt; {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+  const [isConnected, setIsConnected] = useState(false);
+  const wsRef = useRef(null);
+  const intervalRef = useRef(null);
+
+  useEffect(() =&gt; {
+    let isMounted = true;
+
+    // WebSocket connection
+    const ws = new WebSocket('wss://echo.websocket.org');
+    wsRef.current = ws;
+
+    ws.onopen = () =&gt; {
+      if (isMounted) setIsConnected(true);
+    };
+
+    ws.onmessage = (event) =&gt; {
+      if (isMounted) {
+        setMessages(prev =&gt; [...prev, {
+          id: Date.now().toString(),
+          text: event.data,
+          isMe: false,
+        }]);
+      }
+    };
+
+    ws.onerror = () =&gt; {
+      if (isMounted) setIsConnected(false);
+    };
+
+    // Polling for connection status
+    intervalRef.current = setInterval(() =&gt; {
+      if (isMounted && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
+
+    return () =&gt; {
+      isMounted = false;
+      ws.close();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const sendMessage = useCallback(() =&gt; {
+    if (!input.trim() || !wsRef.current) return;
+
+    const message = {
+      id: Date.now().toString(),
+      text: input.trim(),
+      isMe: true,
+    };
+
+    setMessages(prev =&gt; [...prev, message]);
+    wsRef.current.send(input.trim());
+    setInput('');
+  }, [input]);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.title}&gt;Chat (Fixed)&lt;/Text&gt;
+        &lt;View style={[
+          styles.statusDot,
+          { backgroundColor: isConnected ? '#4CAF50' : '#F44336' }
+        ]} /&gt;
+      &lt;/View&gt;
+
+      &lt;FlatList
+        data={messages}
+        keyExtractor={(item) =&gt; item.id}
+        renderItem={({ item }) =&gt; (
+          &lt;View style={[
+            styles.message,
+            item.isMe ? styles.myMessage : styles.theirMessage,
+          ]}&gt;
+            &lt;Text style={styles.messageText}&gt;{item.text}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+        style={styles.messageList}
+      /&gt;
+
+      &lt;View style={styles.inputRow}&gt;
+        &lt;TextInput
+          style={styles.input}
+          placeholder="Type a message..."
+          value={input}
+          onChangeText={setInput}
+        /&gt;
+        &lt;TouchableOpacity style={styles.sendBtn} onPress={sendMessage}&gt;
+          &lt;Text style={styles.sendText}&gt;Send&lt;/Text&gt;
+        &lt;/TouchableOpacity&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 15, backgroundColor: '#007AFF' },
+  title: { fontSize: 20, fontWeight: 'bold', color: '#fff', flex: 1 },
+  statusDot: { width: 10, height: 10, borderRadius: 5 },
+  messageList: { flex: 1, padding: 10 },
+  message: { maxWidth: '80%', padding: 10, borderRadius: 12, marginBottom: 8 },
+  myMessage: { alignSelf: 'flex-end', backgroundColor: '#007AFF' },
+  theirMessage: { alignSelf: 'flex-start', backgroundColor: '#e0e0e0' },
+  messageText: { color: '#fff', fontSize: 15 },
+  inputRow: { flexDirection: 'row', padding: 10, gap: 10 },
+  input: { flex: 1, backgroundColor: '#fff', borderRadius: 20, paddingHorizontal: 15, borderWidth: 1, borderColor: '#ddd' },
+  sendBtn: { backgroundColor: '#007AFF', borderRadius: 20, paddingHorizontal: 20, justifyContent: 'center' },
+  sendText: { color: '#fff', fontWeight: '600' },
+});
+
+export default ChatScreen;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Memory leaks occur when timers, listeners, or subscriptions aren't cleaned up on unmount</li>
+        <li>Always return a cleanup function from useEffect when setting up side effects</li>
+        <li>The isMounted pattern prevents setState calls after unmount</li>
+        <li>Use ref to hold WebSocket instances and close them in cleanup</li>
+        <li>Profile memory usage with React Native Performance Monitor or Flipper</li>
+        <li>Common culprits: setInterval, EventEmitter, WebSocket, Dimensions.addEventListener</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Docs: Synchronizing with Effects</strong> — Official guide on effect cleanup and preventing memory leaks. <a href="https://react.dev/learn/synchronizing-with-effects" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

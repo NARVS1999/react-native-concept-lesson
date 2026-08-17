@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 54: Memoization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 54: Memoization</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand React.memo and useMemo hooks, learn when and how to apply memoization to optimize re-renders, and profile performance before and after applying memoization techniques.</div>
+
+      <h2>What is Memoization?</h2>
+      <p>Memoization is an optimization technique where the result of a function call is cached and returned directly when the same inputs occur again. In React, memoization prevents unnecessary re-renders of components and re-computation of expensive values.</p>
+
+      <h3>React.memo</h3>
+      <p><code>React.memo</code> is a higher-order component that wraps a functional component. It skips re-rendering a component when its props haven't changed (shallow comparison by default).</p>
+
+<pre><code>import React from 'react';
+
+// Without React.memo — re-renders every time parent re-renders
+const UserCard = ({ name, email }) => {
+  console.log('UserCard rendered for', name);
+  return (
+    &lt;View style={styles.card}&gt;
+      &lt;Text style={styles.name}&gt;{name}&lt;/Text&gt;
+      &lt;Text style={styles.email}&gt;{email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+};
+
+// With React.memo — only re-renders when name or email changes
+const MemoizedUserCard = React.memo(({ name, email }) => {
+  console.log('MemoizedUserCard rendered for', name);
+  return (
+    &lt;View style={styles.card}&gt;
+      <Text style={styles.name}>{name}</Text>
+      <Text style={styles.email}>{email}</Text>
+    &lt;/View&gt;
+  );
+});
+
+export default MemoizedUserCard;</code></pre>
+
+      <h3>Custom Comparison Function</h3>
+      <p>By default, React.memo uses shallow comparison. You can provide a custom function for deeper comparisons:</p>
+
+<pre><code>const MemoizedList = React.memo(
+  ({ items, onSelect }) => {
+    return (
+      &lt;FlatList
+        data={items}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          &lt;TouchableOpacity onPress={() => onSelect(item.id)}&gt;
+            &lt;Text&gt;{item.name}&lt;/Text&gt;
+          &lt;/TouchableOpacity&gt;
+        )}
+      /&gt;
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if items length or selectedId changed
+    return (
+      prevProps.items.length === nextProps.items.length &&
+      prevProps.selectedId === nextProps.selectedId
+    );
+  }
+);</code></pre>
+
+      <h2>useMemo Hook</h2>
+      <p><code>useMemo</code> caches the result of an expensive computation between renders. It takes a function and a dependency array — the computation only re-runs when dependencies change.</p>
+
+<pre><code>import React, { useMemo, useState } from 'react';
+
+const FilteredList = ({ items }) => {
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState('name');
+
+  // Without useMemo — recalculates on every render
+  // const filteredItems = items
+  //   .filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
+  //   .sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
+
+  // With useMemo — only recalculates when items, search, or sortBy changes
+  const filteredItems = useMemo(() => {
+    console.log('Computing filtered items...');
+    return items
+      .filter(item => item.name.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => a[sortBy].localeCompare(b[sortBy]));
+  }, [items, search, sortBy]);
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput
+        placeholder="Search..."
+        value={search}
+        onChangeText={setSearch}
+      /&gt;
+      &lt;FlatList
+        data={filteredItems}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => &lt;Text&gt;{item.name}&lt;/Text&gt;}
+      /&gt;
+    &lt;/View&gt;
+  );
+};</code></pre>
+
+      <h2>useMemo vs React.memo</h2>
+      <table>
+        <thead><tr><th>Feature</th><th>React.memo</th><th>useMemo</th></tr></thead>
+        <tbody>
+          <tr><td>Purpose</td><td>Prevents component re-render</td><td>Caches computed values</td></tr>
+          <tr><td>Usage</td><td>Wraps entire component</td><td>Inside a component</td></tr>
+          <tr><td>Returns</td><td>Memoized component</td><td>Cached value</td></tr>
+          <tr><td>Best for</td><td>Child components receiving stable props</td><td>Expensive calculations</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Performance Profiling Before/After</h2>
+      <p>React Native provides a built-in Profiler. You can also use <code>console.time</code> and the React DevTools Profiler.</p>
+
+<pre><code>import React, { Profiler } from 'react';
+
+const onRenderCallback = (
+  id,
+  phase,
+  actualDuration,
+  baseDuration,
+  startTime,
+  commitTime
+) => {
+  console.log(`Component "${id}" ${phase}:`);
+  console.log(`  Actual duration: ${actualDuration.toFixed(2)}ms`);
+  console.log(`  Base duration: ${baseDuration.toFixed(2)}ms`);
+};
+
+// Wrap your component tree
+const App = () => (
+  &lt;Profiler id="ItemList" onRender={onRenderCallback}&gt;
+    &lt;ItemList items={items} /&gt;
+  &lt;/Profiler&gt;
+);</code></pre>
+
+      <h2>Avoiding Premature Optimization</h2>
+      <div class="warning"><strong>Warning:</strong> Don't memoize everything. Memoization adds overhead. Only apply it when you've identified a performance problem through profiling.</div>
+      <ul>
+        <li>Profile first — measure before and after</li>
+        <li>Memoize components that receive new object/array references on every parent render</li>
+        <li>Memoize expensive computations (filtering, sorting, complex math)</li>
+        <li>Don't wrap simple components in React.memo — the comparison cost may exceed re-render cost</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What does React.memo do?</p>
+        <label><input type="radio" name="q1" value="a"> It caches the component's state between renders</label>
+        <label><input type="radio" name="q1" value="b"> It prevents re-rendering a component when its props haven't changed</label>
+        <label><input type="radio" name="q1" value="c"> It replaces useState with a cached value</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. What comparison does React.memo use by default?</p>
+        <label><input type="radio" name="q2" value="a"> Deep comparison</label>
+        <label><input type="radio" name="q2" value="b"> Shallow comparison</label>
+        <label><input type="radio" name="q2" value="c"> Strict equality (===)</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. When should you apply memoization?</p>
+        <label><input type="radio" name="q3" value="a"> On every component by default</label>
+        <label><input type="radio" name="q3" value="b"> After profiling identifies a performance bottleneck</label>
+        <label><input type="radio" name="q3" value="c"> Only when using class components</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Optimize a List with React.memo</h3>
+<pre><code>import React, { useState, useMemo } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+
+const TodoItem = React.memo(({ item, onToggle }) => (
+  &lt;TouchableOpacity style={styles.item} onPress={() =&gt; onToggle(item.id)}&gt;
+    &lt;Text style={[styles.text, item.done &amp;&amp; styles.done]}&gt;
+      {item.done ? '✓' : '○'} {item.title}
+    &lt;/Text&gt;
+  &lt;/TouchableOpacity&gt;
+));
+
+const App = () => {
+  const [todos, setTodos] = useState([
+    { id: '1', title: 'Learn React.memo', done: false },
+    { id: '2', title: 'Learn useMemo', done: false },
+    { id: '3', title: 'Build a todo app', done: true },
+    { id: '4', title: 'Practice memoization', done: false },
+  ]);
+  const [filter, setFilter] = useState('all');
+
+  const toggleTodo = (id) =&gt; {
+    setTodos(prev =&gt;
+      prev.map(t =&gt; (t.id === id ? { ...t, done: !t.done } : t))
+    );
+  };
+
+  const filteredTodos = useMemo(() =&gt; {
+    switch (filter) {
+      case 'done': return todos.filter(t =&gt; t.done);
+      case 'pending': return todos.filter(t =&gt; !t.done);
+      default: return todos;
+    }
+  }, [todos, filter]);
+
+  const stats = useMemo(() =&gt; ({
+    total: todos.length,
+    done: todos.filter(t =&gt; t.done).length,
+    pending: todos.filter(t =&gt; !t.done).length,
+  }), [todos]);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Optimized Todo List&lt;/Text&gt;
+      &lt;Text style={styles.stats}&gt;
+        Total: {stats.total} | Done: {stats.done} | Pending: {stats.pending}
+      &lt;/Text&gt;
+      &lt;View style={styles.filters}&gt;
+        {['all', 'done', 'pending'].map(f =&gt; (
+          &lt;TouchableOpacity
+            key={f}
+            style={[styles.filterBtn, filter === f &amp;&amp; styles.activeFilter]}
+            onPress={() =&gt; setFilter(f)}
+          &gt;
+            &lt;Text style={styles.filterText}&gt;{f.toUpperCase()}&lt;/Text&gt;
+          &lt;/TouchableOpacity&gt;
+        ))}
+      &lt;/View&gt;
+      &lt;FlatList
+        data={filteredTodos}
+        keyExtractor={(item) =&gt; item.id}
+        renderItem={({ item }) =&gt; (
+          &lt;TodoItem item={item} onToggle={toggleTodo} /&gt;
+        )}
+      /&gt;
+    &lt;/View&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 10 },
+  stats: { fontSize: 14, color: '#666', marginBottom: 15 },
+  filters: { flexDirection: 'row', marginBottom: 15, gap: 10 },
+  filterBtn: { padding: 8, borderRadius: 6, backgroundColor: '#ddd' },
+  activeFilter: { backgroundColor: '#007AFF' },
+  filterText: { color: '#fff', fontWeight: '600' },
+  item: { padding: 15, backgroundColor: '#fff', borderRadius: 8, marginBottom: 8 },
+  text: { fontSize: 16 },
+  done: { textDecorationLine: 'line-through', color: '#999' },
+});
+
+export default App;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>React.memo</code> prevents unnecessary re-renders by shallow-comparing props</li>
+        <li><code>useMemo</code> caches expensive computations between renders</li>
+        <li>Both rely on dependency/reference stability to work effectively</li>
+        <li>Always profile performance before applying memoization</li>
+        <li>Avoid premature optimization — memoization adds its own overhead</li>
+        <li>Custom comparison functions can be passed to React.memo for deeper checks</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Docs: useMemo</strong> — Official React documentation on the useMemo hook with examples and best practices. <a href="https://react.dev/reference/react/useMemo" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

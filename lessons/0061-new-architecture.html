@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 61: New Architecture</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 61: New Architecture</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand the React Native New Architecture including Fabric renderer, Turbo Modules, JSI, and Codegen. Learn the migration path from the old architecture and assess compatibility with existing libraries.</div>
+
+      <h2>Overview of the New Architecture</h2>
+      <p>React Native's New Architecture replaces the old Bridge-based communication with a modern, synchronous, and more efficient system. It consists of four key pillars: Fabric, Turbo Modules, JSI, and Codegen.</p>
+
+      <h2>The Bridge Problem</h2>
+      <p>The old architecture uses an asynchronous JSON bridge to communicate between JavaScript and native code. This causes performance bottlenecks.</p>
+
+<pre><code>// Old Architecture (Bridge)
+// JS → JSON serialization → Bridge → Native → JSON response → Bridge → JS
+// Asynchronous, string-based, overhead on every call
+
+// Problem: Layout calculations, gestures, and animations
+// require frequent JS-native communication
+// Bridge becomes a bottleneck</code></pre>
+
+      <h2>JavaScript Interface (JSI)</h2>
+      <p>JSI replaces the Bridge with a direct, synchronous interface between JavaScript and native code. It allows JS to hold references to native objects.</p>
+
+<pre><code>// JSI allows synchronous calls
+// JS can directly invoke native methods without serialization
+
+// Before (Bridge): async, JSON-based
+NativeModules.MyModule.doSomething(data)
+  .then(result => console.log(result));
+
+// After (JSI): synchronous, direct reference
+const result = global.MyModule.doSomething(data);
+console.log(result); // Available immediately</code></pre>
+
+      <h2>Fabric Renderer</h2>
+      <p>Fabric is the new rendering system that enables synchronous layout calculations and concurrent rendering. It replaces the old Shadow Tree with a more efficient architecture.</p>
+
+<pre><code>// Fabric benefits:
+// 1. Synchronous layout — no more layout thrashing
+// 2. Concurrent rendering — UI stays responsive
+// 3. Simpler shadow tree — easier to reason about
+// 4. Better support for React 18 features (concurrent mode)
+
+// Fabric enables:
+// - Synchronous state updates
+// - Immediate layout measurements
+// - Better animation performance
+// - Concurrent rendering support</code></pre>
+
+      <h2>Turbo Modules</h2>
+      <p>Turbo Modules replace the old NativeModules system. They support lazy loading, type safety via Codegen, and synchronous access through JSI.</p>
+
+<pre><code>// TurboModule definition (TypeScript)
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  // Synchronous methods
+  getConstants(): { [key: string]: string | number | boolean };
+  doSomethingSync(value: string): string;
+
+  // Async methods (still supported)
+  doSomethingAsync(value: string): Promise&lt;string&gt;;
+}
+
+export default TurboModuleRegistry.getEnforcing&lt;Spec&gt;('MyModule');</code></pre>
+
+      <h2>Codegen</h2>
+      <p>Codegen generates type-safe native interfaces from TypeScript/Flow specs. It ensures JS and native code agree on method signatures and types.</p>
+
+<pre><code>// Codegen process:
+// 1. Write TurboModule spec in TypeScript
+// 2. Codegen generates native interfaces
+// 3. Native code implements the generated interface
+// 4. Type safety is guaranteed across the bridge
+
+// Benefits:
+// - Compile-time type checking
+// - Auto-generated native code
+// - No runtime type mismatches
+// - Better developer experience</code></pre>
+
+      <h2>Migration Path</h2>
+      <p>Migrating to the New Architecture is incremental. You can enable it without rewriting your entire app.</p>
+
+<pre><code>// Step 1: Enable New Architecture in your project
+// Android: android/gradle.properties
+newArchEnabled=true
+
+// iOS: ios/Podfile
+ENV['RCT_NEW_ARCH_ENABLED'] = '1'
+
+// Step 2: Update dependencies
+// Most popular libraries support New Architecture
+// Check compatibility before upgrading
+
+// Step 3: Migrate NativeModules to TurboModules
+// Start with simple modules, then migrate complex ones
+
+// Step 4: Test thoroughly
+// New Architecture may expose existing bugs</code></pre>
+
+      <h2>Library Compatibility</h2>
+      <table>
+        <thead><tr><th>Library</th><th>Old Arch</th><th>New Arch</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>React Navigation</td><td>Yes</td><td>Yes</td><td>Supported via react-native-screens</td></tr>
+          <tr><td>React Native Reanimated</td><td>Yes</td><td>Yes</td><td>Full Fabric support</td></tr>
+          <tr><td>React Native Gesture Handler</td><td>Yes</td><td>Yes</td><td>Native gesture support</td></tr>
+          <tr><td>Async Storage</td><td>Yes</td><td>Yes</td><td>TurboModule enabled</td></tr>
+          <tr><td>Custom Native Modules</td><td>Yes</td><td>Needs migration</td><td>Rewrite as TurboModules</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What does JSI replace in the old architecture?</p>
+        <label><input type="radio" name="q1" value="a"> The React reconciler</label>
+        <label><input type="radio" name="q1" value="b"> The asynchronous JSON bridge</label>
+        <label><input type="radio" name="q1" value="c"> The native module system</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. What is the main benefit of Fabric over the old renderer?</p>
+        <label><input type="radio" name="q2" value="a"> Simpler API for developers</label>
+        <label><input type="radio" name="q2" value="b"> Synchronous layout calculations and concurrent rendering</label>
+        <label><input type="radio" name="q2" value="c"> Support for older React Native versions</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. What does Codegen produce from TurboModule specs?</p>
+        <label><input type="radio" name="q3" value="a"> Runtime JavaScript code</label>
+        <label><input type="radio" name="q3" value="b"> Type-safe native interfaces for both platforms</label>
+        <label><input type="radio" name="q3" value="c"> Bundle optimization reports</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Research New Architecture Adoption Status</h3>
+<pre><code>import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, StyleSheet, Linking, TouchableOpacity } from 'react-native';
+
+const RESOURCES = [
+  {
+    id: '1',
+    title: 'React Native New Architecture Docs',
+    description: 'Official documentation on the New Architecture, migration guides, and troubleshooting.',
+    url: 'https://reactnative.dev/docs/new-architecture',
+  },
+  {
+    id: '2',
+    title: 'Fabric Renderer',
+    description: 'Deep dive into the Fabric rendering system and its benefits.',
+    url: 'https://github.com/reactwg/react-native-new-architecture',
+  },
+  {
+    id: '3',
+    title: 'TurboModules Guide',
+    description: 'How to create and migrate to Turbo Modules.',
+    url: 'https://reactnative.dev/docs/turbo-modules',
+  },
+  {
+    id: '4',
+    title: 'Library Compatibility List',
+    description: 'Check which libraries support the New Architecture.',
+    url: 'https://github.com/reactwg/react-native-new-architecture/discussions',
+  },
+];
+
+const AdoptionCard = ({ item }) =&gt; (
+  &lt;TouchableOpacity style={styles.card} onPress={() =&gt; Linking.openURL(item.url)}&gt;
+    &lt;Text style={styles.cardTitle}&gt;{item.title}&lt;/Text&gt;
+    &lt;Text style={styles.cardDesc}&gt;{item.description}&lt;/Text&gt;
+    &lt;Text style={styles.cardLink}&gt;Learn more →&lt;/Text&gt;
+  &lt;/TouchableOpacity&gt;
+);
+
+const MigrationChecklist = () =&gt; {
+  const [steps, setSteps] = useState([
+    { id: '1', text: 'Enable New Architecture flag', done: false },
+    { id: '2', text: 'Check library compatibility', done: false },
+    { id: '3', text: 'Update React Native to latest version', done: false },
+    { id: '4', text: 'Migrate first TurboModule', done: false },
+    { id: '5', text: 'Test on iOS and Android', done: false },
+    { id: '6', text: 'Migrate remaining NativeModules', done: false },
+    { id: '7', text: 'Enable Fabric renderer', done: false },
+  ]);
+
+  const toggleStep = (id) =&gt; {
+    setSteps(prev =&gt;
+      prev.map(step =&gt;
+        step.id === id ? { ...step, done: !step.done } : step
+      )
+    );
+  };
+
+  return (
+    &lt;View style={styles.section}&gt;
+      &lt;Text style={styles.sectionTitle}&gt;Migration Checklist&lt;/Text&gt;
+      {steps.map(step =&gt; (
+        &lt;TouchableOpacity key={step.id} style={styles.checkRow} onPress={() =&gt; toggleStep(step.id)}&gt;
+          &lt;Text style={styles.check}&gt;{step.done ? '\u2611' : '\u2610'}&lt;/Text&gt;
+          &lt;Text style={[styles.checkText, step.done &amp;&amp; styles.checkDone]}&gt;
+            {step.text}
+          &lt;/Text&gt;
+        &lt;/TouchableOpacity&gt;
+      ))}
+    &lt;/View&gt;
+  );
+};
+
+const NewArchGuide = () =&gt; (
+  &lt;View style={styles.container}&gt;
+    &lt;Text style={styles.title}&gt;New Architecture Guide&lt;/Text&gt;
+    &lt;Text style={styles.subtitle}&gt;Learn about Fabric, TurboModules, JSI, and Codegen&lt;/Text&gt;
+
+    &lt;MigrationChecklist /&gt;
+
+    &lt;Text style={styles.sectionTitle}&gt;Resources&lt;/Text&gt;
+    &lt;FlatList
+      data={RESOURCES}
+      keyExtractor={(item) =&gt; item.id}
+      renderItem={({ item }) =&gt; &lt;AdoptionCard item={item} /&gt;}
+    /&gt;
+  &lt;/View&gt;
+);
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 },
+  subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 },
+  section: { marginBottom: 25 },
+  sectionTitle: { fontSize: 18, fontWeight: '600', marginBottom: 10 },
+  checkRow: { flexDirection: 'row', alignItems: 'center', padding: 12, backgroundColor: '#fff', borderRadius: 8, marginBottom: 6 },
+  check: { fontSize: 20, marginRight: 12 },
+  checkText: { fontSize: 15, flex: 1 },
+  checkDone: { textDecorationLine: 'line-through', color: '#999' },
+  card: { padding: 15, backgroundColor: '#fff', borderRadius: 8, marginBottom: 10 },
+  cardTitle: { fontSize: 16, fontWeight: '600', marginBottom: 5 },
+  cardDesc: { fontSize: 13, color: '#666', marginBottom: 8 },
+  cardLink: { fontSize: 14, color: '#007AFF', fontWeight: '500' },
+});
+
+export default NewArchGuide;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>The New Architecture replaces the Bridge with JSI for synchronous communication</li>
+        <li>Fabric enables synchronous layout and concurrent rendering</li>
+        <li>Turbo Modules provide lazy loading and type safety via Codegen</li>
+        <li>Codegen generates type-safe native interfaces from TypeScript specs</li>
+        <li>Migration is incremental — enable the flag and update dependencies</li>
+        <li>Most popular libraries already support the New Architecture</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Native New Architecture Working Group</strong> — Official working group with migration guides, discussions, and compatibility updates. <a href="https://github.com/reactwg/react-native-new-architecture" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

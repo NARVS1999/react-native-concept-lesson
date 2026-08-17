@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 57: Image Caching</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 57: Image Caching</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn how to use FastImage for advanced image handling in React Native, including priority control, cache management, preloading, fallback images, and understanding disk vs memory caching strategies.</div>
+
+      <h2>Why FastImage?</h2>
+      <p>React Native's built-in <code>&lt;Image&gt;</code> component has limited caching control. FastImage is a popular alternative that provides advanced caching, priority loading, preloading, and fallback image support.</p>
+
+<pre><code>npm install react-native-fast-image</code></pre>
+
+      <h2>Basic FastImage Usage</h2>
+<pre><code>import FastImage from 'react-native-fast-image';
+
+const Avatar = ({ uri, size = 50 }) =&gt; (
+  &lt;FastImage
+    style={{ width: size, height: size, borderRadius: size / 2 }}
+    source={{ uri }}
+    resizeMode={FastImage.resizeMode.cover}
+  /&gt;
+);
+
+export default Avatar;</code></pre>
+
+      <h2>Priority Control</h2>
+      <p>FastImage allows you to set load priority, ensuring critical images load first.</p>
+
+<pre><code>// High priority — loads immediately (e.g., hero image, avatar)
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/hero.jpg',
+    priority: FastImage.priority.high,
+  }}
+  style={{ width: 400, height: 200 }}
+  resizeMode={FastImage.resizeMode.cover}
+/&gt;
+
+// Normal priority — default
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/normal.jpg',
+    priority: FastImage.priority.normal,
+  }}
+  style={{ width: 400, height: 200 }}
+/&gt;
+
+// Low priority — loads when resources are available
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/thumbnail.jpg',
+    priority: FastImage.priority.low,
+  }}
+  style={{ width: 100, height: 100 }}
+/&gt;</code></pre>
+
+      <h2>Cache Control</h2>
+      <p>FastImage gives you fine-grained control over how images are cached.</p>
+
+<pre><code>// Force reload — bypass cache
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/image.jpg',
+    cache: FastImage.cacheControl.immutable,
+  }}
+  style={styles.image}
+/&gt;
+
+// Web-controlled caching (respects HTTP cache headers)
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/image.jpg',
+    cache: FastImage.cacheControl.web,
+  }}
+  style={styles.image}
+/&gt;
+
+// Only use cached version — never fetch from network
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/image.jpg',
+    cache: FastImage.cacheControl.cacheOnly,
+  }}
+  style={styles.image}
+/&gt;</code></pre>
+
+      <h2>Preloading Images</h2>
+      <p>Preload images before they're needed to ensure instant display.</p>
+
+<pre><code>import FastImage from 'react-native-fast-image';
+
+// Preload a single image
+FastImage.preload([
+  {
+    uri: 'https://example.com/hero.jpg',
+    priority: FastImage.priority.high,
+  },
+]);
+
+// Preload multiple images
+FastImage.preload([
+  { uri: 'https://example.com/banner1.jpg' },
+  { uri: 'https://example.com/banner2.jpg' },
+  { uri: 'https://example.com/banner3.jpg' },
+]);
+
+// Preload with cache control
+FastImage.preload([{
+  uri: 'https://example.com/image.jpg',
+  cache: FastImage.cacheControl.immutable,
+}]);</code></pre>
+
+      <h2>Fallback Images</h2>
+      <p>Show a placeholder or error image while the main image loads or if it fails.</p>
+
+<pre><code>const ProductImage = ({ imageUrl }) =&gt; (
+  &lt;FastImage
+    style={styles.productImage}
+    source={{
+      uri: imageUrl,
+      priority: FastImage.priority.normal,
+    }}
+    defaultSource={require('./assets/placeholder.png')}
+    resizeMode={FastImage.resizeMode.cover}
+  /&gt;
+);
+
+// With error handling
+const SafeImage = ({ uri, fallbackUri }) =&gt; {
+  const [source, setSource] = useState({ uri });
+
+  return (
+    &lt;FastImage
+      style={styles.image}
+      source={source}
+      onError={() =&gt; setSource({ uri: fallbackUri })}
+      resizeMode={FastImage.resizeMode.cover}
+    /&gt;
+  );
+};</code></pre>
+
+      <h2>Disk vs Memory Caching</h2>
+      <table>
+        <thead><tr><th>Cache Type</th><th>Storage</th><th>Persistence</th><th>Speed</th></tr></thead>
+        <tbody>
+          <tr><td>Memory Cache</td><td>RAM</td><td>Until app restart</td><td>Instant access</td></tr>
+          <tr><td>Disk Cache</td><td>Device storage</td><td>Persists across sessions</td><td>Fast (no network)</td></tr>
+          <tr><td>No Cache</td><td>N/A</td><td>N/A</td><td>Network fetch every time</td></tr>
+        </tbody>
+      </table>
+
+      <p>FastImage uses both memory and disk caching. Images are first loaded into memory for instant access, then saved to disk for persistence across app sessions.</p>
+
+      <h2>Event Handlers</h2>
+<pre><code>&lt;FastImage
+  source={{ uri: 'https://example.com/image.jpg' }}
+  style={styles.image}
+  onLoadStart={() =&gt; console.log('Loading started')}
+  onProgress={({ nativeEvent }) =&gt; {
+    const percent = (nativeEvent.loaded / nativeEvent.total) * 100;
+    console.log(`Loading: ${percent.toFixed(0)}%`);
+  }}
+  onLoad={({ nativeEvent }) =&gt; {
+    console.log('Image loaded:', nativeEvent.width, 'x', nativeEvent.height);
+  }}
+  onError={() =&gt; console.log('Image failed to load')}
+  resizeMode={FastImage.resizeMode.cover}
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What is the main advantage of FastImage over React Native's built-in Image?</p>
+        <label><input type="radio" name="q1" value="a"> Faster rendering speed</label>
+        <label><input type="radio" name="q1" value="b"> Advanced caching control, priority loading, and preloading</label>
+        <label><input type="radio" name="q1" value="c"> Smaller bundle size</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. Which FastImage priority should be used for critical images like hero banners?</p>
+        <label><input type="radio" name="q2" value="a"> FastImage.priority.low</label>
+        <label><input type="radio" name="q2" value="b"> FastImage.priority.high</label>
+        <label><input type="radio" name="q2" value="c"> FastImage.priority.normal</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. What does FastImage.cacheControl.immutable do?</p>
+        <label><input type="radio" name="q3" value="a"> Forces a network request every time</label>
+        <label><input type="radio" name="q3" value="b"> Bypasses cache and forces reload from network</label>
+        <label><input type="radio" name="q3" value="c"> Only uses the cached version, never fetches</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Build an Image Gallery with FastImage Caching</h3>
+<pre><code>import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, Dimensions, StyleSheet, ActivityIndicator } from 'react-native';
+import FastImage from 'react-native-fast-image';
+
+const { width } = Dimensions.get('window');
+const IMAGE_SIZE = width / 2 - 15;
+
+const IMAGES = [
+  { id: '1', uri: 'https://picsum.photos/400/400?random=1' },
+  { id: '2', uri: 'https://picsum.photos/400/400?random=2' },
+  { id: '3', uri: 'https://picsum.photos/400/400?random=3' },
+  { id: '4', uri: 'https://picsum.photos/400/400?random=4' },
+  { id: '5', uri: 'https://picsum.photos/400/400?random=5' },
+  { id: '6', uri: 'https://picsum.photos/400/400?random=6' },
+  { id: '7', uri: 'https://picsum.photos/400/400?random=7' },
+  { id: '8', uri: 'https://picsum.photos/400/400?random=8' },
+  { id: '9', uri: 'https://picsum.photos/400/400?random=9' },
+  { id: '10', uri: 'https://picsum.photos/400/400?random=10' },
+];
+
+// Preload images on app start
+FastImage.preload(IMAGES.map(img =&gt; ({
+  uri: img.uri,
+  priority: FastImage.priority.normal,
+})));
+
+const GalleryItem = React.memo(({ item }) =&gt; {
+  const [loading, setLoading] = useState(true);
+
+  return (
+    &lt;View style={styles.imageContainer}&gt;
+      {loading && (
+        &lt;View style={styles.loader}&gt;
+          &lt;ActivityIndicator color="#007AFF" /&gt;
+        &lt;/View&gt;
+      )}
+      &lt;FastImage
+        style={styles.image}
+        source={{
+          uri: item.uri,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        }}
+        resizeMode={FastImage.resizeMode.cover}
+        onLoad={() =&gt; setLoading(false)}
+        onError={() =&gt; setLoading(false)}
+      /&gt;
+    &lt;/View&gt;
+  );
+});
+
+const ImageGallery = () =&gt; {
+  const renderItem = useCallback(({ item }) =&gt; (
+    &lt;GalleryItem item={item} /&gt;
+  ), []);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Cached Image Gallery&lt;/Text&gt;
+      &lt;FlatList
+        data={IMAGES}
+        keyExtractor={(item) =&gt; item.id}
+        numColumns={2}
+        renderItem={renderItem}
+        contentContainerStyle={styles.list}
+      /&gt;
+    &lt;/View&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, fontWeight: 'bold', padding: 15, textAlign: 'center' },
+  list: { padding: 10 },
+  imageContainer: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    margin: 5,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#eee',
+  },
+  image: { width: '100%', height: '100%' },
+  loader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1,
+  },
+});
+
+export default ImageGallery;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>FastImage provides advanced caching, priority loading, and preloading over React Native's Image</li>
+        <li>Priority settings (high, normal, low) control load order for critical images</li>
+        <li>Cache control options: immutable (force reload), web (HTTP headers), cacheOnly (offline only)</li>
+        <li>Preload images before they're needed for instant display</li>
+        <li>Fallback images handle loading errors and improve UX</li>
+        <li>FastImage uses both memory and disk caching for optimal performance</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>react-native-fast-image</strong> — Official FastImage documentation with full API reference and examples. <a href="https://github.com/DylanVann/react-native-fast-image" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

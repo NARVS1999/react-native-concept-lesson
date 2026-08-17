@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 58: List Virtualization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 58: List Virtualization</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Master FlatList virtualization details including windowSize, maxToRenderPerBatch, removeClippedSubviews, getItemLayout optimization, and inverted lists for chat-like interfaces.</div>
+
+      <h2>How Virtualization Works</h2>
+      <p>FlatList renders only the items currently visible on screen plus a buffer zone. Instead of rendering 10,000 items at once, it renders maybe 20-30 visible items, recycling DOM nodes as you scroll.</p>
+
+      <h2>Key FlatList Props</h2>
+      <p>Tune these props to control virtualization behavior and performance.</p>
+
+<pre><code>&lt;FlatList
+  data={items}
+  keyExtractor={(item) =&gt; item.id}
+  renderItem={({ item }) =&gt; &lt;ItemRow item={item} /&gt;}
+
+  // Number of items to render in the initial batch
+  initialNumToRender={10}
+
+  // How many items to render per batch (incremental loading)
+  maxToRenderPerBatch={10}
+
+  // How far ahead (in pixels) to render items
+  windowSize={5}
+
+  // Number of items to keep in the render window
+  removeClippedSubviews={true}
+
+  // Optimize when item height is known
+  getItemLayout={(data, index) =&gt; ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/&gt;</code></pre>
+
+      <h2>windowSize Explained</h2>
+      <p><code>windowSize</code> determines the render window size in multiples of the visible screen height. A windowSize of 5 means the visible screen + 2 screens above + 2 screens below are rendered.</p>
+
+      <table>
+        <thead><tr><th>windowSize</th><th>Effect</th><th>Memory Usage</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Only visible items</td><td>Lowest — may show blank while scrolling</td></tr>
+          <tr><td>5 (default)</td><td>Visible + 2 screens buffer each side</td><td>Moderate — good balance</td></tr>
+          <tr><td>10+</td><td>Large buffer zone</td><td>Higher — smoother scrolling, more memory</td></tr>
+        </tbody>
+      </table>
+
+      <h2>maxToRenderPerBatch</h2>
+      <p>Controls how many items are rendered in each incremental batch. Higher values improve perceived performance but increase frame time per batch.</p>
+
+<pre><code>// Conservative — good for complex items
+&lt;FlatList
+  maxToRenderPerBatch={5}
+  windowSize={5}
+  initialNumToRender={10}
+  data={items}
+  renderItem={renderItem}
+/&gt;
+
+// Aggressive — good for simple items
+&lt;FlatList
+  maxToRenderPerBatch={20}
+  windowSize={10}
+  initialNumToRender={15}
+  data={items}
+  renderItem={renderItem}
+/&gt;</code></pre>
+
+      <h2>removeClippedSubviews</h2>
+      <p>When true, items scrolled off-screen are removed from the native view hierarchy, reducing memory usage. This can cause a brief flash on some platforms.</p>
+
+<pre><code>// Good for long lists with simple items
+&lt;FlatList
+  removeClippedSubviews={true}
+  data={items}
+  renderItem={renderItem}
+/&gt;
+
+// Disable if you notice visual glitches
+&lt;FlatList
+  removeClippedSubviews={false}
+  data={items}
+  renderItem={renderItem}
+/&gt;</code></pre>
+
+      <h2>getItemLayout Optimization</h2>
+      <p>When all items have the same height, providing <code>getItemLayout</code> lets FlatList calculate positions without measuring, enabling instant scrolling to any index.</p>
+
+<pre><code>const ITEM_HEIGHT = 80;
+
+const renderItem = ({ item }) =&gt; (
+  &lt;View style={{ height: ITEM_HEIGHT, padding: 10 }}&gt;
+    &lt;Text&gt;{item.name}&lt;/Text&gt;
+  &lt;/View&gt;
+);
+
+&lt;FlatList
+  data={items}
+  renderItem={renderItem}
+  getItemLayout={(data, index) =&gt; ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+  // scrollToIndex works without measuring!
+  onScrollToIndexFailed={(info) =&gt; {
+    flatListRef.current.scrollToOffset({
+      offset: info.averageItemLength * info.index,
+      animated: true,
+    });
+  }}
+/&gt;</code></pre>
+
+      <h2>Inverted Lists</h2>
+      <p>Inverted FlatLists display items from bottom to top — perfect for chat interfaces where new messages appear at the bottom.</p>
+
+<pre><code>&lt;FlatList
+  data={messages}
+  inverted={true}
+  keyExtractor={(item) =&gt; item.id}
+  renderItem={({ item }) =&gt; (
+    &lt;View style={[
+      styles.messageBubble,
+      item.isMe ? styles.myMessage : styles.theirMessage,
+    ]}&gt;
+      &lt;Text&gt;{item.text}&lt;/Text&gt;
+      &lt;Text style={styles.timestamp}&gt;{item.time}&lt;/Text&gt;
+    &lt;/View&gt;
+  )}
+/&gt;</code></pre>
+
+      <div class="info"><strong>Note:</strong> With inverted lists, the first item in the array appears at the bottom. Use <code>data.slice().reverse()</code> if you want the first item at the top.</div>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What does FlatList virtualization do?</p>
+        <label><input type="radio" name="q1" value="a"> It renders all items at once for faster scrolling</label>
+        <label><input type="radio" name="q1" value="b"> It renders only visible items plus a buffer zone for efficiency</label>
+        <label><input type="radio" name="q1" value="c"> It lazy loads items from the network as you scroll</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. What is the benefit of getItemLayout?</p>
+        <label><input type="radio" name="q2" value="a"> It automatically sizes items based on content</label>
+        <label><input type="radio" name="q2" value="b"> It enables instant scrollToIndex by skipping measurement</label>
+        <label><input type="radio" name="q2" value="c"> It reduces the memory footprint of the list</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. When should you use an inverted FlatList?</p>
+        <label><input type="radio" name="q3" value="a"> For alphabetical lists that sort from Z to A</label>
+        <label><input type="radio" name="q3" value="b"> For chat-like interfaces where new items appear at the bottom</label>
+        <label><input type="radio" name="q3" value="c"> For infinite scrolling galleries</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Optimize a Large FlatList</h3>
+<pre><code>import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { View, Text, FlatList, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+
+const ITEM_HEIGHT = 70;
+
+// Generate 1000 items for performance testing
+const generateItems = (count) =&gt;
+  Array.from({ length: count }, (_, i) =&gt; ({
+    id: String(i),
+    title: `Item ${i + 1}`,
+    subtitle: `Description for item ${i + 1}`,
+  }));
+
+const ItemRow = React.memo(({ item, onPress }) =&gt; (
+  &lt;TouchableOpacity style={styles.item} onPress={() =&gt; onPress(item.id)}&gt;
+    &lt;Text style={styles.itemTitle}&gt;{item.title}&lt;/Text&gt;
+    &lt;Text style={styles.itemSubtitle}&gt;{item.subtitle}&lt;/Text&gt;
+  &lt;/TouchableOpacity&gt;
+));
+
+const OptimizedList = () =&gt; {
+  const [search, setSearch] = useState('');
+  const flatListRef = useRef(null);
+  const allItems = useMemo(() =&gt; generateItems(1000), []);
+
+  const filteredItems = useMemo(() =&gt; {
+    if (!search) return allItems;
+    return allItems.filter(item =&gt;
+      item.title.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [allItems, search]);
+
+  const handlePress = useCallback((id) =&gt; {
+    console.log('Pressed:', id);
+  }, []);
+
+  const scrollToTop = useCallback(() =&gt; {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  }, []);
+
+  const renderItem = useCallback(({ item }) =&gt; (
+    &lt;ItemRow item={item} onPress={handlePress} /&gt;
+  ), [handlePress]);
+
+  const getItemLayout = useCallback((data, index) =&gt; ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  }), []);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Optimized FlatList ({filteredItems.length} items)&lt;/Text&gt;
+      &lt;TextInput
+        style={styles.searchInput}
+        placeholder="Search items..."
+        value={search}
+        onChangeText={setSearch}
+      /&gt;
+      &lt;FlatList
+        ref={flatListRef}
+        data={filteredItems}
+        keyExtractor={(item) =&gt; item.id}
+        renderItem={renderItem}
+        getItemLayout={getItemLayout}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={true}
+        style={styles.list}
+      /&gt;
+      &lt;TouchableOpacity style={styles.scrollTop} onPress={scrollToTop}&gt;
+        &lt;Text style={styles.scrollTopText}&gt;^&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 20, fontWeight: 'bold', padding: 15, textAlign: 'center' },
+  searchInput: { margin: 10, padding: 12, backgroundColor: '#fff', borderRadius: 8, borderWidth: 1, borderColor: '#ddd' },
+  list: { flex: 1 },
+  item: { height: ITEM_HEIGHT, justifyContent: 'center', padding: 15, backgroundColor: '#fff', marginHorizontal: 10, marginVertical: 3, borderRadius: 8 },
+  itemTitle: { fontSize: 16, fontWeight: '600' },
+  itemSubtitle: { fontSize: 13, color: '#666', marginTop: 4 },
+  scrollTop: { position: 'absolute', bottom: 20, right: 20, width: 50, height: 50, borderRadius: 25, backgroundColor: '#007AFF', justifyContent: 'center', alignItems: 'center' },
+  scrollTopText: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
+});
+
+export default OptimizedList;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>FlatList virtualization renders only visible items plus a buffer zone</li>
+        <li><code>windowSize</code> controls the buffer zone — higher means smoother scrolling but more memory</li>
+        <li><code>maxToRenderPerBatch</code> controls how many items render per incremental batch</li>
+        <li><code>removeClippedSubviews</code> removes off-screen items from native view hierarchy</li>
+        <li><code>getItemLayout</code> enables instant scrolling by skipping measurement</li>
+        <li>Inverted lists display items bottom-to-top for chat interfaces</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Native FlatList Docs</strong> — Official documentation on FlatList with performance tips and virtualization details. <a href="https://reactnative.dev/docs/flatlist" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

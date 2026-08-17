@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 60: Hermes Engine</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 60: Hermes Engine</h1>
+      <p><em>Phase 7 — Advanced Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand what the Hermes JavaScript engine is, learn how bytecode precompilation improves startup time, explore memory optimization features, and measure the performance impact of enabling or disabling Hermes in your app.</div>
+
+      <h2>What is Hermes?</h2>
+      <p>Hermes is an open-source JavaScript engine optimized for running React Native apps. Created by Meta, it compiles JavaScript source code into optimized bytecode ahead-of-time (AOT), resulting in faster startup times and lower memory usage compared to JavaScriptCore (JSC).</p>
+
+      <h2>Bytecode Precompilation</h2>
+      <p>Traditional JavaScript engines parse and compile JS at runtime. Hermes precompiles JS to bytecode during the build step, so the runtime only needs to execute pre-compiled bytecode.</p>
+
+      <table>
+        <thead><tr><th>Engine</th><th>Compilation</th><th>Startup</th><th>Runtime</th></tr></thead>
+        <tbody>
+          <tr><td>JavaScriptCore</td><td>JIT compilation at runtime</td><td>Slower (parse + compile)</td><td>Faster (optimized machine code)</td></tr>
+          <tr><td>V8 (Chrome)</td><td>JIT compilation at runtime</td><td>Slower (parse + compile)</td><td>Fastest (optimized machine code)</td></tr>
+          <tr><td>Hermes</td><td>AOT bytecode compilation</td><td>Faster (bytecode ready)</td><td>Moderate (bytecode execution)</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Startup Improvement</h2>
+      <p>Hermes significantly improves Time-to-Interactive (TTI) — the time from app launch to when the first screen is interactive. Bytecode is smaller than source code and doesn't need parsing.</p>
+
+<pre><code>// Hermes bytecode is pre-compiled during build
+// No runtime parsing needed — app starts faster
+
+// Typical improvement:
+// - Cold start: 30-50% faster
+// - TTI: 40-60% improvement
+// - App size: 10-20% smaller (bytecode vs source)</code></pre>
+
+      <h2>Memory Optimization</h2>
+      <p>Hermes uses less memory than JSC because it avoids JIT compilation overhead and uses a more efficient garbage collector.</p>
+
+      <ul>
+        <li>No JIT compiler memory overhead</li>
+        <li>Efficient garbage collection with generational GC</li>
+        <li>Smaller memory footprint for bytecode vs parsed AST</li>
+        <li>Lazy compilation — only compile what's needed</li>
+      </ul>
+
+      <h2>Enabling/Disabling Hermes</h2>
+
+      <h3>React Native CLI (Android)</h3>
+<pre><code>// android/gradle.properties
+hermesEnabled=true
+
+// or in android/app/build.gradle
+project.ext.react = [
+    enableHermes: true,  // Set to false to disable Hermes
+]</code></pre>
+
+      <h3>React Native CLI (iOS)</h3>
+<pre><code>// ios/Podfile
+:hermes_enabled => true
+
+# Then reinstall pods
+cd ios &amp;&amp; pod install</code></pre>
+
+      <h3>Expo</h3>
+<pre><code>// app.json or app.config.js
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "hermesEnabled": true
+          },
+          "ios": {
+            "hermesEnabled": true
+          }
+        }
+      ]
+    ]
+  }
+}</code></pre>
+
+      <h2>Measuring Impact</h2>
+      <p>Compare app performance with and without Hermes to understand the improvement.</p>
+
+<pre><code>// Enable Hermes debugging
+// Android: adb shell setprop debug.keystone.dev.hermes true
+
+// Performance metrics to compare:
+// 1. Time to First Byte (TTFB)
+// 2. Time to Interactive (TTI)
+// 3. FPS during animations
+// 4. Memory usage over time
+// 5. App bundle size
+
+// Use React Native Performance Monitor
+import { Performance } from 'react-native';
+
+// Measure startup time
+const startTime = Date.now();
+// ... app initialization ...
+console.log('Startup time:', Date.now() - startTime, 'ms');</code></pre>
+
+      <h2>Hermes vs JavaScriptCore</h2>
+      <table>
+        <thead><tr><th>Feature</th><th>Hermes</th><th>JavaScriptCore</th></tr></thead>
+        <tbody>
+          <tr><td>Cold start</td><td>Fast (bytecode ready)</td><td>Slower (parse + compile)</td></tr>
+          <tr><td>Peak performance</td><td>Moderate</td><td>High (JIT optimized)</td></tr>
+          <tr><td>Memory usage</td><td>Lower</td><td>Higher</td></tr>
+          <tr><td>App size</td><td>Smaller</td><td>Larger</td></tr>
+          <tr><td>Debugging</td><td>Chrome DevTools</td><td>Safari/Chrome DevTools</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p>1. What is the primary advantage of Hermes over JavaScriptCore?</p>
+        <label><input type="radio" name="q1" value="a"> Faster peak runtime performance</label>
+        <label><input type="radio" name="q1" value="b"> Faster startup time through bytecode precompilation</label>
+        <label><input type="radio" name="q1" value="c"> Better support for ES6+ features</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>2. How does Hermes compile JavaScript code?</p>
+        <label><input type="radio" name="q2" value="a"> JIT compilation at runtime</label>
+        <label><input type="radio" name="q2" value="b"> AOT bytecode compilation during build</label>
+        <label><input type="radio" name="q2" value="c"> Interpreter mode with no compilation</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p>3. What is the typical improvement in Time-to-Interactive with Hermes?</p>
+        <label><input type="radio" name="q3" value="a"> 5-10% improvement</label>
+        <label><input type="radio" name="q3" value="b"> 40-60% improvement</label>
+        <label><input type="radio" name="q3" value="c"> No significant improvement</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Compare App Startup with and without Hermes</h3>
+<pre><code>// In your App.js or index.js — add startup timing measurement
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+
+const startTime = Date.now();
+
+const App = () =&gt; {
+  const [startupTime, setStartupTime] = useState(null);
+  const [metrics, setMetrics] = useState([]);
+
+  useEffect(() =&gt; {
+    // Measure Time-to-Interactive
+    const tti = Date.now() - startTime;
+    setStartupTime(tti);
+
+    setMetrics([
+      { id: '1', label: 'Time to Interactive', value: tti + ' ms' },
+      { id: '2', label: 'JavaScript Engine', value: 'Hermes' },
+      { id: '3', label: 'Platform', value: Platform.OS },
+      { id: '4', label: 'Platform Version', value: Platform.Version },
+      { id: '5', label: 'Memory Usage', value: Math.round(performance?.memory?.usedJSHeapSize / 1024 / 1024) + ' MB' },
+    ]);
+  }, []);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Hermes Performance Monitor&lt;/Text&gt;
+      &lt;Text style={styles.subtitle}&gt;App Startup Metrics&lt;/Text&gt;
+      &lt;FlatList
+        data={metrics}
+        keyExtractor={(item) =&gt; item.id}
+        renderItem={({ item }) =&gt; (
+          &lt;View style={styles.metricRow}&gt;
+            &lt;Text style={styles.metricLabel}&gt;{item.label}&lt;/Text&gt;
+            &lt;Text style={styles.metricValue}&gt;{item.value}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+      /&gt;
+      &lt;View style={styles.infoBox}&gt;
+        &lt;Text style={styles.infoText}&gt;
+          Compare this with the same app without Hermes to see the improvement.
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 5 },
+  subtitle: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 20 },
+  metricRow: { flexDirection: 'row', justifyContent: 'space-between', padding: 15, backgroundColor: '#fff', borderRadius: 8, marginBottom: 8 },
+  metricLabel: { fontSize: 16, color: '#333' },
+  metricValue: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
+  infoBox: { marginTop: 20, padding: 15, backgroundColor: '#e3f2fd', borderRadius: 8 },
+  infoText: { fontSize: 14, color: '#1565c0', textAlign: 'center' },
+});
+
+export default App;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Hermes is Meta's JavaScript engine optimized for React Native</li>
+        <li>It precompiles JavaScript to bytecode (AOT) for faster startup</li>
+        <li>Cold start and Time-to-Interactive improve by 40-60%</li>
+        <li>Memory usage is lower due to no JIT overhead</li>
+        <li>Enable Hermes via gradle.properties (Android) or Podfile (iOS)</li>
+        <li>Compare startup metrics with and without Hermes to measure impact</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong> Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>Hermes Documentation</strong> — Official Hermes documentation with architecture details and benchmarks. <a href="https://hermesengine.dev/" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
