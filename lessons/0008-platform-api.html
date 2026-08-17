@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 8: Platform API</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 8: Platform API</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to detect the current platform and OS version, how to use platform-specific file extensions, when to use each approach, and how to use Platform.select for inline platform differences.
+      </div>
+
+      <h2>Platform.OS</h2>
+      <p>The <code>Platform</code> module from React Native provides information about the running platform. The most basic use is <code>Platform.OS</code>, which returns either <code>"ios"</code> or <code>"android"</code>.</p>
+
+      <pre><code>import { Platform, Text, View, StyleSheet } from 'react-native';
+
+function PlatformExample() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text&gt;Running on: {Platform.OS}&lt;/Text&gt;
+
+      {Platform.OS === 'ios' ? (
+        &lt;Text style={styles.iosText}&gt;This is iOS!&lt;/Text&gt;
+      ) : (
+        &lt;Text style={styles.androidText}&gt;This is Android!&lt;/Text&gt;
+      )}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <p>Common use cases for <code>Platform.OS</code>:</p>
+      <ul>
+        <li>Showing platform-specific UI elements</li>
+        <li>Calling platform-specific APIs</li>
+        <li>Applying different styles per platform</li>
+        <li>Platform-specific navigation behavior</li>
+      </ul>
+
+      <h2>Platform.Version</h2>
+      <p>On Android, <code>Platform.Version</code> returns a number representing the API level. On iOS, it returns a string representing the OS version.</p>
+
+      <pre><code>import { Platform, Text, View } from 'react-native';
+
+function VersionExample() {
+  // Android: Platform.Version is a number (e.g., 33 for Android 13)
+  // iOS: Platform.Version is a string (e.g., "16.4")
+
+  const getMinVersionMessage = () =&gt; {
+    if (Platform.OS === 'android') {
+      // Android API level check
+      if (Platform.Version &gt;= 33) {
+        return 'Android 13 or higher';
+      } else if (Platform.Version &gt;= 29) {
+        return 'Android 10 or higher';
+      }
+      return 'Older Android version';
+    }
+
+    if (Platform.OS === 'ios') {
+      // iOS version check (string comparison works for simple cases)
+      const majorVersion = parseInt(Platform.Version.split('.')[0], 10);
+      if (majorVersion &gt;= 16) {
+        return 'iOS 16 or higher';
+      } else if (majorVersion &gt;= 14) {
+        return 'iOS 14 or higher';
+      }
+      return 'Older iOS version';
+    }
+
+    return 'Unknown platform';
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Platform: {Platform.OS}&lt;/Text&gt;
+      &lt;Text&gt;Version: {Platform.Version}&lt;/Text&gt;
+      &lt;Text&gt;{getMinVersionMessage()}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Platform-Specific File Extensions</h2>
+      <p>React Native's Metro bundler supports platform-specific file extensions. When you import a module, Metro automatically resolves the correct file based on the running platform.</p>
+
+      <p>The resolution order for <code>import Button from './Button'</code>:</p>
+      <ol>
+        <li><code>Button.ios.js</code> (iOS only)</li>
+        <li><code>Button.android.js</code> (Android only)</li>
+        <li><code>Button.native.js</code> (Both mobile platforms)</li>
+        <li><code>Button.js</code> (Default/fallback)</li>
+      </ol>
+
+      <pre><code>// Button.ios.js - iOS-specific implementation
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+
+export default function Button({ title, onPress }) {
+  return (
+    &lt;TouchableOpacity style={styles.iosButton} onPress={onPress}&gt;
+      &lt;Text style={styles.iosButtonText}&gt;{title}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  iosButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  iosButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});</code></pre>
+
+      <pre><code>// Button.android.js - Android-specific implementation
+import React from 'react';
+import { TouchableNativeFeedback, Text, StyleSheet } from 'react-native';
+
+export default function Button({ title, onPress }) {
+  return (
+    &lt;TouchableNativeFeedback
+      onPress={onPress}
+      background={TouchableNativeFeedback.Ripple('#fff', false)}
+    &gt;
+      &lt;Text style={styles.androidButtonText}&gt;{title}&lt;/Text&gt;
+    &lt;/TouchableNativeFeedback&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  androidButtonText: {
+    backgroundColor: '#6200EE',
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    textAlign: 'center',
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+});</code></pre>
+
+      <pre><code>// Button.native.js - Shared mobile implementation
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+
+export default function Button({ title, onPress }) {
+  return (
+    &lt;TouchableOpacity style={styles.button} onPress={onPress}&gt;
+      &lt;Text style={styles.buttonText}&gt;{title}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});</code></pre>
+
+      <p>When to use each approach:</p>
+      <ul>
+        <li><strong><code>.ios.js</code> / <code>.android.js</code>:</strong> When the platforms need completely different implementations</li>
+        <li><strong><code>.native.js</code>:</strong> When you need a mobile-specific implementation but both platforms are the same</li>
+        <li><strong><code>.js</code>:</strong> The default fallback — use this for shared code</li>
+      </ul>
+
+      <h2>When to Use Each Approach</h2>
+
+      <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+        <thead>
+          <tr style="background:#3b82f6; color:#fff;">
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Scenario</th>
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Best Approach</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Small style differences</td>
+            <td style="border:1px solid #ddd; padding:10px;">Platform.select or Platform.OS inline</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Different component implementations</td>
+            <td style="border:1px solid #ddd; padding:10px;">Platform-specific file extensions</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Version-dependent features</td>
+            <td style="border:1px solid #ddd; padding:10px;">Platform.Version check</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Entirely different screens per platform</td>
+            <td style="border:1px solid #ddd; padding:10px;">Platform-specific file extensions</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Simple conditional styles</td>
+            <td style="border:1px solid #ddd; padding:10px;">Platform.select</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Platform.select for Inline Differences</h2>
+      <p><code>Platform.select</code> is a helper that takes an object with <code>ios</code> and <code>android</code> keys and returns the value for the current platform. It's perfect for inline platform differences.</p>
+
+      <pre><code>import { Platform, StyleSheet } from 'react-native';
+
+// Simple value selection
+const headerHeight = Platform.select({
+  ios: 44,
+  android: 56,
+});
+
+// In StyleSheet.create
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.select({
+      ios: 44,    // Status bar + navigation bar height on iOS
+      android: 56, // Standard toolbar height on Android
+    }),
+  },
+  shadow: {
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  font: {
+    ...Platform.select({
+      ios: {
+        fontFamily: 'System',
+      },
+      android: {
+        fontFamily: 'Roboto',
+      },
+    }),
+  },
+});</code></pre>
+
+      <h2>Practical Examples</h2>
+      <p>Here are real-world patterns you will use frequently:</p>
+
+      <pre><code>import { Platform, StyleSheet, StatusBar } from 'react-native';
+
+// Safe area top padding that works on both platforms
+const SAFE_TOP = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0;
+
+// Platform-specific header styling
+const headerStyles = StyleSheet.create({
+  header: {
+    backgroundColor: Platform.select({
+      ios: '#f8f8f8',
+      android: '#6200EE',
+    }),
+    paddingTop: SAFE_TOP,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  headerTitle: {
+    color: Platform.select({
+      ios: '#000',
+      android: '#fff',
+    }),
+    fontSize: 18,
+    fontWeight: '600',
+  },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What does Platform.OS return on an iPhone?</strong></p>
+        <label><input type="radio" name="q1" value="a"> "iphone"</label>
+        <label><input type="radio" name="q1" value="b"> "ios"</label>
+        <label><input type="radio" name="q1" value="c"> "apple"</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. If you import './Button', which file does Metro resolve first on Android?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Button.js</label>
+        <label><input type="radio" name="q2" value="b"> Button.android.js</label>
+        <label><input type="radio" name="q2" value="c"> Button.native.js</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What is Platform.select best used for?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Installing platform-specific packages</label>
+        <label><input type="radio" name="q3" value="b"> Choosing between different values for iOS and Android inline</label>
+        <label><input type="radio" name="q3" value="c"> Running different apps on each platform</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create a Component with Different Text on iOS vs Android</h3>
+        <p>Create a WelcomeCard component that displays different content and styling per platform:</p>
+
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet, Platform, StatusBar } from 'react-native';
+
+export default function WelcomeCard() {
+  return (
+    &lt;View style={styles.card}&gt;
+      &lt;Text style={styles.platformLabel}&gt;
+        Platform: {Platform.OS.toUpperCase()}
+      &lt;/Text&gt;
+
+      &lt;Text style={styles.title}&gt;
+        {Platform.OS === 'ios' ? 'Welcome to iOS!' : 'Welcome to Android!'}
+      &lt;/Text&gt;
+
+      &lt;Text style={styles.description}&gt;
+        {Platform.OS === 'ios'
+          ? 'This app uses Apple Human Interface Guidelines for a native iOS feel.'
+          : 'This app uses Material Design principles for a native Android experience.'}
+      &lt;/Text&gt;
+
+      &lt;View style={styles.versionInfo}&gt;
+        &lt;Text style={styles.versionText}&gt;
+          OS Version: {Platform.Version}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.featureList}&gt;
+        &lt;Text style={styles.feature}&gt;
+          {Platform.OS === 'ios' ? 'SF Symbols' : 'Material Icons'}
+        &lt;/Text&gt;
+        &lt;Text style={styles.feature}&gt;
+          {Platform.OS === 'ios' ? 'Haptic Feedback' : 'Vibration API'}
+        &lt;/Text&gt;
+        &lt;Text style={styles.feature}&gt;
+          {Platform.OS === 'ios' ? 'Face ID / Touch ID' : 'Fingerprint / Face Unlock'}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    margin: 16,
+    padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  platformLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Platform.select({
+      ios: '#007AFF',
+      android: '#6200EE',
+    }),
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#1a1a1a',
+  },
+  description: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  versionInfo: {
+    backgroundColor: Platform.select({
+      ios: '#f0f0f0',
+      android: '#f5f5f5',
+    }),
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  versionText: {
+    fontSize: 13,
+    color: '#333',
+    fontWeight: '500',
+  },
+  featureList: {
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: 12,
+  },
+  feature: {
+    fontSize: 14,
+    color: '#444',
+    paddingVertical: 4,
+  },
+});</code></pre>
+
+        <p><strong>Platform-specific files approach:</strong></p>
+        <pre><code>// WelcomeMessage.ios.tsx
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+
+export default function WelcomeMessage() {
+  return (
+    &lt;Text style={styles.message}&gt;
+      Welcome! We hope you enjoy using this app on your iPhone or iPad.
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  message: {
+    fontFamily: 'System',
+    fontSize: 16,
+    color: '#333',
+  },
+});
+
+// WelcomeMessage.android.tsx
+import React from 'react';
+import { Text, StyleSheet } from 'react-native';
+
+export default function WelcomeMessage() {
+  return (
+    &lt;Text style={styles.message}&gt;
+      Welcome! We hope you enjoy using this app on your Android device.
+    &lt;/Text&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  message: {
+    fontFamily: 'Roboto',
+    fontSize: 16,
+    color: '#333',
+  },
+});
+
+// Usage (Metro auto-resolves the correct file)
+import WelcomeMessage from './WelcomeMessage';</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>Platform.OS</code> returns <code>"ios"</code> or <code>"android"</code> for the current platform</li>
+        <li><code>Platform.Version</code> returns API level (number) on Android and OS version (string) on iOS</li>
+        <li>Platform-specific file extensions (<code>.ios.js</code>, <code>.android.js</code>) let Metro auto-resolve the right file</li>
+        <li><code>.native.js</code> serves as a fallback for both mobile platforms</li>
+        <li><code>Platform.select({ ios: ..., android: ... })</code> picks the right value inline</li>
+        <li>Use file extensions for completely different implementations, and <code>Platform.select</code> for small inline differences</li>
+        <li>Always consider the default <code>.js</code> file as the fallback</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Platform API Documentation</strong> — Official guide to the Platform module and platform-specific code. <a href="https://reactnative.dev/docs/platform" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

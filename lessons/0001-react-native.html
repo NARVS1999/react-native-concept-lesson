@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 1: React Native</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 1: React Native</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand what React Native is, how it renders native components, the differences between Expo and CLI, the JS-native bridge architecture, and why React Native is a compelling choice for cross-platform mobile development.
+      </div>
+
+      <h2>What is React Native?</h2>
+      <p>React Native is an open-source framework created by Meta (Facebook) that allows developers to build mobile applications using JavaScript and React. Unlike React, which targets the web browser, React Native renders to real native platform components — meaning your app looks and feels like a truly native application on both iOS and Android.</p>
+      <p>When you write a <code>&lt;View&gt;</code> in React Native, it compiles to a real <code>UIView</code> on iOS and a real <code>android.view.View</code> on Android. This is fundamentally different from hybrid frameworks that simply wrap web content inside a WebView.</p>
+      <p>React Native was first released in 2015 and has since grown into one of the most popular mobile development frameworks. It powers apps like Instagram, Facebook, Shopify, Discord, Bloomberg, and many more.</p>
+
+      <h2>How React Native Renders Native Components</h2>
+      <p>React Native uses a bridge architecture to communicate between JavaScript and native code. Here is the rendering pipeline:</p>
+      <ol>
+        <li><strong>JavaScript Thread:</strong> Your React components and business logic run on a dedicated JavaScript thread.</li>
+        <li><strong>Bridge:</strong> When the JS thread needs to update the UI, it serializes messages and sends them across an asynchronous bridge to the native side.</li>
+        <li><strong>Native Thread:</strong> The native platform receives these messages and updates the real native UI components accordingly.</li>
+      </ol>
+      <p>In the newer architecture (known as the "New Architecture" or Fabric), React Native uses JavaScript Interface (JSI) instead of the older asynchronous bridge. JSI allows direct synchronous access to native objects from JavaScript, which significantly improves performance.</p>
+
+      <pre><code>// React Native code that renders a native button
+import React from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Hello React Native!&lt;/Text&gt;
+      &lt;Button
+        title="Press Me"
+        onPress={() =&gt; alert('Button pressed!')}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+});</code></pre>
+      <p>In this example, <code>View</code> renders to a native view container, <code>Text</code> renders to native text, and <code>Button</code> renders to a platform-native button. None of these are HTML elements.</p>
+
+      <h2>Expo vs CLI: A Detailed Comparison</h2>
+      <p>When starting a React Native project, you have two primary options: Expo and React Native CLI (now often called bare workflow). Understanding the differences is crucial for choosing the right approach.</p>
+
+      <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+        <thead>
+          <tr style="background:#3b82f6; color:#fff;">
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Feature</th>
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Expo</th>
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">React Native CLI</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Setup Time</td>
+            <td style="border:1px solid #ddd; padding:10px;">Seconds (npx create-expo-app)</td>
+            <td style="border:1px solid #ddd; padding:10px;">Minutes to hours (manual config)</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Native Code Access</td>
+            <td style="border:1px solid #ddd; padding:10px;">Limited (use config plugins or eject)</td>
+            <td style="border:1px solid #ddd; padding:10px;">Full access to iOS and Android</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Build System</td>
+            <td style="border:1px solid #ddd; padding:10px;">EAS Build (cloud-based)</td>
+            <td style="border:1px solid #ddd; padding:10px;">Local build with Xcode/Android Studio</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">OTA Updates</td>
+            <td style="border:1px solid #ddd; padding:10px;">Built-in via EAS Update</td>
+            <td style="border:1px solid #ddd; padding:10px;">Requires CodePush or custom solution</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Learning Curve</td>
+            <td style="border:1px solid #ddd; padding:10px;">Beginner-friendly</td>
+            <td style="border:1px solid #ddd; padding:10px;">Requires native platform knowledge</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Libraries</td>
+            <td style="border:1px solid #ddd; padding:10px;">Managed ecosystem (curated)</td>
+            <td style="border:1px solid #ddd; padding:10px;">Full npm ecosystem</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Development Speed</td>
+            <td style="border:1px solid #ddd; padding:10px;">Fastest for most apps</td>
+            <td style="border:1px solid #ddd; padding:10px;">Faster for highly customized apps</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>The JS-Native Bridge Architecture</h2>
+      <p>The traditional React Native architecture consists of three main threads:</p>
+      <ul>
+        <li><strong>JavaScript Thread:</strong> Runs your React code, state management, and business logic. This is where your components live.</li>
+        <li><strong>Main/UI Thread:</strong> Handles user interactions and renders native views. This is the thread that manages the actual screen pixels.</li>
+        <li><strong>Shadow Thread (Layout):</strong> Computes layout using Yoga (a cross-platform layout engine) before passing the final positions to the native thread.</li>
+      </ul>
+      <p>Communication happens through a serialized JSON bridge. While this is asynchronous by default (which keeps the JS thread responsive), it can introduce latency for high-frequency events like scrolling or animations.</p>
+      <p>The new architecture introduces <strong>JSI (JavaScript Interface)</strong>, which replaces the bridge with a synchronous, direct connection between JS and native code. This eliminates serialization overhead and enables features like shared C++ objects.</p>
+
+      <h2>Why Use React Native Over Native Development?</h2>
+      <p>There are several compelling reasons to choose React Native:</p>
+      <ul>
+        <li><strong>Code Sharing:</strong> Write once, run on both iOS and Android. This can save 40-60% of development time compared to building two separate native apps.</li>
+        <li><strong>Single Codebase:</strong> Bug fixes and feature additions apply to both platforms simultaneously.</li>
+        <li><strong>Fast Iteration:</strong> Features like Fast Refresh allow you to see changes instantly without rebuilding the entire app.</li>
+        <li><strong>Large Ecosystem:</strong> Access to thousands of npm packages and a massive developer community.</li>
+        <li><strong>Web Developer Friendly:</strong> If you know React for the web, you already know 80% of React Native.</li>
+        <li><strong>Over-the-Air Updates:</strong> Push updates to users without going through the App Store or Play Store review process.</li>
+      </ul>
+
+      <h2>Cross-Platform Benefits</h2>
+      <p>React Native's cross-platform nature extends beyond just sharing code:</p>
+      <ul>
+        <li><strong>Shared Business Logic:</strong> API calls, data processing, state management, and navigation all work identically on both platforms.</li>
+        <li><strong>Shared UI Components:</strong> Most components render the same way on both platforms. Platform-specific differences are handled with <code>Platform</code> API or platform-specific files.</li>
+        <li><strong>Consistent Design:</strong> Your app maintains a consistent look and feel across platforms while respecting platform conventions when needed.</li>
+        <li><strong>Reduced Cost:</strong> One development team, one codebase, one deployment pipeline = significantly lower development and maintenance costs.</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What does React Native render to?</strong></p>
+        <label><input type="radio" name="q1" value="a"> WebViews (HTML/CSS)</label>
+        <label><input type="radio" name="q1" value="b"> Real native platform components</label>
+        <label><input type="radio" name="q1" value="c"> Canvas elements</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Which setup option is recommended for beginners?</strong></p>
+        <label><input type="radio" name="q2" value="a"> React Native CLI</label>
+        <label><input type="radio" name="q2" value="b"> Expo</label>
+        <label><input type="radio" name="q2" value="c"> Neither, use plain JavaScript</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What does the JSI (New Architecture) replace?</strong></p>
+        <label><input type="radio" name="q3" value="a"> The JavaScript thread</label>
+        <label><input type="radio" name="q3" value="b"> The asynchronous JSON bridge</label>
+        <label><input type="radio" name="q3" value="c"> The Yoga layout engine</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create and Run a Basic Expo App</h3>
+        <p>Follow these steps to set up your first React Native project using Expo:</p>
+        <ol>
+          <li>Install Node.js (version 18 or later) from <a href="https://nodejs.org" target="_blank">nodejs.org</a></li>
+          <li>Run the following commands in your terminal:</li>
+        </ol>
+
+        <pre><code># Install Expo CLI globally
+npm install -g expo-cli
+
+# Create a new Expo project
+npx create-expo-app MyFirstApp
+
+# Navigate into the project
+cd MyFirstApp
+
+# Start the development server
+npx expo start</code></pre>
+
+        <p>Then, modify <code>App.js</code> with the following content:</p>
+        <pre><code>import React, { useState } from 'react';
+import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+
+export default function App() {
+  const [name, setName] = useState('');
+  const [greeting, setGreeting] = useState('');
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Welcome to React Native!&lt;/Text&gt;
+      &lt;TextInput
+        style={styles.input}
+        placeholder="Enter your name"
+        value={name}
+        onChangeText={setName}
+      /&gt;
+      &lt;Button
+        title="Say Hello"
+        onPress={() =&gt; setGreeting(`Hello, ${name}!`)}
+      /&gt;
+      {greeting ? &lt;Text style={styles.greeting}&gt;{greeting}&lt;/Text&gt; : null}
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    width: '100%',
+    marginBottom: 15,
+    fontSize: 16,
+  },
+  greeting: {
+    marginTop: 20,
+    fontSize: 20,
+    color: '#3b82f6',
+  },
+});</code></pre>
+
+        <p>Open the Expo Go app on your phone and scan the QR code, or press <code>i</code> for iOS simulator / <code>a</code> for Android emulator.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>React Native renders to real native components, not WebViews</li>
+        <li>The JS-Native bridge architecture separates JS logic from native UI rendering</li>
+        <li>Expo is recommended for beginners due to faster setup and simpler workflow</li>
+        <li>React Native CLI gives full access to native code for advanced customization</li>
+        <li>Cross-platform development with RN can save significant time and resources</li>
+        <li>The new architecture (JSI) improves performance by eliminating the async bridge</li>
+        <li>React Native powers many production apps used by millions of people daily</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Official Documentation</strong> — The official docs with guides, API references, and tutorials for getting started with React Native. <a href="https://reactnative.dev/docs/getting-started" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

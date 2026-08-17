@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 3: JSX</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 3: JSX</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand what JSX is, how it compiles to JavaScript, the rules you must follow when writing JSX, how to use expressions, conditional rendering, and list rendering within JSX.
+      </div>
+
+      <h2>What is JSX?</h2>
+      <p>JSX (JavaScript XML) is a syntax extension for JavaScript that looks like HTML but is actually JavaScript. It allows you to write UI structures in a familiar, declarative way. React Native uses JSX to describe what your UI should look like.</p>
+      <p>JSX is not valid JavaScript on its own — it must be compiled (transpiled) before it can run. Tools like Babel or Metro bundler transform JSX into regular JavaScript function calls.</p>
+
+      <pre><code>// What you write (JSX):
+const element = &lt;Text&gt;Hello, World!&lt;/Text&gt;;
+
+// What it compiles to (JavaScript):
+const element = React.createElement(Text, null, 'Hello, World!');
+
+// A more complex example:
+const ui = (
+  &lt;View style={{ padding: 20 }}&gt;
+    &lt;Text style={{ fontSize: 24 }}&gt;Welcome&lt;/Text&gt;
+  &lt;/View&gt;
+);
+
+// Compiles to:
+const ui = React.createElement(
+  View,
+  { style: { padding: 20 } },
+  React.createElement(Text, { style: { fontSize: 24 } }, 'Welcome')
+);</code></pre>
+
+      <p>Understanding this compilation helps you see that JSX is just syntactic sugar over <code>React.createElement()</code> calls. Every JSX element becomes a function call that returns a React element object.</p>
+
+      <h2>JSX Rules</h2>
+      <p>JSX has strict rules that you must follow. Violating them will cause compilation errors.</p>
+
+      <h3>Rule 1: Return a Single Root Element</h3>
+      <p>A component must return a single JSX element. If you need multiple elements, wrap them in a <code>View</code> or a Fragment.</p>
+      <pre><code>// WRONG - returns two adjacent elements
+function BadComponent() {
+  return (
+    &lt;Text&gt;First&lt;/Text&gt;
+    &lt;Text&gt;Second&lt;/Text&gt;
+  );
+}
+
+// CORRECT - wrapped in a View
+function GoodComponent() {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;First&lt;/Text&gt;
+      &lt;Text&gt;Second&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// CORRECT - using Fragment (no extra wrapper element)
+function AlsoCorrect() {
+  return (
+    &lt;&gt;
+      &lt;Text&gt;First&lt;/Text&gt;
+      &lt;Text&gt;Second&lt;/Text&gt;
+    &lt;/&gt;
+  );
+}</code></pre>
+
+      <h3>Rule 2: Close All Tags</h3>
+      <p>Every tag must be explicitly closed, including self-closing tags.</p>
+      <pre><code>// WRONG - self-closing tags not closed
+&lt;Image source={logo} /&gt;     // ✗ missing slash before &gt;
+&lt;TextInput placeholder="Name" /&gt;  // ✗ missing slash
+
+// CORRECT
+&lt;Image source={logo} /&gt;
+&lt;TextInput placeholder="Name" /&gt;
+
+// WRONG - non-self-closing tags
+&lt;View&gt;
+  &lt;Text&gt;Hello
+&lt;/View&gt;
+
+// CORRECT
+&lt;View&gt;
+  &lt;Text&gt;Hello&lt;/Text&gt;
+&lt;/View&gt;</code></pre>
+
+      <h3>Rule 3: Use camelCase for Attributes</h3>
+      <p>JSX uses camelCase for attribute names instead of the HTML lowercase convention.</p>
+      <pre><code>// HTML vs JSX attribute names:
+// class → className (not used in RN, but applies to React)
+// for → htmlFor
+// onclick → onPress
+// onchange → onChangeText
+// tabindex → tabIndex
+// style takes an object, not a string
+
+// WRONG
+&lt;TextInput
+  onchange={handleChange}
+  style="color: red"
+/&gt;
+
+// CORRECT
+&lt;TextInput
+  onChangeText={handleChange}
+  style={{ color: 'red' }}
+/&gt;</code></pre>
+
+      <h2>Expressions in JSX</h2>
+      <p>You can embed any valid JavaScript expression inside curly braces <code>{}</code> within JSX.</p>
+
+      <pre><code>const name = 'Alice';
+const age = 25;
+const isLoggedIn = true;
+
+const Profile = () =&gt; (
+  &lt;View&gt;
+    {/* String interpolation */}
+    &lt;Text&gt;Hello, {name}!&lt;/Text&gt;
+
+    {/* Math expressions */}
+    &lt;Text&gt;Double age: {age * 2}&lt;/Text&gt;
+
+    {/* Function calls */}
+    &lt;Text&gt;Uppercase: {name.toUpperCase()}&lt;/Text&gt;
+
+    {/* Ternary expressions */}
+    &lt;Text&gt;{isLoggedIn ? 'Welcome back!' : 'Please log in'}&lt;/Text&gt;
+
+    {/* Object access */}
+    &lt;Text&gt;{`Name: ${name}, Age: ${age}`}&lt;/Text&gt;
+  &lt;/View&gt;
+);</code></pre>
+
+      <p>Important: You can only embed <em>expressions</em>, not <em>statements</em>. Expressions produce a value; statements do not.</p>
+      <pre><code>// VALID - expressions
+{isLoggedIn &amp;&amp; &lt;Text&gt;Logged in&lt;/Text&gt;}
+{items.length &gt; 0 ? &lt;List /&gt; : &lt;EmptyState /&gt;}
+{users.map(user =&gt; &lt;Text key={user.id}&gt;{user.name}&lt;/Text&gt;)}
+
+// INVALID - statements (will cause errors)
+{if (isLoggedIn) { return &lt;Text&gt;Yes&lt;/Text&gt;; }}
+{for (let i = 0; i &lt; 10; i++) { ... }}</code></pre>
+
+      <h2>Conditional Rendering</h2>
+      <p>There are several ways to conditionally render elements in JSX.</p>
+
+      <pre><code>const Dashboard = ({ user, notifications, isAdmin }) =&gt; {
+  // Method 1: Ternary operator
+  return (
+    &lt;View&gt;
+      {user ? (
+        &lt;Text&gt;Welcome, {user.name}!&lt;/Text&gt;
+      ) : (
+        &lt;Text&gt;Please log in&lt;/Text&gt;
+      )}
+    &lt;/View&gt;
+  );
+};
+
+// Method 2: Logical AND (&&)
+const Notifications = ({ count }) =&gt; (
+  &lt;View&gt;
+    {count &gt; 0 &amp;&amp; (
+      &lt;View style={styles.badge}&gt;
+        &lt;Text&gt;{count}&lt;/Text&gt;
+      &lt;/View&gt;
+    )}
+  &lt;/View&gt;
+);
+
+// Method 3: Variable assignment
+const AdminPanel = ({ isAdmin }) =&gt; {
+  let content;
+
+  if (isAdmin) {
+    content = &lt;Text&gt;Admin Dashboard&lt;/Text&gt;;
+  } else {
+    content = &lt;Text&gt;Access Denied&lt;/Text&gt;;
+  }
+
+  return &lt;View&gt;{content}&lt;/View&gt;;
+};
+
+// Method 4: Early return
+const UserProfile = ({ user }) =&gt; {
+  if (!user) return null;
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{user.name}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+};</code></pre>
+
+      <h2>List Rendering with Map</h2>
+      <p>To render lists of data, use the <code>Array.map()</code> method to transform data into JSX elements. Always provide a unique <code>key</code> prop.</p>
+
+      <pre><code>interface Todo {
+  id: number;
+  title: string;
+  completed: boolean;
+}
+
+const TodoList = ({ todos }: { todos: Todo[] }) =&gt; (
+  &lt;View&gt;
+    {todos.map((todo) =&gt; (
+      &lt;View key={todo.id} style={styles.todoItem}&gt;
+        &lt;Text style={todo.completed ? styles.done : styles.pending}&gt;
+          {todo.title}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    ))}
+  &lt;/View&gt;
+);
+
+// With filtering
+const ActiveTodos = ({ todos }) =&gt; (
+  &lt;View&gt;
+    {todos
+      .filter((todo) =&gt; !todo.completed)
+      .map((todo) =&gt; (
+        &lt;Text key={todo.id}&gt;{todo.title}&lt;/Text&gt;
+      ))}
+  &lt;/View&gt;
+);
+
+// Nested lists
+const UserGroups = ({ groups }) =&gt; (
+  &lt;View&gt;
+    {groups.map((group) =&gt; (
+      &lt;View key={group.id}&gt;
+        &lt;Text style={styles.groupTitle}&gt;{group.name}&lt;/Text&gt;
+        {group.members.map((member) =&gt; (
+          &lt;Text key={member.id}&gt;  {member.name}&lt;/Text&gt;
+        ))}
+      &lt;/View&gt;
+    ))}
+  &lt;/View&gt;
+);</code></pre>
+
+      <p><strong>Why do we need keys?</strong> Keys help React identify which items have changed, been added, or removed. Without keys, React would re-render the entire list on every change, which is inefficient. Keys must be unique among siblings (they don't need to be globally unique).</p>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What does JSX compile to?</strong></p>
+        <label><input type="radio" name="q1" value="a"> HTML elements</label>
+        <label><input type="radio" name="q1" value="b"> React.createElement() function calls</label>
+        <label><input type="radio" name="q1" value="c"> Direct DOM manipulation</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. What must you provide when rendering a list with .map()?</strong></p>
+        <label><input type="radio" name="q2" value="a"> A className prop</label>
+        <label><input type="radio" name="q2" value="b"> A unique key prop for each item</label>
+        <label><input type="radio" name="q2" value="c"> An index for the callback</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. How do you embed a JavaScript expression in JSX?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Using double quotes ""</label>
+        <label><input type="radio" name="q3" value="b"> Using curly braces {}</label>
+        <label><input type="radio" name="q3" value="c"> Using angle brackets &lt;&gt;</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a JSX Component with Conditional Rendering</h3>
+        <p>Create a <code>NotificationBadge</code> component that uses conditional rendering to show different UI based on the number of notifications:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+interface NotificationBadgeProps {
+  count: number;
+  username: string;
+}
+
+export default function NotificationBadge({ count, username }: NotificationBadgeProps) {
+  return (
+    &lt;View style={styles.container}&gt;
+      {/* Always show greeting */}
+      &lt;Text style={styles.greeting}&gt;
+        {username ? `Hello, ${username}!` : 'Hello, Guest!'}
+      &lt;/Text&gt;
+
+      {/* Conditional: show badge only if there are notifications */}
+      {count &gt; 0 &amp;&amp; (
+        &lt;View style={styles.badge}&gt;
+          &lt;Text style={styles.badgeText}&gt;{count}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+
+      {/* Ternary: show different messages */}
+      &lt;Text style={styles.message}&gt;
+        {count === 0
+          ? 'No new notifications'
+          : count === 1
+          ? 'You have 1 new notification'
+          : `You have ${count} new notifications`}
+      &lt;/Text&gt;
+
+      {/* Conditional styling */}
+      &lt;View style={[styles.statusBar, count &gt; 0 &amp;&amp; styles.activeStatusBar]}&gt;
+        &lt;Text style={styles.statusText}&gt;
+          {count &gt; 0 ? 'Active' : 'Idle'}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+  },
+  greeting: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  badge: {
+    backgroundColor: 'red',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    alignSelf: 'flex-start',
+    marginTop: 5,
+  },
+  badgeText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  message: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
+  },
+  statusBar: {
+    marginTop: 15,
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: '#e0e0e0',
+  },
+  activeStatusBar: {
+    backgroundColor: '#4CAF50',
+  },
+  statusText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+});</code></pre>
+
+        <p><strong>Test it:</strong> Use the component with different values like <code>&lt;NotificationBadge count={0} username="Alice" /&gt;</code>, <code>&lt;NotificationBadge count={1} username="Bob" /&gt;</code>, and <code>&lt;NotificationBadge count={5} username="" /&gt;</code>.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>JSX is a syntax extension that compiles to <code>React.createElement()</code> calls</li>
+        <li>Every component must return a single root element (use View or Fragment)</li>
+        <li>All tags must be explicitly closed, including self-closing tags</li>
+        <li>Use camelCase for attribute names (e.g., <code>onPress</code> instead of <code>onclick</code>)</li>
+        <li>Embed JavaScript expressions in JSX using curly braces <code>{}</code></li>
+        <li>Conditional rendering uses ternary operators, logical AND, or variable assignment</li>
+        <li>List rendering uses <code>.map()</code> with unique <code>key</code> props</li>
+        <li>Only expressions (not statements) can be embedded in JSX</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React JSX Documentation</strong> — Official guide to JSX syntax and its compilation process. <a href="https://react.dev/learn/writing-markup-with-jsx" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

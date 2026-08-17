@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 5: Props</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 5: Props</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand what props are, how to pass and destructure them, how to set default values, how to use the children prop, how to define prop types with TypeScript, and the props drilling problem.
+      </div>
+
+      <h2>What Are Props?</h2>
+      <p>Props (short for "properties") are how data flows from a parent component to a child component. They are the mechanism for component communication in React Native. Think of props as function arguments — they allow you to pass data into a component to customize its behavior or appearance.</p>
+      <p>Props are <strong>read-only</strong>. A child component can receive props but should never modify them. This ensures a predictable, unidirectional data flow: data goes down from parent to child, and events go up from child to parent via callback functions.</p>
+
+      <pre><code>// Parent passes props to Child
+function Parent() {
+  return &lt;Child name="Alice" age={25} /&gt;;
+}
+
+// Child receives and uses props
+function Child({ name, age }) {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Name: {name}&lt;/Text&gt;
+      &lt;Text&gt;Age: {age}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Passing Props</h2>
+      <p>Props are passed as attributes on JSX elements, just like HTML attributes. They can be strings, numbers, booleans, objects, arrays, functions, or even other React elements.</p>
+
+      <pre><code>&lt;UserCard
+  name="Alice"
+  age={25}
+  isActive={true}
+  avatar={{ uri: 'https://example.com/avatar.jpg' }}
+  tags={['admin', 'verified']}
+  onPress={() =&gt; console.log('Pressed')}
+/&gt;</code></pre>
+
+      <p>Key rules for passing props:</p>
+      <ul>
+        <li><strong>Strings</strong> use quotes: <code>name="Alice"</code></li>
+        <li><strong>Numbers</strong> use curly braces: <code>age={25}</code></li>
+        <li><strong>Booleans</strong> use curly braces: <code>isActive={true}</code> or shorthand <code>isActive</code></li>
+        <li><strong>Objects, arrays, functions</strong> use curly braces: <code>onPress={() =&gt; {}}</code></li>
+      </ul>
+
+      <h2>Destructuring Props</h2>
+      <p>Destructuring in the function signature makes your code cleaner and more readable.</p>
+
+      <pre><code>// WITHOUT destructuring (verbose)
+function UserCard(props) {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{props.name}&lt;/Text&gt;
+      &lt;Text&gt;{props.email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// WITH destructuring (clean)
+function UserCard({ name, email }) {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{name}&lt;/Text&gt;
+      &lt;Text&gt;{email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// WITH TypeScript interface (type-safe)
+interface UserCardProps {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
+function UserCard({ name, email, avatar }: UserCardProps) {
+  return (
+    &lt;View&gt;
+      {avatar &amp;&amp; &lt;Image source={{ uri: avatar }} /&gt;}
+      &lt;Text&gt;{name}&lt;/Text&gt;
+      &lt;Text&gt;{email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Default Props</h2>
+      <p>Default values ensure your component works even when optional props are not provided.</p>
+
+      <pre><code>// Method 1: Default parameter values (recommended)
+function Button({ title, variant = 'primary', size = 'medium' }) {
+  return (
+    &lt;TouchableOpacity style={[styles[variant], styles[size]]}&gt;
+      &lt;Text&gt;{title}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+// Usage - variant and size default if not provided
+&lt;Button title="Submit" /&gt;  // uses primary, medium
+&lt;Button title="Cancel" variant="secondary" /&gt;  // uses medium
+&lt;Button title="Delete" variant="danger" size="large" /&gt;
+
+// Method 2: With TypeScript optional properties
+interface AvatarProps {
+  uri: string;
+  size?: number;
+  borderRadius?: number;
+}
+
+function Avatar({ uri, size = 40, borderRadius }: AvatarProps) {
+  return (
+    &lt;Image
+      source={{ uri }}
+      style={{
+        width: size,
+        height: size,
+        borderRadius: borderRadius ?? size / 2,
+      }}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>The Children Prop</h2>
+      <p>The <code>children</code> prop is a special prop that allows you to pass JSX elements as the content of a component. It enables powerful composition patterns.</p>
+
+      <pre><code>// A Card wrapper that accepts any content via children
+function Card({ title, children }) {
+  return (
+    &lt;View style={styles.card}&gt;
+      {title &amp;&amp; &lt;Text style={styles.cardTitle}&gt;{title}&lt;/Text&gt;}
+      &lt;View style={styles.cardBody}&gt;
+        {children}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Usage - pass any content inside the Card tags
+function App() {
+  return (
+    &lt;Card title="User Profile"&gt;
+      &lt;Avatar uri="https://example.com/john.jpg" /&gt;
+      &lt;Text&gt;John Doe&lt;/Text&gt;
+      &lt;Text&gt;john@example.com&lt;/Text&gt;
+      &lt;Button title="Edit Profile" /&gt;
+    &lt;/Card&gt;
+  );
+}
+
+// Another example: a layout wrapper
+function ScreenLayout({ header, children, footer }) {
+  return (
+    &lt;View style={styles.layout}&gt;
+      {header}
+      &lt;View style={styles.content}&gt;
+        {children}
+      &lt;/View&gt;
+      {footer}
+    &lt;/View&gt;
+  );
+}
+
+// Usage
+&lt;ScreenLayout
+  header={&lt;Text style={styles.header}&gt;Settings&lt;/Text&gt;}
+  footer={&lt;Button title="Save" /&gt;}
+&gt;
+  &lt;TextInput placeholder="Name" /&gt;
+  &lt;TextInput placeholder="Email" /&gt;
+&lt;/ScreenLayout&gt;</code></pre>
+
+      <h2>Prop Types with TypeScript Interfaces</h2>
+      <p>TypeScript interfaces provide compile-time type checking for your props, catching errors before they reach runtime.</p>
+
+      <pre><code>interface ProductCardProps {
+  name: string;
+  price: number;
+  description?: string;
+  imageUrl: string;
+  inStock: boolean;
+  rating: number;
+  tags?: string[];
+  onAddToCart: (productId: string) =&gt; void;
+  onWishlist: () =&gt; void;
+}
+
+function ProductCard({
+  name,
+  price,
+  description,
+  imageUrl,
+  inStock,
+  rating,
+  tags = [],
+  onAddToCart,
+  onWishlist,
+}: ProductCardProps) {
+  return (
+    &lt;View style={styles.productCard}&gt;
+      &lt;Image source={{ uri: imageUrl }} style={styles.productImage} /&gt;
+      &lt;Text style={styles.productName}&gt;{name}&lt;/Text&gt;
+      &lt;Text style={styles.price}&gt;${price.toFixed(2)}&lt;/Text&gt;
+
+      {tags.length &gt; 0 &amp;&amp; (
+        &lt;View style={styles.tags}&gt;
+          {tags.map((tag, index) =&gt; (
+            &lt;View key={index} style={styles.tag}&gt;
+              &lt;Text style={styles.tagText}&gt;{tag}&lt;/Text&gt;
+            &lt;/View&gt;
+          ))}
+        &lt;/View&gt;
+      )}
+
+      &lt;View style={styles.actions}&gt;
+        &lt;Button
+          title={inStock ? 'Add to Cart' : 'Out of Stock'}
+          disabled={!inStock}
+          onPress={() =&gt; onAddToCart(name)}
+        /&gt;
+        &lt;Button title="Wishlist" variant="ghost" onPress={onWishlist} /&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>The Props Drilling Problem</h2>
+      <p>Props drilling occurs when you need to pass props through multiple intermediate components that don't use them, just to reach a deeply nested child.</p>
+
+      <pre><code>// Props drilling example - BAD
+function App() {
+  const [user, setUser] = useState({ name: 'Alice', theme: 'dark' });
+  return &lt;Layout user={user} /&gt;;
+}
+
+function Layout({ user }) {
+  // Layout doesn't use 'user' at all, just passes it down
+  return &lt;Sidebar user={user} /&gt;;
+}
+
+function Sidebar({ user }) {
+  // Sidebar doesn't use 'user' either
+  return &lt;UserProfile user={user} /&gt;;
+}
+
+function UserProfile({ user }) {
+  // Finally, UserProfile uses it
+  return &lt;Text&gt;{user.name}&lt;/Text&gt;;
+}</code></pre>
+
+      <p>Solutions to props drilling include:</p>
+      <ul>
+        <li><strong>Context API:</strong> Pass data through the component tree without props</li>
+        <li><strong>State management libraries:</strong> Redux, Zustand, or Jotai</li>
+        <li><strong>Component composition:</strong> Restructure to reduce nesting</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What are props in React Native?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Internal component state</label>
+        <label><input type="radio" name="q1" value="b"> Read-only data passed from parent to child</label>
+        <label><input type="radio" name="q1" value="c"> CSS styles applied to components</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. What is the children prop used for?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Managing child component state</label>
+        <label><input type="radio" name="q2" value="b"> Passing JSX content as the body of a component</label>
+        <label><input type="radio" name="q2" value="c"> Creating parent-child relationships</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What problem does props drilling cause?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Performance issues in rendering</label>
+        <label><input type="radio" name="q3" value="b"> Passing props through intermediate components that don't need them</label>
+        <label><input type="radio" name="q3" value="c"> Memory leaks in the application</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a UserCard Component</h3>
+        <p>Create a UserCard component that accepts name, email, and avatar as props, with TypeScript:</p>
+
+        <pre><code>import React from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+
+interface UserCardProps {
+  name: string;
+  email: string;
+  avatar: string;
+  role?: string;
+  isOnline?: boolean;
+  onPress?: () =&gt; void;
+}
+
+export default function UserCard({
+  name,
+  email,
+  avatar,
+  role = 'User',
+  isOnline = false,
+  onPress,
+}: UserCardProps) {
+  const cardContent = (
+    &lt;View style={styles.card}&gt;
+      &lt;View style={styles.avatarContainer}&gt;
+        &lt;Image source={{ uri: avatar }} style={styles.avatar} /&gt;
+        {isOnline &amp;&amp; &lt;View style={styles.onlineIndicator} /&gt;}
+      &lt;/View&gt;
+      &lt;View style={styles.info}&gt;
+        &lt;Text style={styles.name}&gt;{name}&lt;/Text&gt;
+        &lt;Text style={styles.email}&gt;{email}&lt;/Text&gt;
+        &lt;View style={styles.roleBadge}&gt;
+          &lt;Text style={styles.roleText}&gt;{role}&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+
+  if (onPress) {
+    return (
+      &lt;TouchableOpacity onPress={onPress} activeOpacity={0.7}&gt;
+        {cardContent}
+      &lt;/TouchableOpacity&gt;
+    );
+  }
+
+  return cardContent;
+}
+
+const styles = StyleSheet.create({
+  card: {
+    flexDirection: 'row',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  avatar: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#22c55e',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  info: {
+    flex: 1,
+  },
+  name: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
+  },
+  email: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  roleBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#e0e7ff',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  roleText: {
+    fontSize: 12,
+    color: '#3730a3',
+    fontWeight: '600',
+  },
+});</code></pre>
+
+        <p><strong>Usage:</strong></p>
+        <pre><code>&lt;UserCard
+  name="Alice Johnson"
+  email="alice@example.com"
+  avatar="https://i.pravatar.cc/150?img=1"
+  role="Admin"
+  isOnline={true}
+  onPress={() =&gt; navigation.navigate('Profile', { userId: 1 })}
+/&gt;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Props are read-only data passed from parent to child components</li>
+        <li>They enable unidirectional data flow (parent to child)</li>
+        <li>Destructure props in the function signature for cleaner code</li>
+        <li>Use default parameter values for optional props</li>
+        <li>The <code>children</code> prop allows passing JSX content to wrap components</li>
+        <li>TypeScript interfaces define the shape and types of your props</li>
+        <li>Props drilling (passing props through unnecessary intermediaries) can be solved with Context API or state management</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Passing Props Documentation</strong> — Official guide to passing props and the children prop pattern. <a href="https://react.dev/learn/passing-props-to-a-component" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 4: Components</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 4: Components</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand what components are, the difference between function and class components, how to compose components, naming conventions, file organization, and how to build reusable component patterns.
+      </div>
+
+      <h2>What Are Components?</h2>
+      <p>Components are the building blocks of a React Native application. A component is a self-contained piece of UI that can accept data (props) and manage its own state. Think of components as reusable UI recipes — you define them once and use them throughout your app.</p>
+      <p>Every React Native app is a tree of components. At the top is your root component (usually <code>App</code>), and beneath it are increasingly specific UI pieces. For example, a social media feed might have a <code>FeedScreen</code> component containing <code>PostCard</code> components, each containing <code>Avatar</code>, <code>PostContent</code>, and <code>LikeButton</code> components.</p>
+
+      <pre><code>// The simplest possible component
+function Greeting() {
+  return &lt;Text&gt;Hello, World!&lt;/Text&gt;;
+}
+
+// Used in JSX
+&lt;Greeting /&gt;</code></pre>
+
+      <h2>Function Components vs Class Components</h2>
+      <p>React Native supports two types of components. Function components are now the standard and should always be preferred.</p>
+
+      <h3>Function Components (Modern, Recommended)</h3>
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;{count}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={() =&gt; setCount(count + 1)} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { alignItems: 'center', padding: 20 },
+  count: { fontSize: 48, fontWeight: 'bold' },
+});
+
+export default Counter;</code></pre>
+
+      <h3>Class Components (Legacy, Avoid)</h3>
+      <pre><code>import React, { Component } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+class Counter extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { count: 0 };
+  }
+
+  increment = () =&gt; {
+    this.setState({ count: this.state.count + 1 });
+  };
+
+  render() {
+    return (
+      &lt;View style={styles.container}&gt;
+        &lt;Text style={styles.count}&gt;{this.state.count}&lt;/Text&gt;
+        &lt;Button title="Increment" onPress={this.increment} /&gt;
+      &lt;/View&gt;
+    );
+  }
+}
+
+export default Counter;</code></pre>
+
+      <h3>Why Function Components Win</h3>
+      <ul>
+        <li><strong>Simpler syntax:</strong> Less boilerplate, no constructor or this-binding</li>
+        <li><strong>Hooks:</strong> Only available in function components — give you state, side effects, and more</li>
+        <li><strong>Better performance:</strong> No overhead of class instantiation</li>
+        <li><strong>Easier testing:</strong> Simple functions are easier to test than class instances</li>
+        <li><strong>Future-proof:</strong> React team focuses all new features on function components</li>
+      </ul>
+
+      <h2>Component Composition</h2>
+      <p>Composition is the practice of combining smaller components to build larger ones. This is the core principle of component-based architecture.</p>
+
+      <pre><code>// Small, focused components
+function Avatar({ imageUrl, size = 40 }) {
+  return (
+    &lt;Image
+      source={{ uri: imageUrl }}
+      style={{ width: size, height: size, borderRadius: size / 2 }}
+    /&gt;
+  );
+}
+
+function Badge({ text, color = 'red' }) {
+  return (
+    &lt;View style={[styles.badge, { backgroundColor: color }]}&gt;
+      &lt;Text style={styles.badgeText}&gt;{text}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Composed component that combines smaller pieces
+function UserHeader({ user }) {
+  return (
+    &lt;View style={styles.header}&gt;
+      &lt;Avatar imageUrl={user.avatar} size={50} /&gt;
+      &lt;View style={styles.headerInfo}&gt;
+        &lt;Text style={styles.name}&gt;{user.name}&lt;/Text&gt;
+        &lt;Text style={styles.email}&gt;{user.email}&lt;/Text&gt;
+      &lt;/View&gt;
+      {user.isVerified &amp;&amp; &lt;Badge text="Verified" color="blue" /&gt;}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Component Naming Rules</h2>
+      <p>Following naming conventions keeps your codebase consistent and readable:</p>
+      <ul>
+        <li><strong>Component names must start with a capital letter:</strong> <code>function MyComponent()</code>, not <code>function myComponent()</code></li>
+        <li><strong>Use PascalCase:</strong> <code>UserCard</code>, <code>NavigationHeader</code>, <code>TodoList</code></li>
+        <li><strong>File names match component names:</strong> <code>UserCard.tsx</code> contains the <code>UserCard</code> component</li>
+        <li><strong>One component per file:</strong> Each file should export one main component</li>
+      </ul>
+      <pre><code>// CORRECT - PascalCase component name
+function UserCard() { /* ... */ }
+export default UserCard;
+
+// WRONG - lowercase starts with function call interpretation
+function userCard() { /* ... */ }</code></pre>
+
+      <h2>Component File Organization</h2>
+      <p>A well-organized project structure scales as your app grows. Here is a common pattern:</p>
+      <pre><code>src/
+  components/
+    Avatar/
+      Avatar.tsx
+      Avatar.test.tsx
+      index.ts
+    Button/
+      Button.tsx
+      Button.styles.ts
+      index.ts
+    Card/
+      Card.tsx
+      index.ts
+  screens/
+    HomeScreen.tsx
+    ProfileScreen.tsx
+    SettingsScreen.tsx
+  navigation/
+    AppNavigator.tsx
+  hooks/
+    useAuth.ts
+    useFetch.ts
+  utils/
+    formatDate.ts
+    api.ts
+  types/
+    index.ts</code></pre>
+
+      <h2>Reusable Component Patterns</h2>
+      <p>Here is a detailed example of a well-designed, reusable Button component:</p>
+
+      <pre><code>import React from 'react';
+import { TouchableOpacity, Text, ActivityIndicator, StyleSheet } from 'react-native';
+
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+type ButtonSize = 'small' | 'medium' | 'large';
+
+interface ButtonProps {
+  title: string;
+  onPress: () =&gt; void;
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  disabled?: boolean;
+}
+
+export default function Button({
+  title,
+  onPress,
+  variant = 'primary',
+  size = 'medium',
+  loading = false,
+  disabled = false,
+}: ButtonProps) {
+  const buttonStyles = [
+    styles.base,
+    styles[variant],
+    styles[size],
+    disabled &amp;&amp; styles.disabled,
+  ];
+
+  const textStyles = [
+    styles.text,
+    styles[`${variant}Text`],
+    styles[`${size}Text`],
+  ];
+
+  return (
+    &lt;TouchableOpacity
+      style={buttonStyles}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+    &gt;
+      {loading ? (
+        &lt;ActivityIndicator color="#fff" size="small" /&gt;
+      ) : (
+        &lt;Text style={textStyles}&gt;{title}&lt;/Text&gt;
+      )}
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  base: {
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  primary: { backgroundColor: '#3b82f6' },
+  secondary: { backgroundColor: '#6b7280' },
+  danger: { backgroundColor: '#ef4444' },
+  ghost: { backgroundColor: 'transparent' },
+  small: { paddingVertical: 6, paddingHorizontal: 12 },
+  medium: { paddingVertical: 10, paddingHorizontal: 20 },
+  large: { paddingVertical: 14, paddingHorizontal: 28 },
+  disabled: { opacity: 0.5 },
+  text: { fontWeight: '600', color: '#fff' },
+  primaryText: { color: '#fff' },
+  secondaryText: { color: '#fff' },
+  dangerText: { color: '#fff' },
+  ghostText: { color: '#3b82f6' },
+  smallText: { fontSize: 12 },
+  mediumText: { fontSize: 16 },
+  largeText: { fontSize: 18 },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. Which type of component should you always use in modern React Native?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Class components</label>
+        <label><input type="radio" name="q1" value="b"> Function components</label>
+        <label><input type="radio" name="q1" value="c"> Arrow components</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. What is the correct naming convention for a React Native component?</strong></p>
+        <label><input type="radio" name="q2" value="a"> lowercase (e.g., userCard)</label>
+        <label><input type="radio" name="q2" value="b"> PascalCase (e.g., UserCard)</label>
+        <label><input type="radio" name="q2" value="c"> camelCase (e.g., userCard)</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. How many components should typically be exported per file?</strong></p>
+        <label><input type="radio" name="q3" value="a"> One main component</label>
+        <label><input type="radio" name="q3" value="b"> As many as possible</label>
+        <label><input type="radio" name="q3" value="c"> Exactly three</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Reusable Card Component</h3>
+        <p>Create a flexible Card component that can display content in various configurations:</p>
+
+        <pre><code>import React from 'react';
+import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+
+interface CardProps {
+  title: string;
+  subtitle?: string;
+  description?: string;
+  imageUrl?: string;
+  onPress?: () =&gt; void;
+  variant?: 'default' | 'outlined' | 'elevated';
+}
+
+export default function Card({
+  title,
+  subtitle,
+  description,
+  imageUrl,
+  onPress,
+  variant = 'default',
+}: CardProps) {
+  const cardContent = (
+    &lt;View style={[styles.card, styles[variant]]}&gt;
+      {imageUrl &amp;&amp; (
+        &lt;Image source={{ uri: imageUrl }} style={styles.image} /&gt;
+      )}
+      &lt;View style={styles.content}&gt;
+        &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+        {subtitle &amp;&amp; &lt;Text style={styles.subtitle}&gt;{subtitle}&lt;/Text&gt;}
+        {description &amp;&amp; &lt;Text style={styles.description}&gt;{description}&lt;/Text&gt;}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+
+  if (onPress) {
+    return (
+      &lt;TouchableOpacity onPress={onPress} activeOpacity={0.8}&gt;
+        {cardContent}
+      &lt;/TouchableOpacity&gt;
+    );
+  }
+
+  return cardContent;
+}
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  default: {
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  outlined: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  elevated: {
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+  },
+  image: {
+    width: '100%',
+    height: 150,
+  },
+  content: {
+    padding: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 14,
+    color: '#333',
+    lineHeight: 20,
+  },
+});</code></pre>
+
+        <p><strong>Usage examples:</strong></p>
+        <pre><code>// Basic card
+&lt;Card title="Getting Started" description="Learn the basics" /&gt;
+
+// Card with image and subtitle
+&lt;Card
+  title="React Native"
+  subtitle="Mobile Development"
+  imageUrl="https://picsum.photos/400/200"
+/&gt;
+
+// Tappable elevated card
+&lt;Card
+  title="Read More"
+  variant="elevated"
+  onPress={() =&gt; navigation.navigate('Article')}
+/&gt;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Components are self-contained, reusable building blocks of your UI</li>
+        <li>Always use function components over class components</li>
+        <li>Compose small, focused components to build complex UIs</li>
+        <li>Component names must use PascalCase and start with a capital letter</li>
+        <li>One component per file is the recommended file organization pattern</li>
+        <li>Use TypeScript interfaces to define component props for type safety</li>
+        <li>Design components with sensible defaults and flexible prop options</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Components Documentation</strong> — Official guide to creating and composing components in React. <a href="https://react.dev/learn/your-first-component" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'a' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

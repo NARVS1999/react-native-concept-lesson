@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 6: State</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 6: State</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand what state is, how it differs from props, how state triggers re-renders, the importance of state immutability, state lifting, and how to manage complex state objects.
+      </div>
+
+      <h2>What Is State?</h2>
+      <p>State is data that belongs to a component and can change over time. While props are external data passed into a component, state is internal data that a component manages itself. When state changes, React Native re-renders the component to reflect the new data on screen.</p>
+      <p>State is what makes your app interactive. Without state, your app would be a static display. With state, you can track user input, fetch data from APIs, toggle UI elements, and respond to events.</p>
+
+      <pre><code>import React, { useState } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+function Counter() {
+  // useState returns [currentValue, setterFunction]
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Add 1" onPress={() =&gt; setCount(count + 1)} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <p>The <code>useState</code> hook takes an initial value and returns an array with two elements: the current state value and a function to update it. When you call the setter function, React Native schedules a re-render of the component.</p>
+
+      <h2>State vs Props</h2>
+      <p>Understanding the difference between state and props is fundamental:</p>
+
+      <table style="width:100%; border-collapse:collapse; margin:15px 0;">
+        <thead>
+          <tr style="background:#3b82f6; color:#fff;">
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Feature</th>
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">Props</th>
+            <th style="border:1px solid #ddd; padding:10px; text-align:left;">State</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Source</td>
+            <td style="border:1px solid #ddd; padding:10px;">Passed from parent component</td>
+            <td style="border:1px solid #ddd; padding:10px;">Managed within the component</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Mutability</td>
+            <td style="border:1px solid #ddd; padding:10px;">Read-only (immutable)</td>
+            <td style="border:1px solid #ddd; padding:10px;">Can be changed via setter</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Re-renders</td>
+            <td style="border:1px solid #ddd; padding:10px;">Changes trigger re-render</td>
+            <td style="border:1px solid #ddd; padding:10px;">Changes trigger re-render</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Purpose</td>
+            <td style="border:1px solid #ddd; padding:10px;">Configure a component</td>
+            <td style="border:1px solid #ddd; padding:10px;">Track interactive data</td>
+          </tr>
+          <tr>
+            <td style="border:1px solid #ddd; padding:10px;">Scope</td>
+            <td style="border:1px solid #ddd; padding:10px;">Component receives from outside</td>
+            <td style="border:1px solid #ddd; padding:10px;">Component owns and controls</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <pre><code>// Props come from outside
+function Parent() {
+  return &lt;Child name="Alice" /&gt;;  // "Alice" is a prop
+}
+
+// State is internal
+function Child({ name }) {
+  const [age, setAge] = useState(25);  // age is state
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{name} is {age} years old&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>How State Triggers Re-Renders</h2>
+      <p>When you call a state setter function, React Native does two things:</p>
+      <ol>
+        <li>It updates the state value to the new value you provided</li>
+        <li>It schedules a re-render of the component (and its children)</li>
+      </ol>
+      <p>This re-render is how the UI stays in sync with your data. React compares the new JSX with the previous JSX and updates only the parts of the native view tree that changed.</p>
+
+      <pre><code>function ToggleExample() {
+  const [isVisible, setIsVisible] = useState(false);
+
+  // This will cause a re-render
+  const toggle = () =&gt; {
+    setIsVisible(!isVisible); // State changes, component re-renders
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;Button title="Toggle" onPress={toggle} /&gt;
+      {isVisible &amp;&amp; &lt;Text&gt;Now you see me!&lt;/Text&gt;}
+    &lt;/View&gt;
+  );
+}
+
+// Important: Batched updates
+function BatchExample() {
+  const [count, setCount] = useState(0);
+  const [name, setName] = useState('');
+
+  const handleClick = () =&gt; {
+    // These two updates are batched into one re-render
+    setCount(count + 1);
+    setName('Updated');
+  };
+
+  return (/* ... */);
+}</code></pre>
+
+      <h2>State Immutability</h2>
+      <p>You must never modify state directly. Always create a new value when updating state, especially for objects and arrays. Direct mutation prevents React from detecting changes, causing your UI to not update.</p>
+
+      <pre><code>// WRONG - direct mutation (will NOT re-render)
+function BadTodoList() {
+  const [todos, setTodos] = useState(['Buy milk', 'Walk dog']);
+
+  const addTodo = () =&gt; {
+    todos.push('New todo');     // Direct mutation - BAD!
+    setTodos(todos);            // Same reference - no re-render!
+  };
+
+  return (/* ... */);
+}
+
+// CORRECT - immutable update
+function GoodTodoList() {
+  const [todos, setTodos] = useState(['Buy milk', 'Walk dog']);
+
+  const addTodo = () =&gt; {
+    setTodos([...todos, 'New todo']);  // New array - triggers re-render
+  };
+
+  const removeTodo = (index) =&gt; {
+    setTodos(todos.filter((_, i) =&gt; i !== index));  // New array
+  };
+
+  return (/* ... */);
+}
+
+// CORRECT - immutable object update
+function ProfileEditor() {
+  const [user, setUser] = useState({ name: 'Alice', age: 25 });
+
+  const updateAge = () =&gt; {
+    setUser({ ...user, age: user.age + 1 });  // New object
+  };
+
+  const updateName = (newName) =&gt; {
+    setUser({ ...user, name: newName });  // New object with spread
+  };
+
+  return (/* ... */);
+}
+
+// CORRECT - immutable array update with items
+function TodoApp() {
+  const [todos, setTodos] = useState([
+    { id: 1, text: 'Learn React', completed: false },
+    { id: 2, text: 'Learn Native', completed: false },
+  ]);
+
+  const toggleTodo = (id) =&gt; {
+    setTodos(todos.map(todo =&gt;
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    ));
+  };
+
+  return (/* ... */);
+}</code></pre>
+
+      <h2>State Lifting</h2>
+      <p>When two sibling components need to share state, lift the state up to their closest common parent. The parent holds the state and passes it down as props.</p>
+
+      <pre><code>// LIFTED STATE - parent manages shared state
+function TemperatureConverter() {
+  const [celsius, setCelsius] = useState('');
+
+  const fahrenheit = celsius ? (parseFloat(celsius) * 9) / 5 + 32 : '';
+
+  return (
+    &lt;View&gt;
+      {/* Parent passes state down as props */}
+      &lt;TemperatureInput
+        scale="celsius"
+        temperature={celsius}
+        onTemperatureChange={setCelsius}
+      /&gt;
+      &lt;TemperatureInput
+        scale="fahrenheit"
+        temperature={fahrenheit.toString()}
+        onTemperatureChange={(f) =&gt; {
+          setCelsius(((parseFloat(f) - 32) * 5) / 9);
+        }}
+      /&gt;
+      &lt;BoilingVerdict celsius={parseFloat(celsius) || 0} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Child components receive state as props
+function TemperatureInput({ scale, temperature, onTemperatureChange }) {
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Enter temperature in {scale}:&lt;/Text&gt;
+      &lt;TextInput
+        value={temperature}
+        onChangeText={onTemperatureChange}
+        keyboardType="numeric"
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Complex State Objects</h2>
+      <p>For components with multiple related state values, using a single state object can be cleaner.</p>
+
+      <pre><code>// Using a state object for related values
+function UserForm() {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    age: 0,
+  });
+
+  // Helper to update a single field
+  const updateField = (field, value) =&gt; {
+    setFormData(prev =&gt; ({ ...prev, [field]: value }));
+  };
+
+  return (
+    &lt;View style={styles.form}&gt;
+      &lt;TextInput
+        placeholder="First Name"
+        value={formData.firstName}
+        onChangeText={(val) =&gt; updateField('firstName', val)}
+      /&gt;
+      &lt;TextInput
+        placeholder="Last Name"
+        value={formData.lastName}
+        onChangeText={(val) =&gt; updateField('lastName', val)}
+      /&gt;
+      &lt;TextInput
+        placeholder="Email"
+        value={formData.email}
+        onChangeText={(val) =&gt; updateField('email', val)}
+        keyboardType="email-address"
+      /&gt;
+      &lt;Button
+        title="Submit"
+        onPress={() =&gt; console.log(formData)}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Functional state updates (when new state depends on previous)
+function Counter() {
+  const [count, setCount] = useState(0);
+
+  // Use function form when new state depends on previous
+  const increment = () =&gt; setCount(prev =&gt; prev + 1);
+  const decrement = () =&gt; setCount(prev =&gt; prev - 1);
+  const reset = () =&gt; setCount(0);
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{count}&lt;/Text&gt;
+      &lt;Button title="+" onPress={increment} /&gt;
+      &lt;Button title="-" onPress={decrement} /&gt;
+      &lt;Button title="Reset" onPress={reset} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What happens when you call a state setter function?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Nothing, you need to manually re-render</label>
+        <label><input type="radio" name="q1" value="b"> React schedules a re-render of the component</label>
+        <label><input type="radio" name="q1" value="c"> The entire app restarts</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Why must state updates be immutable?</strong></p>
+        <label><input type="radio" name="q2" value="a"> For better performance</label>
+        <label><input type="radio" name="q2" value="b"> So React can detect the change and trigger a re-render</label>
+        <label><input type="radio" name="q2" value="c"> To prevent memory leaks</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. How do sibling components share state?</strong></p>
+        <label><input type="radio" name="q3" value="a"> They can access each other's state directly</label>
+        <label><input type="radio" name="q3" value="b"> Lift state to the closest common parent and pass down as props</label>
+        <label><input type="radio" name="q3" value="c"> They use global variables</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Counter with Increment, Decrement, and Reset</h3>
+        <p>Create a fully functional counter app with state management:</p>
+
+        <pre><code>import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  const increment = () =&gt; setCount(prev =&gt; prev + 1);
+  const decrement = () =&gt; setCount(prev =&gt; prev - 1);
+  const reset = () =&gt; setCount(0);
+
+  const getCountColor = () =&gt; {
+    if (count &gt; 0) return '#22c55e';
+    if (count &lt; 0) return '#ef4444';
+    return '#374151';
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Counter App&lt;/Text&gt;
+
+      &lt;View style={styles.countContainer}&gt;
+        &lt;Text style={[styles.count, { color: getCountColor() }]}&gt;
+          {count}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.buttonRow}&gt;
+        &lt;TouchableOpacity
+          style={[styles.button, styles.decrementButton]}
+          onPress={decrement}
+        &gt;
+          &lt;Text style={styles.buttonText}&gt;-&lt;/Text&gt;
+        &lt;/TouchableOpacity&gt;
+
+        &lt;TouchableOpacity
+          style={[styles.button, styles.resetButton]}
+          onPress={reset}
+        &gt;
+          &lt;Text style={styles.buttonText}&gt;Reset&lt;/Text&gt;
+        &lt;/TouchableOpacity&gt;
+
+        &lt;TouchableOpacity
+          style={[styles.button, styles.incrementButton]}
+          onPress={increment}
+        &gt;
+          &lt;Text style={styles.buttonText}&gt;+&lt;/Text&gt;
+        &lt;/TouchableOpacity&gt;
+      &lt;/View&gt;
+
+      &lt;Text style={styles.hint}&gt;
+        {count === 0
+          ? 'Start counting!'
+          : count &gt; 0
+          ? 'Going up!'
+          : 'Going down!'}
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 40,
+  },
+  countContainer: {
+    marginBottom: 40,
+  },
+  count: {
+    fontSize: 80,
+    fontWeight: 'bold',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 16,
+    marginBottom: 30,
+  },
+  button: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  incrementButton: {
+    backgroundColor: '#22c55e',
+  },
+  decrementButton: {
+    backgroundColor: '#ef4444',
+  },
+  resetButton: {
+    backgroundColor: '#6b7280',
+    width: 80,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  hint: {
+    fontSize: 16,
+    color: '#666',
+  },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>State is internal, mutable data managed by a component using <code>useState</code></li>
+        <li>Props are external, read-only data passed from parent to child</li>
+        <li>Calling a state setter triggers a re-render of the component</li>
+        <li>Always update state immutably — never modify arrays or objects directly</li>
+        <li>Use the spread operator (<code>...</code>) to create new copies of state</li>
+        <li>Lift state up to the closest common parent when siblings need to share data</li>
+        <li>Use functional updates (<code>setState(prev =&gt; ...)</code>) when new state depends on previous state</li>
+        <li>Group related values in a state object for cleaner code</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React State Documentation</strong> — Official guide to managing state with useState and understanding state updates. <a href="https://react.dev/learn/state-a-components-memory" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

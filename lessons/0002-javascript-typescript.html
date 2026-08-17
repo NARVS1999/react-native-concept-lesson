@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 2: JavaScript and TypeScript</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 2: JavaScript and TypeScript</h1>
+      <p><em>Phase 1 — Foundational Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand the JavaScript fundamentals required for React Native development, the basics of TypeScript, why TypeScript is preferred in React Native projects, and how to configure TypeScript in an Expo project.
+      </div>
+
+      <h2>JavaScript Fundamentals for React Native</h2>
+      <p>Before diving into React Native, you need a solid grasp of core JavaScript concepts. Let's review the essentials.</p>
+
+      <h3>Variables and Data Types</h3>
+      <p>React Native uses <code>let</code> and <code>const</code> for variable declarations. Avoid <code>var</code> as it has function scope instead of block scope.</p>
+      <pre><code>// const for values that won't change
+const appName = 'MyApp';
+const PI = 3.14159;
+
+// let for values that will change
+let counter = 0;
+let userName = 'John';
+
+// Data types
+const isActive = true;          // boolean
+const count = 42;               // number
+const message = 'Hello!';      // string
+const items = [1, 2, 3];       // array
+const user = { name: 'John' }; // object
+const nothing = null;           // null
+const notDefined = undefined;   // undefined</code></pre>
+
+      <h3>Arrow Functions</h3>
+      <p>Arrow functions are the standard way to write functions in React Native. They are shorter and lexically bind <code>this</code>.</p>
+      <pre><code>// Traditional function
+function add(a, b) {
+  return a + b;
+}
+
+// Arrow function
+const add = (a, b) =&gt; a + b;
+
+// Arrow function with body
+const greet = (name) =&gt; {
+  const greeting = `Hello, ${name}!`;
+  return greeting;
+};
+
+// Arrow function with single parameter (no parentheses needed)
+const double = x =&gt; x * 2;</code></pre>
+
+      <h3>Array Methods</h3>
+      <p>Array methods are essential for transforming data in React Native components.</p>
+      <pre><code>const users = [
+  { id: 1, name: 'Alice', age: 25 },
+  { id: 2, name: 'Bob', age: 30 },
+  { id: 3, name: 'Charlie', age: 35 },
+];
+
+// map - transform each item
+const names = users.map(user =&gt; user.name);
+// ['Alice', 'Bob', 'Charlie']
+
+// filter - keep items that match condition
+const adults = users.filter(user =&gt; user.age &gt;= 30);
+// [{ id: 2, name: 'Bob', age: 30 }, { id: 3, name: 'Charlie', age: 35 }]
+
+// find - get first matching item
+const bob = users.find(user =&gt; user.name === 'Bob');
+// { id: 2, name: 'Bob', age: 30 }
+
+// reduce - accumulate into single value
+const totalAge = users.reduce((sum, user) =&gt; sum + user.age, 0);
+// 90</code></pre>
+
+      <h3>Destructuring</h3>
+      <p>Destructuring makes it easy to extract values from objects and arrays.</p>
+      <pre><code>// Object destructuring
+const user = { name: 'Alice', age: 25, email: 'alice@example.com' };
+const { name, age, email } = user;
+
+// With renaming
+const { name: userName } = user;
+
+// With defaults
+const { role = 'user' } = user;
+
+// Array destructuring
+const colors = ['red', 'green', 'blue'];
+const [first, second, third] = colors;
+
+// In function parameters
+const UserCard = ({ name, age }) =&gt; {
+  return `${name} is ${age} years old`;
+};</code></pre>
+
+      <h3>Spread and Rest Operators</h3>
+      <pre><code>// Spread operator - expand arrays/objects
+const arr1 = [1, 2, 3];
+const arr2 = [...arr1, 4, 5]; // [1, 2, 3, 4, 5]
+
+const obj1 = { a: 1, b: 2 };
+const obj2 = { ...obj1, c: 3 }; // { a: 1, b: 2, c: 3 }
+
+// Rest operator - collect remaining items
+const [first, ...rest] = [1, 2, 3, 4];
+// first = 1, rest = [2, 3, 4]
+
+const { id, ...userData } = { id: 1, name: 'Alice', age: 25 };
+// id = 1, userData = { name: 'Alice', age: 25 }</code></pre>
+
+      <h2>TypeScript Basics</h2>
+      <p>TypeScript is a superset of JavaScript that adds static type checking. React Native projects increasingly use TypeScript for better developer experience and fewer runtime errors.</p>
+
+      <h3>Basic Types</h3>
+      <pre><code>// Primitive types
+let name: string = 'Alice';
+let age: number = 25;
+let isActive: boolean = true;
+
+// Array types
+let scores: number[] = [90, 85, 92];
+let names: Array&lt;string&gt; = ['Alice', 'Bob'];
+
+// Union types
+let id: string | number = 'abc123';
+id = 42; // also valid
+
+// Literal types
+type Status = 'loading' | 'success' | 'error';
+let currentStatus: Status = 'loading';</code></pre>
+
+      <h3>Interfaces</h3>
+      <p>Interfaces define the shape of objects.</p>
+      <pre><code>interface User {
+  id: number;
+  name: string;
+  email: string;
+  age?: number; // optional property
+  role: 'admin' | 'user' | 'guest';
+}
+
+const user: User = {
+  id: 1,
+  name: 'Alice',
+  email: 'alice@example.com',
+  role: 'admin',
+};</code></pre>
+
+      <h3>Generic Types</h3>
+      <pre><code>// Generic function
+function getFirst&lt;T&gt;(arr: T[]): T | undefined {
+  return arr[0];
+}
+
+const num = getFirst([1, 2, 3]); // number
+const str = getFirst(['a', 'b']); // string
+
+// Generic component-like pattern
+interface ApiResponse&lt;T&gt; {
+  data: T;
+  status: number;
+  message: string;
+}
+
+const userResponse: ApiResponse&lt;User&gt; = {
+  data: { id: 1, name: 'Alice', email: 'a@b.com', role: 'user' },
+  status: 200,
+  message: 'Success',
+};</code></pre>
+
+      <h2>JS vs TS Side-by-Side Comparison</h2>
+      <pre><code>// ============================================
+// JavaScript Version
+// ============================================
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+
+export default function LoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  const handleLogin = () => {
+    // No type checking - could pass number, object, etc.
+    console.log(email, password);
+    // email could accidentally be set to a number
+    setEmail(123); // No error in JS!
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput value={email} onChangeText={setEmail} /&gt;
+      &lt;TextInput value={password} onChangeText={setPassword} secureTextEntry /&gt;
+      &lt;Button title="Login" onPress={handleLogin} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// ============================================
+// TypeScript Version
+// ============================================
+import React, { useState } from 'react';
+import { View, Text, TextInput, Button } from 'react-native';
+
+interface LoginFormProps {
+  onLogin: (email: string, password: string) =&gt; void;
+}
+
+export default function LoginForm({ onLogin }: LoginFormProps) {
+  const [email, setEmail] = useState&lt;string&gt;('');
+  const [password, setPassword] = useState&lt;string&gt;('');
+
+  const handleLogin = () =&gt; {
+    onLogin(email, password);
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput value={email} onChangeText={setEmail} /&gt;
+      &lt;TextInput value={password} onChangeText={setPassword} secureTextEntry /&gt;
+      &lt;Button title="Login" onPress={handleLogin} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Why TypeScript is Preferred in React Native</h2>
+      <ul>
+        <li><strong>Early Error Detection:</strong> Catch type-related bugs at compile time instead of runtime</li>
+        <li><strong>Better IDE Support:</strong> Autocomplete, inline documentation, and refactoring tools work much better</li>
+        <li><strong>Self-Documenting Code:</strong> Types serve as documentation for other developers (and your future self)</li>
+        <li><strong>Refactoring Confidence:</strong> Change a prop name and TypeScript shows every place that needs updating</li>
+        <li><strong>Industry Standard:</strong> Most modern React Native projects use TypeScript; knowing it makes you more employable</li>
+      </ul>
+
+      <h2>TS Configuration in Expo Projects</h2>
+      <p>When you create a new Expo project, TypeScript is included by default. The configuration is in <code>tsconfig.json</code>:</p>
+      <pre><code>{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
+}</code></pre>
+      <p>Key settings explained:</p>
+      <ul>
+        <li><code>"strict": true</code> — Enables all strict type-checking options (recommended)</li>
+        <li><code>"paths"</code> — Allows import aliases like <code>@/components/Button</code></li>
+        <li><code>"include"</code> — Specifies which files TypeScript should check</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <p><strong>1. What is the main advantage of TypeScript over JavaScript?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Faster runtime execution</label>
+        <label><input type="radio" name="q1" value="b"> Static type checking that catches errors at compile time</label>
+        <label><input type="radio" name="q1" value="c"> Smaller bundle sizes</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>2. Which keyword should you use for variable declarations in React Native?</strong></p>
+        <label><input type="radio" name="q2" value="a"> var</label>
+        <label><input type="radio" name="q2" value="b"> const and let</label>
+        <label><input type="radio" name="q2" value="c"> define</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+
+      <div class="quiz-item">
+        <p><strong>3. What does an interface define in TypeScript?</strong></p>
+        <label><input type="radio" name="q3" value="a"> A function implementation</label>
+        <label><input type="radio" name="q3" value="b"> The shape/structure of an object</label>
+        <label><input type="radio" name="q3" value="c"> A CSS style object</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Convert a JS Component to TypeScript</h3>
+        <p>Take this JavaScript component and convert it to TypeScript:</p>
+        <pre><code>// Original: UserList.js (JavaScript)
+import React from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+
+export default function UserList({ users, onSelect }) {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;FlatList
+        data={users}
+        keyExtractor={(item) =&gt; item.id.toString()}
+        renderItem={({ item }) =&gt; (
+          &lt;View style={styles.item}&gt;
+            &lt;Text style={styles.name}&gt;{item.name}&lt;/Text&gt;
+            &lt;Text style={styles.email}&gt;{item.email}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  item: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  name: { fontSize: 16, fontWeight: 'bold' },
+  email: { fontSize: 14, color: '#666' },
+});</code></pre>
+
+        <p>Convert it to TypeScript by adding proper interfaces:</p>
+        <pre><code>// Converted: UserList.tsx (TypeScript)
+import React from 'react';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
+
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+interface UserListProps {
+  users: User[];
+  onSelect: (user: User) =&gt; void;
+}
+
+export default function UserList({ users, onSelect }: UserListProps) {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;FlatList
+        data={users}
+        keyExtractor={(item) =&gt; item.id.toString()}
+        renderItem={({ item }) =&gt; (
+          &lt;View style={styles.item}&gt;
+            &lt;Text style={styles.name}&gt;{item.name}&lt;/Text&gt;
+            &lt;Text style={styles.email}&gt;{item.email}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  item: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  name: { fontSize: 16, fontWeight: 'bold' },
+  email: { fontSize: 14, color: '#666' },
+});</code></pre>
+
+        <p><strong>Challenge:</strong> Add an optional <code>age</code> field to the User interface, make it required in the component, and add a conditional render for age display.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Use <code>const</code> and <code>let</code> instead of <code>var</code> for variable declarations</li>
+        <li>Arrow functions are the standard function syntax in React Native</li>
+        <li>Array methods like <code>map</code>, <code>filter</code>, and <code>find</code> are essential for data transformation</li>
+        <li>Destructuring makes extracting values from objects and arrays concise</li>
+        <li>TypeScript adds static type checking, catching bugs before they reach runtime</li>
+        <li>Interfaces define object shapes and are used extensively in React Native with TS</li>
+        <li>Expo projects include TypeScript support out of the box</li>
+        <li>TypeScript provides better IDE support, documentation, and refactoring capabilities</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>TypeScript Official Handbook</strong> — Comprehensive guide to TypeScript from the basics to advanced types. <a href="https://www.typescriptlang.org/docs/handbook/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
