@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0021: NavigationContainer</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0021: NavigationContainer</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Understand the NavigationContainer component, how to wrap your app with it, and configure navigation state and linking.
+      </div>
+
+      <h2>What is NavigationContainer?</h2>
+      <p><code>NavigationContainer</code> is the root component for React Navigation. It manages the navigation state and provides the navigation context to your app.</p>
+      <p>Every React Navigation app must have exactly one <code>NavigationContainer</code> component at the root.</p>
+
+      <h2>Basic Setup</h2>
+      <pre><code>import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Details" component={DetailsScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Wrapping Your App</h2>
+      <p>The <code>NavigationContainer</code> should wrap your entire navigation structure. Place it in your root component (usually <code>App.js</code>):</p>
+      <pre><code>// App.js
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import HomeNavigator from './navigation/HomeNavigator';
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;HomeNavigator /&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Navigation State Management</h2>
+      <p>NavigationContainer manages the navigation state internally. You can access and modify the state using hooks:</p>
+      <pre><code>import { useNavigationContainerRef } from '@react-navigation/native';
+
+function App() {
+  const navigationRef = useNavigationContainerRef();
+
+  return (
+    &lt;NavigationContainer ref={navigationRef}&gt;
+      {/* Your navigators */}
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Linking Configuration</h2>
+      <p>Linking configuration maps URLs to screens for deep linking:</p>
+      <pre><code>const linking = {
+  prefixes: ['myapp://', 'https://myapp.com'],
+  config: {
+    screens: {
+      Home: '',
+      Details: 'details/:id',
+      Profile: 'user/:userId',
+    },
+  },
+};
+
+function App() {
+  return (
+    &lt;NavigationContainer linking={linking}&gt;
+      &lt;Stack.Navigator&gt;
+        {/* screens */}
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Event Listeners</h2>
+      <p>You can listen to navigation events:</p>
+      <pre><code>function App() {
+  return (
+    &lt;NavigationContainer
+      onReady={() =&gt; {
+        console.log('Navigation is ready');
+      }}
+      onStateChange={(state) =&gt; {
+        console.log('Navigation state changed:', state);
+      }}
+    &gt;
+      {/* Your navigators */}
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the purpose of NavigationContainer?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> To create navigation screens</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> To manage navigation state and provide context</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> To style navigation components</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How many NavigationContainer components should a React Navigation app have?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> One for each screen</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Exactly one at the root</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> As many as needed</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What does linking configuration do?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Links CSS files to components</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Maps URLs to screens for deep linking</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Connects to external APIs</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Set Up NavigationContainer with Basic Config</h3>
+        <p>Create a basic React Navigation setup with NavigationContainer:</p>
+        <pre><code># Install dependencies
+npm install @react-navigation/native
+npm install react-native-screens react-native-safe-area-context
+
+# Create navigation directory
+mkdir navigation</code></pre>
+        <p>Create <code>navigation/HomeNavigator.js</code>:</p>
+        <pre><code>import React from 'react';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from '../screens/HomeScreen';
+import DetailsScreen from '../screens/DetailsScreen';
+
+const Stack = createNativeStackNavigator();
+
+export default function HomeNavigator() {
+  return (
+    &lt;Stack.Navigator&gt;
+      &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+      &lt;Stack.Screen name="Details" component={DetailsScreen} /&gt;
+    &lt;/Stack.Navigator&gt;
+  );
+}</code></pre>
+        <p>Update <code>App.js</code>:</p>
+        <pre><code>import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import HomeNavigator from './navigation/HomeNavigator';
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;HomeNavigator /&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+        <p>Create simple screen components and test navigation.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>NavigationContainer is the root component for React Navigation</li>
+        <li>It manages navigation state and provides context to child navigators</li>
+        <li>Only one NavigationContainer should exist at the app root</li>
+        <li>Linking configuration enables deep linking and URL mapping</li>
+        <li>Event listeners can track navigation state changes</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Navigation Documentation</strong> — Official docs for React Navigation setup and API. <a href="https://reactnavigation.org/docs/getting-started" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

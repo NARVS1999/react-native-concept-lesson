@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0024: FlatList</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0024: FlatList</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master FlatList for efficient rendering of lists, optimize performance, and implement infinite scrolling.
+      </div>
+
+      <h2>What is FlatList?</h2>
+      <p><code>FlatList</code> is a React Native component for rendering efficient, scrollable lists of data. It renders items lazily (only when they're about to appear on screen), making it perfect for large datasets.</p>
+
+      <h2>Basic FlatList Usage</h2>
+      <pre><code>import React from 'react';
+import { FlatList, Text, View } from 'react-native';
+
+const data = [
+  { id: '1', title: 'Item 1' },
+  { id: '2', title: 'Item 2' },
+  { id: '3', title: 'Item 3' },
+];
+
+function MyList() {
+  return (
+    &lt;FlatList
+      data={data}
+      keyExtractor={(item) =&gt; item.id}
+      renderItem={({ item }) =&gt; (
+        &lt;View&gt;
+          &lt;Text&gt;{item.title}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>Essential Props</h2>
+      <p><strong>data:</strong> Array of items to render</p>
+      <p><strong>keyExtractor:</strong> Function to extract unique key for each item</p>
+      <p><strong>renderItem:</strong> Function to render each item</p>
+
+      <h2>Performance Optimization</h2>
+      <pre><code>&lt;FlatList
+  data={largeDataSet}
+  keyExtractor={(item) =&gt; item.id}
+  renderItem={renderItem}
+  initialNumToRender={10}
+  maxToRenderPerBatch={10}
+  windowSize={5}
+  removeClippedSubviews={true}
+  getItemLayout={(data, index) =&gt; ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index,
+    index,
+  })}
+/&gt;</code></pre>
+
+      <p><strong>initialNumToRender:</strong> Number of items to render initially</p>
+      <p><strong>windowSize:</strong> Number of items to keep in the render window</p>
+      <p><strong>removeClippedSubviews:</strong> Remove off-screen views from native hierarchy</p>
+
+      <h2>Infinite Scrolling (Pagination)</h2>
+      <pre><code>function InfiniteList() {
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  const loadMore = () =&gt; {
+    if (loading) return;
+    setLoading(true);
+    // Fetch next page of data
+    fetchMoreData(page).then((newData) =&gt; {
+      setData([...data, ...newData]);
+      setPage(page + 1);
+      setLoading(false);
+    });
+  };
+
+  return (
+    &lt;FlatList
+      data={data}
+      keyExtractor={(item) =&gt; item.id}
+      renderItem={renderItem}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={loading ? &lt;ActivityIndicator /&gt; : null}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>Empty and Header Components</h2>
+      <pre><code>&lt;FlatList
+  data={data}
+  keyExtractor={(item) =&gt; item.id}
+  renderItem={renderItem}
+  ListHeaderComponent={&lt;Text style={styles.header}&gt;My List&lt;/Text&gt;}
+  ListEmptyComponent={&lt;Text&gt;No items found&lt;/Text&gt;}
+  ListFooterComponent={&lt;Text&gt;End of list&lt;/Text&gt;}
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. Why is FlatList better than mapping an array for large lists?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> It renders all items at once</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> It renders items lazily as they come into view</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> It uses less memory for small lists</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What prop is used for infinite scrolling?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> onScroll</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> onEndReached</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> onPagination</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What does keyExtractor do?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Sorts the data</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Extracts unique keys for each item</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Filters duplicate items</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a FlatList with 100 Items</h3>
+        <p>Create a performant FlatList with 100 items and infinite scrolling:</p>
+        <pre><code>import React, { useState, useEffect } from 'react';
+import { FlatList, Text, View, StyleSheet, ActivityIndicator } from 'react-native';
+
+const generateData = (page) =&gt; {
+  const items = [];
+  for (let i = 1; i &lt;= 20; i++) {
+    const id = (page - 1) * 20 + i;
+    items.push({ id: String(id), title: `Item ${id}` });
+  }
+  return items;
+};
+
+export default function App() {
+  const [data, setData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() =&gt; {
+    // Load initial data
+    setData(generateData(1));
+  }, []);
+
+  const loadMore = () =&gt; {
+    if (loading) return;
+    setLoading(true);
+    setTimeout(() =&gt; {
+      const newData = generateData(page + 1);
+      setData([...data, ...newData]);
+      setPage(page + 1);
+      setLoading(false);
+    }, 1000);
+  };
+
+  const onRefresh = () =&gt; {
+    setRefreshing(true);
+    setTimeout(() =&gt; {
+      setData(generateData(1));
+      setPage(1);
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  const renderItem = ({ item }) =&gt; (
+    &lt;View style={styles.item}&gt;
+      &lt;Text style={styles.itemText}&gt;{item.title}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;FlatList
+        data={data}
+        keyExtractor={(item) =&gt; item.id}
+        renderItem={renderItem}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={loading ? &lt;ActivityIndicator style={styles.loader} /&gt; : null}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        initialNumToRender={10}
+        windowSize={5}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  item: { padding: 20, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  itemText: { fontSize: 16 },
+  loader: { padding: 20 },
+});</code></pre>
+        <p>This creates a FlatList with 100+ items, pull-to-refresh, and infinite scrolling.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>FlatList renders items lazily for better performance with large lists</li>
+        <li>Always provide a unique <code>keyExtractor</code> for each item</li>
+        <li>Use <code>onEndReached</code> for infinite scrolling/pagination</li>
+        <li>Optimize with <code>initialNumToRender</code>, <code>windowSize</code>, and <code>removeClippedSubviews</code></li>
+        <li>Use <code>getItemLayout</code> when item heights are fixed for better performance</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native FlatList</strong> — Official docs for FlatList component. <a href="https://reactnative.dev/docs/flatlist" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

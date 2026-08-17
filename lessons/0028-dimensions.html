@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0028: Dimensions API</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0028: Dimensions API</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master the Dimensions API and useWindowDimensions hook to create responsive layouts that adapt to different screen sizes.
+      </div>
+
+      <h2>Dimensions API</h2>
+      <p>The <code>Dimensions</code> API provides information about the device screen:</p>
+      <pre><code>import { Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+console.log('Screen width:', width);
+console.log('Screen height:', height);</code></pre>
+
+      <h2>useWindowDimensions Hook</h2>
+      <p>The recommended way to get screen dimensions in functional components:</p>
+      <pre><code>import { useWindowDimensions } from 'react-native';
+
+function MyComponent() {
+  const { width, height } = useWindowDimensions();
+  
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Width: {width}, Height: {height}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Responsive Sizing</h2>
+      <p>Calculate sizes based on screen dimensions:</p>
+      <pre><code>import { Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
+// Percentage-based sizing
+const cardWidth = width * 0.9;  // 90% of screen width
+const cardHeight = height * 0.3; // 30% of screen height
+
+// Responsive font size
+const fontSize = width &lt; 350 ? 14 : 16;
+
+// Responsive spacing
+const padding = width &lt; 350 ? 10 : 20;</code></pre>
+
+      <h2>Percentage-Based Layouts</h2>
+      <p>Use percentage strings for flexible layouts:</p>
+      <pre><code>&lt;View style={{ width: '100%', height: '100%' }}&gt;
+  &lt;View style={{ width: '50%', height: 100 }}&gt;
+    &lt;Text&gt;Half width&lt;/Text&gt;
+  &lt;/View&gt;
+&lt;/View&gt;</code></pre>
+
+      <h2>Orientation Handling</h2>
+      <pre><code>import { useWindowDimensions } from 'react-native';
+
+function ResponsiveComponent() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width &gt; height;
+  
+  return (
+    &lt;View style={{
+      flexDirection: isLandscape ? 'row' : 'column',
+    }}&gt;
+      &lt;View style={{ flex: 1 }}&gt;
+        &lt;Text&gt;Content 1&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={{ flex: 1 }}&gt;
+        &lt;Text&gt;Content 2&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Breakpoints</h2>
+      <p>Create breakpoint system for different screen sizes:</p>
+      <pre><code>const breakpoints = {
+  small: 350,
+  medium: 600,
+  large: 900,
+};
+
+const getBreakpoint = (width) =&gt; {
+  if (width &lt; breakpoints.small) return 'small';
+  if (width &lt; breakpoints.medium) return 'medium';
+  return 'large';
+};
+
+function ResponsiveComponent() {
+  const { width } = useWindowDimensions();
+  const breakpoint = getBreakpoint(width);
+  
+  const styles = {
+    small: { fontSize: 14, padding: 10 },
+    medium: { fontSize: 16, padding: 15 },
+    large: { fontSize: 18, padding: 20 },
+  };
+  
+  return (
+    &lt;View style={styles[breakpoint]}&gt;
+      &lt;Text&gt;Responsive content&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the recommended way to get screen dimensions in functional components?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Dimensions.get()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> useWindowDimensions()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Screen.width</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you create a view that takes 50% of screen width?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> width: 50</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> width: '50%'</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> width: Dimensions.get('window').width / 2</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. Why is useWindowDimensions preferred over Dimensions.get()?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> It's faster</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> It updates when screen dimensions change</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> It uses less memory</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Responsive Layout</h3>
+        <p>Create a responsive layout that adapts to different screen sizes:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
+
+const breakpoints = {
+  small: 350,
+  medium: 600,
+};
+
+export default function ResponsiveLayout() {
+  const { width, height } = useWindowDimensions();
+  const isSmall = width &lt; breakpoints.small;
+  const isMedium = width &lt; breakpoints.medium;
+  const isLandscape = width &gt; height;
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.header}&gt;
+        Responsive Layout ({width.toFixed(0)} x {height.toFixed(0)})
+      &lt;/Text&gt;
+      
+      &lt;View style={[
+        styles.content,
+        isLandscape &amp;&amp; styles.landscapeContent,
+      ]}&gt;
+        &lt;View style={[
+          styles.card,
+          { width: isSmall ? '100%' : isMedium ? '80%' : '60%' },
+        ]}&gt;
+          &lt;Text style={[
+            styles.cardTitle,
+            { fontSize: isSmall ? 16 : 20 },
+          ]}&gt;
+            Responsive Card
+          &lt;/Text&gt;
+          &lt;Text style={styles.cardText}&gt;
+            This card adapts to screen size: {isSmall ? 'Small' : isMedium ? 'Medium' : 'Large'}
+          &lt;/Text&gt;
+        &lt;/View&gt;
+        
+        &lt;View style={[
+          styles.grid,
+          isLandscape &amp;&amp; styles.gridLandscape,
+        ]}&gt;
+          &lt;View style={[styles.gridItem, { backgroundColor: '#007AFF' }]}&gt;
+            &lt;Text style={styles.gridText}&gt;Item 1&lt;/Text&gt;
+          &lt;/View&gt;
+          &lt;View style={[styles.gridItem, { backgroundColor: '#34C759' }]}&gt;
+            &lt;Text style={styles.gridText}&gt;Item 2&lt;/Text&gt;
+          &lt;/View&gt;
+          {!isLandscape &amp;&amp; (
+            &lt;View style={[styles.gridItem, { backgroundColor: '#FF9500' }]}&gt;
+              &lt;Text style={styles.gridText}&gt;Item 3&lt;/Text&gt;
+            &lt;/View&gt;
+          )}
+        &lt;/View&gt;
+      &lt;/View&gt;
+      
+      &lt;View style={styles.footer}&gt;
+        &lt;Text style={styles.footerText}&gt;
+          Orientation: {isLandscape ? 'Landscape' : 'Portrait'}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: { fontSize: 20, fontWeight: 'bold', padding: 20, textAlign: 'center' },
+  content: { flex: 1, padding: 20 },
+  landscapeContent: { flexDirection: 'row' },
+  card: { backgroundColor: 'white', borderRadius: 10, padding: 20, marginBottom: 20, alignSelf: 'center' },
+  cardTitle: { fontWeight: 'bold', marginBottom: 10 },
+  cardText: { color: '#666' },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' },
+  gridLandscape: { flexDirection: 'column', width: '30%' },
+  gridItem: { width: '48%', height: 100, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 10 },
+  gridText: { color: 'white', fontWeight: 'bold' },
+  footer: { padding: 20, backgroundColor: 'white' },
+  footerText: { textAlign: 'center', color: '#666' },
+});</code></pre>
+        <p>This creates a responsive layout that adapts to screen size and orientation.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Use <code>useWindowDimensions()</code> to get responsive screen dimensions</li>
+        <li>Dimensions update automatically when screen size changes (rotation, etc.)</li>
+        <li>Use percentage-based layouts for flexible sizing</li>
+        <li>Create breakpoint systems for different screen sizes</li>
+        <li>Handle orientation changes with <code>isLandscape</code> checks</li>
+        <li>Always test on different screen sizes for responsive design</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Dimensions</strong> — Official docs for Dimensions API. <a href="https://reactnative.dev/docs/dimensions" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0022: Stack Navigator</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0022: Stack Navigator</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master stack navigation with push/pop pattern, screen management, and parameter passing between screens.
+      </div>
+
+      <h2>Stack Navigator Concept</h2>
+      <p>A stack navigator works like a stack of cards - you push new screens onto the stack and pop them off when going back. This is the most common navigation pattern in mobile apps.</p>
+
+      <h2>Setting Up Stack Navigator</h2>
+      <pre><code>import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from './screens/HomeScreen';
+import DetailsScreen from './screens/DetailsScreen';
+
+const Stack = createNativeStackNavigator();
+
+function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Details" component={DetailsScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Navigation Methods</h2>
+      <p><strong>Push a new screen:</strong></p>
+      <pre><code>navigation.navigate('Details', { itemId: 86, otherParam: 'anything' });</code></pre>
+
+      <p><strong>Go back to previous screen:</strong></p>
+      <pre><code>navigation.goBack();</code></pre>
+
+      <p><strong>Go back to the first screen in stack:</strong></p>
+      <pre><code>navigation.popToTop();</code></pre>
+
+      <h2>Passing Parameters</h2>
+      <p><strong>Sending parameters:</strong></p>
+      <pre><code>// HomeScreen.js
+function HomeScreen({ navigation }) {
+  return (
+    &lt;Button
+      title="Go to Details"
+      onPress={() =&gt; navigation.navigate('Details', {
+        itemId: 42,
+        itemName: 'React Native Course'
+      })}
+    /&gt;
+  );
+}</code></pre>
+
+      <p><strong>Receiving parameters:</strong></p>
+      <pre><code>// DetailsScreen.js
+function DetailsScreen({ route, navigation }) {
+  const { itemId, itemName } = route.params;
+  
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Item ID: {itemId}&lt;/Text&gt;
+      &lt;Text&gt;Item Name: {itemName}&lt;/Text&gt;
+      &lt;Button title="Go Back" onPress={() =&gt; navigation.goBack()} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Screen Configuration</h2>
+      <pre><code>&lt;Stack.Screen
+  name="Home"
+  component={HomeScreen}
+  options={{
+    title: 'My Home',
+    headerStyle: { backgroundColor: '#f4511e' },
+    headerTintColor: '#fff',
+    headerTitleStyle: { fontWeight: 'bold' },
+  }}
+/&gt;</code></pre>
+
+      <h2>Setting Initial Params</h2>
+      <pre><code>&lt;Stack.Screen
+  name="Details"
+  component={DetailsScreen}
+  initialParams={{ itemId: 0, itemName: 'Default Item' }}
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the stack navigation pattern?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Tabs at the bottom of screen</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Push and pop screens like a stack of cards</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Drawing navigation drawer</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you pass parameters to a screen?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Using global variables</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Second argument of navigation.navigate()</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Using AsyncStorage</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. How do you go back to the previous screen?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> navigation.close()</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> navigation.goBack()</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> navigation.back()</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a 3-Screen Stack Navigation</h3>
+        <p>Create a stack navigator with Home, Details, and Profile screens:</p>
+        <pre><code>import React from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+function HomeScreen({ navigation }) {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Home Screen&lt;/Text&gt;
+      &lt;Button
+        title="Go to Details"
+        onPress={() =&gt; navigation.navigate('Details', { id: 1, name: 'React' })}
+      /&gt;
+      &lt;Button
+        title="Go to Profile"
+        onPress={() =&gt; navigation.navigate('Profile', { userId: 'user123' })}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+function DetailsScreen({ route, navigation }) {
+  const { id, name } = route.params;
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Details Screen&lt;/Text&gt;
+      &lt;Text&gt;ID: {id}, Name: {name}&lt;/Text&gt;
+      &lt;Button title="Go Back" onPress={() =&gt; navigation.goBack()} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+function ProfileScreen({ route, navigation }) {
+  const { userId } = route.params;
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Profile Screen&lt;/Text&gt;
+      &lt;Text&gt;User ID: {userId}&lt;/Text&gt;
+      &lt;Button title="Go Home" onPress={() =&gt; navigation.popToTop()} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator initialRouteName="Home"&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Details" component={DetailsScreen} /&gt;
+        &lt;Stack.Screen name="Profile" component={ProfileScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 24, marginBottom: 20 },
+});</code></pre>
+        <p>This creates a complete 3-screen stack navigation with parameter passing.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Stack navigator uses push/pop pattern for screen navigation</li>
+        <li>Use <code>createNativeStackNavigator()</code> to create a stack navigator</li>
+        <li>Pass parameters as second argument to <code>navigation.navigate()</code></li>
+        <li>Access parameters via <code>route.params</code> in the receiving screen</li>
+        <li>Use <code>goBack()</code>, <code>popToTop()</code>, or <code>pop()</code> to navigate back</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Navigation Stack Navigator</strong> — Official docs for stack navigator API. <a href="https://reactnavigation.org/docs/stack-navigator" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0019: Expo Managed Workflow</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0019: Expo Managed Workflow</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Understand Expo managed workflow, create Expo apps, and learn when to use Expo for React Native development.
+      </div>
+
+      <h2>What is Expo?</h2>
+      <p>Expo is a set of tools and services built around React Native that helps you build, deploy, and manage React Native apps without needing to touch native code directly.</p>
+      <p>The <strong>managed workflow</strong> means Expo handles the native project configuration for you, letting you focus on writing JavaScript/React code.</p>
+
+      <h2>Creating an Expo App</h2>
+      <p>To create a new Expo project, use the following command:</p>
+      <pre><code>npx create-expo-app my-app
+cd my-app
+npm start</code></pre>
+      <p>This sets up a complete React Native project with Expo's tools and configuration.</p>
+
+      <h2>Expo Go App</h2>
+      <p><strong>Expo Go</strong> is a mobile app that lets you preview your React Native projects on physical devices without building native binaries.</p>
+      <ul>
+        <li>Download Expo Go from App Store or Google Play</li>
+        <li>Scan the QR code from your terminal</li>
+        <li>See your app running instantly on your device</li>
+      </ul>
+
+      <h2>EAS Build</h2>
+      <p><strong>EAS (Expo Application Services)</strong> is Expo's build and submission service for creating production builds:</p>
+      <pre><code># Install EAS CLI
+npm install -g eas-cli
+
+# Login to your Expo account
+eas login
+
+# Build for Android
+eas build --platform android
+
+# Build for iOS
+eas build --platform ios</code></pre>
+
+      <h2>Advantages for Beginners</h2>
+      <ul>
+        <li><strong>No native setup required</strong> — No need to install Xcode or Android Studio</li>
+        <li><strong>Instant feedback</strong> — Use Expo Go to test on real devices immediately</li>
+        <li><strong>Managed native code</strong> — Expo handles complex native configuration</li>
+        <li><strong>Rich ecosystem</strong> — Access to many pre-built modules and APIs</li>
+        <li><strong>Easy deployment</strong> — EAS Build simplifies app store submission</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the main benefit of Expo's managed workflow?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> You must write native code</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Expo handles native configuration for you</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> You need Xcode to run Expo apps</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you create a new Expo project?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> react-native init</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> npx create-expo-app</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> expo new</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What is Expo Go used for?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Building production apps</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Previewing apps on physical devices</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Writing native code</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Create Your First Expo App</h3>
+        <p>Create an Expo app and run it on your device:</p>
+        <pre><code># Create the project
+npx create-expo-app HelloWorld
+cd HelloWorld
+
+# Start the development server
+npm start</code></pre>
+        <p>Then:</p>
+        <ol>
+          <li>Install Expo Go on your phone</li>
+          <li>Scan the QR code shown in your terminal</li>
+          <li>Modify App.js to display your name</li>
+          <li>Save and see the changes on your device</li>
+        </ol>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Expo provides a managed workflow for React Native development</li>
+        <li>Use <code>npx create-expo-app</code> to create new projects</li>
+        <li>Expo Go allows instant testing on physical devices</li>
+        <li>EAS Build handles production builds and app store submission</li>
+        <li>Expo is ideal for beginners who want to focus on JavaScript/React</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Expo Documentation</strong> — Official Expo docs with guides and API reference. <a href="https://docs.expo.dev" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

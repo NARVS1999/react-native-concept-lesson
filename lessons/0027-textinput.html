@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0027: TextInput</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0027: TextInput</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master TextInput for user input, handle form validation, and build complete forms with various input types.
+      </div>
+
+      <h2>Basic TextInput Usage</h2>
+      <p><code>TextInput</code> is the fundamental component for user text input in React Native:</p>
+      <pre><code>import React, { useState } from 'react';
+import { TextInput, View, Text } from 'react-native';
+
+function MyInput() {
+  const [text, setText] = useState('');
+  
+  return (
+    &lt;View&gt;
+      &lt;TextInput
+        value={text}
+        onChangeText={setText}
+        placeholder="Enter text"
+      /&gt;
+      &lt;Text&gt;You typed: {text}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Essential Props</h2>
+      <p><strong>value:</strong> Controlled input value</p>
+      <p><strong>onChangeText:</strong> Called when text changes</p>
+      <p><strong>placeholder:</strong> Hint text when empty</p>
+      <p><strong>placeholderTextColor:</strong> Color of placeholder text</p>
+
+      <h2>Keyboard Types</h2>
+      <pre><code>&lt;TextInput
+  keyboardType="default"      // Default keyboard
+  keyboardType="email-address" // Email keyboard
+  keyboardType="numeric"      // Numeric keyboard
+  keyboardType="phone-pad"    // Phone keyboard
+  keyboardType="url"          // URL keyboard
+/&gt;</code></pre>
+
+      <h2>Secure Text Entry</h2>
+      <p>For passwords and sensitive information:</p>
+      <pre><code>&lt;TextInput
+  secureTextEntry={true}
+  placeholder="Enter password"
+/&gt;</code></pre>
+
+      <h2>Auto Capitalize</h2>
+      <pre><code>&lt;TextInput
+  autoCapitalize="none"      // No capitalization
+  autoCapitalize="sentences" // Capitalize first letter of sentences
+  autoCapitalize="words"     // Capitalize first letter of words
+  autoCapitalize="characters" // Capitalize all letters
+/&gt;</code></pre>
+
+      <h2>Multiline Input</h2>
+      <pre><code>&lt;TextInput
+  multiline={true}
+  numberOfLines={4}
+  textAlignVertical="top"
+  placeholder="Enter multiple lines..."
+/&gt;</code></pre>
+
+      <h2>Styling Inputs</h2>
+      <pre><code>&lt;TextInput
+  style={{
+    height: 50,
+    borderColor: 'gray',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 15,
+    fontSize: 16,
+    backgroundColor: '#f9f9f9',
+  }}
+  placeholder="Styled input"
+/&gt;</code></pre>
+
+      <h2>Focus and Blur Events</h2>
+      <pre><code>&lt;TextInput
+  onFocus={() =&gt; console.log('Input focused')}
+  onBlur={() =&gt; console.log('Input blurred')}
+  placeholder="Focus me"
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What prop is used to handle text changes?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> onChange</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> onChangeText</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> onTextUpdate</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you make a password input?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> keyboardType="password"</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> secureTextEntry={true}</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> isPassword={true}</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What does keyboardType="numeric" do?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Shows numeric keyboard</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Only allows numbers</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Formats as number</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Login Form with Validation</h3>
+        <p>Create a login form with email and password validation:</p>
+        <pre><code>import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+
+export default function LoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+
+  const validateForm = () =&gt; {
+    const newErrors = {};
+    
+    if (!email) {
+      newErrors.email = 'Email is required';
+    } else if (!email.includes('@')) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!password) {
+      newErrors.password = 'Password is required';
+    } else if (password.length &lt; 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = () =&gt; {
+    if (validateForm()) {
+      Alert.alert('Success', 'Login successful!');
+    }
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Login&lt;/Text&gt;
+      
+      &lt;View style={styles.inputContainer}&gt;
+        &lt;TextInput
+          style={[styles.input, errors.email &amp;&amp; styles.inputError]}
+          value={email}
+          onChangeText={setEmail}
+          placeholder="Email"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoCorrect={false}
+        /&gt;
+        {errors.email &amp;&amp; &lt;Text style={styles.errorText}&gt;{errors.email}&lt;/Text&gt;}
+      &lt;/View&gt;
+      
+      &lt;View style={styles.inputContainer}&gt;
+        &lt;TextInput
+          style={[styles.input, errors.password &amp;&amp; styles.inputError]}
+          value={password}
+          onChangeText={setPassword}
+          placeholder="Password"
+          secureTextEntry
+          autoCapitalize="none"
+        /&gt;
+        {errors.password &amp;&amp; &lt;Text style={styles.errorText}&gt;{errors.password}&lt;/Text&gt;}
+      &lt;/View&gt;
+      
+      &lt;TouchableOpacity style={styles.button} onPress={handleLogin}&gt;
+        &lt;Text style={styles.buttonText}&gt;Login&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
+  inputContainer: { marginBottom: 15 },
+  input: { height: 50, borderColor: '#ddd', borderWidth: 1, borderRadius: 8, paddingHorizontal: 15, fontSize: 16 },
+  inputError: { borderColor: '#ff3b30' },
+  errorText: { color: '#ff3b30', fontSize: 12, marginTop: 5 },
+  button: { backgroundColor: '#007AFF', height: 50, borderRadius: 8, justifyContent: 'center', alignItems: 'center', marginTop: 10 },
+  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+});</code></pre>
+        <p>This creates a complete login form with email and password validation.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>TextInput is the core component for user text input</li>
+        <li>Use <code>onChangeText</code> to handle text changes (not <code>onChange</code>)</li>
+        <li><code>secureTextEntry</code> hides text for passwords</li>
+        <li><code>keyboardType</code> sets the appropriate keyboard type</li>
+        <li><code>autoCapitalize</code> controls automatic capitalization</li>
+        <li>Always validate user input and provide feedback for errors</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native TextInput</strong> — Official docs for TextInput component. <a href="https://reactnative.dev/docs/textinput" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

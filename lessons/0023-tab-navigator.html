@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0023: Tab Navigator</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0023: Tab Navigator</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Create bottom and top tab navigators, customize tab bars and icons, and nest stack navigators inside tabs.
+      </div>
+
+      <h2>Bottom Tab Navigator</h2>
+      <p>Bottom tabs are the most common tab pattern in mobile apps, providing quick access to main sections.</p>
+      <pre><code>import React from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import HomeScreen from './screens/HomeScreen';
+import SettingsScreen from './screens/SettingsScreen';
+
+const Tab = createBottomTabNavigator();
+
+function App() {
+  return (
+    &lt;Tab.Navigator&gt;
+      &lt;Tab.Screen name="Home" component={HomeScreen} /&gt;
+      &lt;Tab.Screen name="Settings" component={SettingsScreen} /&gt;
+    &lt;/Tab.Navigator&gt;
+  );
+}</code></pre>
+
+      <h2>Top Tab Navigator</h2>
+      <p>Top tabs are useful for content that doesn't need immediate access from anywhere in the app.</p>
+      <pre><code>import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+
+const TopTab = createMaterialTopTabNavigator();
+
+function App() {
+  return (
+    &lt;TopTab.Navigator&gt;
+      &lt;TopTab.Screen name="Popular" component={PopularScreen} /&gt;
+      &lt;TopTab.Screen name="Recent" component={RecentScreen} /&gt;
+    &lt;/TopTab.Navigator&gt;
+  );
+}</code></pre>
+
+      <h2>Adding Tab Icons</h2>
+      <p>Use <code>@expo/vector-icons</code> or <code>react-native-vector-icons</code> for tab icons:</p>
+      <pre><code>import { Ionicons } from '@expo/vector-icons';
+
+&lt;Tab.Screen
+  name="Home"
+  component={HomeScreen}
+  options={{
+    tabBarIcon: ({ focused, color, size }) =&gt; (
+      &lt;Ionicons
+        name={focused ? 'home' : 'home-outline'}
+        size={size}
+        color={color}
+      /&gt;
+    ),
+  }}
+/&gt;</code></pre>
+
+      <h2>Tab Bar Customization</h2>
+      <pre><code>&lt;Tab.Navigator
+  screenOptions={{
+    tabBarActiveTintColor: '#e91e63',
+    tabBarInactiveTintColor: 'gray',
+    tabBarStyle: {
+      backgroundColor: 'white',
+      borderTopWidth: 0,
+      elevation: 10,
+      shadowOpacity: 0.1,
+      height: 60,
+      paddingBottom: 10,
+    },
+    tabBarLabelStyle: {
+      fontSize: 12,
+      fontWeight: 'bold',
+    },
+  }}
+&gt;</code></pre>
+
+      <h2>Nesting Stack Inside Tabs</h2>
+      <p>A common pattern is to nest a stack navigator inside each tab for deeper navigation:</p>
+      <pre><code>import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const HomeStack = createNativeStackNavigator();
+
+function HomeStackScreen() {
+  return (
+    &lt;HomeStack.Navigator&gt;
+      &lt;HomeStack.Screen name="Home" component={HomeScreen} /&gt;
+      &lt;HomeStack.Screen name="Details" component={DetailsScreen} /&gt;
+    &lt;/HomeStack.Navigator&gt;
+  );
+}
+
+function App() {
+  return (
+    &lt;Tab.Navigator&gt;
+      &lt;Tab.Screen name="HomeTab" component={HomeStackScreen}
+        options={{ headerShown: false }}
+      /&gt;
+      &lt;Tab.Screen name="Settings" component={SettingsScreen} /&gt;
+    &lt;/Tab.Navigator&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the most common tab navigation pattern?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Top tabs only</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Bottom tabs for main sections</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Side tabs</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you add icons to tabs?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Using the tabBarIcon option</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Using the icon prop directly</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Icons are not supported in tabs</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What is a common pattern for deeper navigation in tabs?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Using only tab navigation</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Nesting stack navigator inside each tab</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Using drawer navigation</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Tab Navigator with 3 Tabs</h3>
+        <p>Create a bottom tab navigator with Home, Profile, and Settings tabs:</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+import { NavigationContainer } from '@react-navigation/native';
+
+const Tab = createBottomTabNavigator();
+
+function HomeScreen() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Home Screen&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+function ProfileScreen() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Profile Screen&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+function SettingsScreen() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Settings Screen&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Tab.Navigator
+        screenOptions={({ route }) =&gt; ({
+          tabBarIcon: ({ focused, color, size }) =&gt; {
+            let iconName;
+            if (route.name === 'Home') {
+              iconName = focused ? 'home' : 'home-outline';
+            } else if (route.name === 'Profile') {
+              iconName = focused ? 'person' : 'person-outline';
+            } else if (route.name === 'Settings') {
+              iconName = focused ? 'settings' : 'settings-outline';
+            }
+            return &lt;Ionicons name={iconName} size={size} color={color} /&gt;;
+          },
+          tabBarActiveTintColor: '#007AFF',
+          tabBarInactiveTintColor: 'gray',
+        })}
+      &gt;
+        &lt;Tab.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Tab.Screen name="Profile" component={ProfileScreen} /&gt;
+        &lt;Tab.Screen name="Settings" component={SettingsScreen} /&gt;
+      &lt;/Tab.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 24 },
+});</code></pre>
+        <p>This creates a complete tab navigation with icons and custom styling.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Bottom tabs are the most common navigation pattern in mobile apps</li>
+        <li>Use <code>createBottomTabNavigator()</code> for bottom tabs</li>
+        <li>Customize tabs with <code>tabBarIcon</code>, <code>tabBarActiveTintColor</code>, and other options</li>
+        <li>Nest stack navigators inside tabs for deeper navigation</li>
+        <li>Top tabs are useful for content grouping within a screen</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Navigation Tab Navigator</strong> — Official docs for tab navigator. <a href="https://reactnavigation.org/docs/bottom-tab-navigator" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

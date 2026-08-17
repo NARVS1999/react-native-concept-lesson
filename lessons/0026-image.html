@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0026: Image Component</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0026: Image Component</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master the Image component for displaying local and remote images, handle resizeMode, and use ImageBackground.
+      </div>
+
+      <h2>Basic Image Usage</h2>
+      <p>The <code>Image</code> component displays images from various sources:</p>
+      <pre><code>import React from 'react';
+import { Image, View } from 'react-native';
+
+function MyComponent() {
+  return (
+    &lt;View&gt;
+      &lt;Image
+        source={require('./assets/photo.png')}
+        style={{ width: 200, height: 200 }}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Local Assets</h2>
+      <p>Use <code>require()</code> for local images:</p>
+      <pre><code>// Static asset (bundled with app)
+&lt;Image source={require('./assets/logo.png')} /&gt;
+
+// Dynamic local image
+const imageSource = require('./assets/photo.jpg');
+&lt;Image source={imageSource} /&gt;</code></pre>
+
+      <h2>Remote URIs</h2>
+      <p>For remote images, specify both URI and dimensions:</p>
+      <pre><code>&lt;Image
+  source={{ uri: 'https://example.com/image.jpg' }}
+  style={{ width: 300, height: 200 }}
+/&gt;</code></pre>
+
+      <h2>ResizeMode</h2>
+      <p>Control how images fit within their dimensions:</p>
+      <pre><code>&lt;Image
+  source={require('./assets/photo.png')}
+  style={{ width: 300, height: 300 }}
+  resizeMode="cover"  // cover, contain, stretch, repeat, center
+/&gt;</code></pre>
+
+      <p><strong>resizeMode options:</strong></p>
+      <ul>
+        <li><code>cover</code> — Scale to fill, may crop</li>
+        <li><code>contain</code> — Scale to fit, may letterbox</li>
+        <li><code>stretch</code> — Stretch to fill exactly</li>
+        <li><code>center</code> — Center without resize</li>
+      </ul>
+
+      <h2>ImageBackground</h2>
+      <p>Display content on top of an image background:</p>
+      <pre><code>import { ImageBackground, Text, StyleSheet } from 'react-native';
+
+function MyCard() {
+  return (
+    &lt;ImageBackground
+      source={{ uri: 'https://example.com/background.jpg' }}
+      style={styles.background}
+      imageStyle={styles.image}
+    &gt;
+      &lt;Text style={styles.text}&gt;Hello World&lt;/Text&gt;
+    &lt;/ImageBackground&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  background: { width: 300, height: 200, justifyContent: 'center' },
+  image: { borderRadius: 10 },
+  text: { color: 'white', fontSize: 24, textAlign: 'center' },
+});</code></pre>
+
+      <h2>Image Events</h2>
+      <pre><code>&lt;Image
+  source={{ uri: 'https://example.com/image.jpg' }}
+  style={{ width: 200, height: 200 }}
+  onLoadStart={() =&gt; console.log('Loading started')}
+  onLoadEnd={() =&gt; console.log('Loading finished')}
+  onError={(error) =&gt; console.log('Error:', error)}
+/&gt;</code></pre>
+
+      <h2>FastImage for Caching</h2>
+      <p>For better performance with remote images, use <code>react-native-fast-image</code>:</p>
+      <pre><code>import FastImage from 'react-native-fast-image';
+
+&lt;FastImage
+  source={{
+    uri: 'https://example.com/image.jpg',
+    priority: FastImage.priority.normal,
+  }}
+  style={{ width: 200, height: 200 }}
+  resizeMode={FastImage.resizeMode.cover}
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. How do you load a local image in React Native?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Using fetch()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Using require()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Using import</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What does resizeMode="cover" do?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Shows the entire image</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Scales to fill, may crop edges</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Stretches to exact dimensions</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What is ImageBackground used for?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Loading images in background</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Displaying content on top of an image</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Compressing images</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build an Image Gallery with Thumbnails</h3>
+        <p>Create an image gallery with thumbnails and a main image display:</p>
+        <pre><code>import React, { useState } from 'react';
+import { Image, View, FlatList, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+
+const images = [
+  { id: '1', uri: 'https://picsum.photos/200/200?random=1', full: 'https://picsum.photos/800/600?random=1' },
+  { id: '2', uri: 'https://picsum.photos/200/200?random=2', full: 'https://picsum.photos/800/600?random=2' },
+  { id: '3', uri: 'https://picsum.photos/200/200?random=3', full: 'https://picsum.photos/800/600?random=3' },
+  { id: '4', uri: 'https://picsum.photos/200/200?random=4', full: 'https://picsum.photos/800/600?random=4' },
+  { id: '5', uri: 'https://picsum.photos/200/200?random=5', full: 'https://picsum.photos/800/600?random=5' },
+  { id: '6', uri: 'https://picsum.photos/200/200?random=6', full: 'https://picsum.photos/800/600?random=6' },
+];
+
+export default function App() {
+  const [selectedImage, setSelectedImage] = useState(images[0]);
+
+  const renderThumbnail = ({ item }) =&gt; (
+    &lt;TouchableOpacity onPress={() =&gt; setSelectedImage(item)}&gt;
+      &lt;Image
+        source={{ uri: item.uri }}
+        style={[
+          styles.thumbnail,
+          selectedImage.id === item.id &amp;&amp; styles.selectedThumbnail,
+        ]}
+      /&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Image
+        source={{ uri: selectedImage.full }}
+        style={styles.mainImage}
+        resizeMode="contain"
+      /&gt;
+      &lt;FlatList
+        data={images}
+        renderItem={renderThumbnail}
+        keyExtractor={(item) =&gt; item.id}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.thumbnailList}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#000' },
+  mainImage: { width: Dimensions.get('window').width, height: 400 },
+  thumbnailList: { maxHeight: 100 },
+  thumbnail: { width: 80, height: 80, margin: 5, borderRadius: 5 },
+  selectedThumbnail: { borderWidth: 3, borderColor: '#007AFF' },
+});</code></pre>
+        <p>This creates an image gallery with a main display and horizontal thumbnail scroll.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Use <code>require()</code> for local images and <code>{ uri: '...' }</code> for remote images</li>
+        <li>Remote images require explicit width and height</li>
+        <li><code>resizeMode</code> controls how images fit their container</li>
+        <li><code>ImageBackground</code> allows displaying content over images</li>
+        <li>Consider FastImage for better caching and performance with remote images</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Image</strong> — Official docs for Image component. <a href="https://reactnative.dev/docs/image" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

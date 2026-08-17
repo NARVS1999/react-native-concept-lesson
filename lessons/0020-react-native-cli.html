@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0020: React Native CLI (Bare Workflow)</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0020: React Native CLI (Bare Workflow)</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Understand the React Native CLI bare workflow, set up native development environments, and know when to choose CLI over Expo.
+      </div>
+
+      <h2>What is React Native CLI?</h2>
+      <p>The React Native CLI provides a bare workflow where you have full access to the native project files (iOS and Android). This gives you complete control over native code and configuration.</p>
+      <p>Unlike Expo's managed workflow, you're responsible for managing native dependencies and build configurations.</p>
+
+      <h2>Creating a CLI Project</h2>
+      <pre><code>npx react-native init MyProject
+cd MyProject</code></pre>
+      <p>This creates a project with separate <code>ios/</code> and <code/android/</code> directories containing native code.</p>
+
+      <h2>Native Development Setup</h2>
+      <p>To run CLI projects, you need native development environments:</p>
+      
+      <h3>For iOS:</h3>
+      <ul>
+        <li>macOS computer (required)</li>
+        <li>Xcode (latest version recommended)</li>
+        <li>CocoaPods (Ruby gem)</li>
+      </ul>
+      <pre><code># Install CocoaPods
+sudo gem install cocoapods
+
+# Install iOS dependencies
+cd ios && pod install && cd ..</code></pre>
+
+      <h3>For Android:</h3>
+      <ul>
+        <li>Android Studio</li>
+        <li>Java Development Kit (JDK)</li>
+        <li>Android SDK</li>
+      </ul>
+
+      <h2>Running the App</h2>
+      <pre><code># Start Metro bundler
+npm start
+
+# Run on iOS
+npx react-native run-ios
+
+# Run on Android
+npx react-native run-android</code></pre>
+
+      <h2>Project Structure Comparison</h2>
+      <p><strong>Expo Project:</strong></p>
+      <pre><code>my-app/
+├── App.js
+├── app.json
+├── package.json
+└── node_modules/</code></pre>
+
+      <p><strong>CLI Project:</strong></p>
+      <pre><code>MyProject/
+├── App.js
+├── android/
+├── ios/
+├── package.json
+└── node_modules/</code></pre>
+
+      <h2>When to Choose CLI Over Expo</h2>
+      <ul>
+        <li><strong>Custom native modules</strong> — When you need to write native code in Swift/Kotlin</li>
+        <li><strong>Existing native apps</strong> — Integrating React Native into existing native projects</li>
+        <li><strong>Specific SDK requirements</strong> — When you need access to latest native APIs not yet in Expo</li>
+        <li><strong>Full control</strong> — When you need complete control over native build process</li>
+        <li><strong>Enterprise requirements</strong> — Custom build pipelines and CI/CD configurations</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What does the React Native CLI bare workflow provide?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Only JavaScript code</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Full access to native project files</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Managed native configuration</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What is required to run iOS apps with React Native CLI?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Android Studio only</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> macOS and Xcode</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Windows and Visual Studio</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. When should you choose CLI over Expo?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> When you want instant testing on devices</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> When you need custom native modules</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> When you're a complete beginner</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Compare Expo vs CLI Project Structure</h3>
+        <p>Create both types of projects and compare their structures:</p>
+        <pre><code># Create Expo project
+npx create-expo-app ExpoProject
+
+# Create CLI project
+npx react-native init CLIProject</code></pre>
+        <p>Then:</p>
+        <ol>
+          <li>Compare the directory structures of both projects</li>
+          <li>Note the presence of <code>android/</code> and <code>ios/</code> folders in CLI project</li>
+          <li>Examine the <code>app.json</code> in Expo vs <code>android/</code> and <code>ios/</code> configs in CLI</li>
+          <li>Run both projects and observe the differences</li>
+          <li>Document which project type would be better for different scenarios</li>
+        </ol>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>React Native CLI provides a bare workflow with full native access</li>
+        <li>CLI projects include <code>ios/</code> and <code>android/</code> directories</li>
+        <li>You need Xcode for iOS development and Android Studio for Android</li>
+        <li>Choose CLI when you need custom native modules or full control</li>
+        <li>Expo is better for beginners and rapid prototyping</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Documentation</strong> — Official React Native docs with setup guides. <a href="https://reactnative.dev/docs/environment-setup" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0025: SectionList</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0025: SectionList</h1>
+      <p><em>Phase 3 — Implementation Concepts</em></p>
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Master SectionList for grouped data display with section headers and sticky headers.
+      </div>
+
+      <h2>What is SectionList?</h2>
+      <p><code>SectionList</code> is a React Native component for rendering grouped data with section headers. It's similar to FlatList but organizes items into sections, making it perfect for contact lists, settings menus, or any grouped data.</p>
+
+      <h2>Basic SectionList Usage</h2>
+      <pre><code>import React from 'react';
+import { SectionList, Text, View } from 'react-native';
+
+const sections = [
+  {
+    title: 'A',
+    data: ['Alice', 'Anna', 'Alex'],
+  },
+  {
+    title: 'B',
+    data: ['Bob', 'Brian', 'Bella'],
+  },
+];
+
+function ContactList() {
+  return (
+    &lt;SectionList
+      sections={sections}
+      keyExtractor={(item, index) =&gt; item + index}
+      renderItem={({ item }) =&gt; (
+        &lt;View&gt;
+          &lt;Text&gt;{item}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+      renderSectionHeader={({ section: { title } }) =&gt; (
+        &lt;View style={styles.header}&gt;
+          &lt;Text style={styles.headerText}&gt;{title}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>Data Structure</h2>
+      <p>SectionList expects data in this format:</p>
+      <pre><code>const sections = [
+  {
+    title: 'Section Title',  // Required
+    data: ['Item 1', 'Item 2'],  // Required
+    id: 'optional-id',  // Optional
+  },
+];</code></pre>
+
+      <h2>Sticky Section Headers</h2>
+      <p>Enable sticky headers that stick to the top when scrolling:</p>
+      <pre><code>&lt;SectionList
+  sections={sections}
+  stickySectionHeadersEnabled={true}
+  renderItem={renderItem}
+  renderSectionHeader={renderSectionHeader}
+/&gt;</code></pre>
+
+      <h2>Section Headers</h2>
+      <pre><code>renderSectionHeader={({ section }) =&gt; (
+  &lt;View style={styles.sectionHeader}&gt;
+    &lt;Text style={styles.sectionHeaderText}&gt;
+      {section.title}
+    &lt;/Text&gt;
+    &lt;Text style={styles.sectionCount}&gt;
+      {section.data.length} items
+    &lt;/Text&gt;
+  &lt;/View&gt;
+)}</code></pre>
+
+      <h2>Additional Features</h2>
+      <pre><code>&lt;SectionList
+  sections={sections}
+  renderItem={renderItem}
+  renderSectionHeader={renderSectionHeader}
+  ListHeaderComponent={&lt;Text&gt;My Contacts&lt;/Text&gt;}
+  ListFooterComponent={&lt;Text&gt;End of list&lt;/Text&gt;}
+  ListEmptyComponent={&lt;Text&gt;No contacts&lt;/Text&gt;}
+  ItemSeparatorComponent={() =&gt; &lt;View style={styles.separator} /&gt;}
+  SectionSeparatorComponent={() =&gt; &lt;View style={styles.sectionSeparator} /&gt;}
+/&gt;</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the main difference between SectionList and FlatList?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> SectionList is faster</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> SectionList organizes data into sections with headers</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> SectionList only works with strings</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What does stickySectionHeadersEnabled do?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Makes headers colorful</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Makes section headers stick to the top when scrolling</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Adds animation to headers</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What props are required for each section?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> title and data</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> title and data only</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> title, data, and id</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Contacts List Grouped Alphabetically</h3>
+        <p>Create a contacts list with alphabetical sections:</p>
+        <pre><code>import React from 'react';
+import { SectionList, Text, View, StyleSheet } from 'react-native';
+
+const contacts = [
+  { title: 'A', data: ['Alice Anderson', 'Alex Apple', 'Amy Adams'] },
+  { title: 'B', data: ['Bob Brown', 'Brian Baker', 'Bella Blue'] },
+  { title: 'C', data: ['Charlie Chen', 'Cindy Clark', 'Carl Cooper'] },
+  { title: 'D', data: ['David Davis', 'Diana Diaz', 'Dan Davis'] },
+  { title: 'E', data: ['Emma Evans', 'Eric Edwards', 'Emily Ellis'] },
+];
+
+export default function App() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.header}&gt;Contacts&lt;/Text&gt;
+      &lt;SectionList
+        sections={contacts}
+        keyExtractor={(item, index) =&gt; item + index}
+        renderItem={({ item }) =&gt; (
+          &lt;View style={styles.item}&gt;
+            &lt;Text style={styles.itemText}&gt;{item}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+        renderSectionHeader={({ section: { title } }) =&gt; (
+          &lt;View style={styles.sectionHeader}&gt;
+            &lt;Text style={styles.sectionHeaderText}&gt;{title}&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+        stickySectionHeadersEnabled={true}
+        ItemSeparatorComponent={() =&gt; &lt;View style={styles.separator} /&gt;}
+        SectionSeparatorComponent={() =&gt; &lt;View style={styles.sectionSeparator} /&gt;}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: { fontSize: 24, fontWeight: 'bold', padding: 20, backgroundColor: '#f5f5f5' },
+  sectionHeader: { backgroundColor: '#e0e0e0', paddingVertical: 8, paddingHorizontal: 15 },
+  sectionHeaderText: { fontSize: 16, fontWeight: 'bold', color: '#333' },
+  item: { paddingVertical: 12, paddingHorizontal: 15 },
+  itemText: { fontSize: 16 },
+  separator: { height: 1, backgroundColor: '#f0f0f0', marginLeft: 15 },
+  sectionSeparator: { height: 10 },
+});</code></pre>
+        <p>This creates a contacts list grouped alphabetically with sticky section headers.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>SectionList is for displaying grouped data with section headers</li>
+        <li>Data must be in format: <code>[{ title: 'Section', data: ['items'] }]</code></li>
+        <li>Enable <code>stickySectionHeadersEnabled</code> for headers that stick when scrolling</li>
+        <li>Use <code>renderSectionHeader</code> to customize section header appearance</li>
+        <li>Similar performance benefits to FlatList for large datasets</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native SectionList</strong> — Official docs for SectionList component. <a href="https://reactnative.dev/docs/sectionlist" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
