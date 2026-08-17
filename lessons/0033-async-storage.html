@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0033: Async Storage</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0033: Async Storage</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Use @react-native-async-storage/async-storage to persist key-value data locally, handle JSON serialization, understand storage limits, and build a custom useAsyncStorage hook.
+      </div>
+
+      <h2>What is AsyncStorage?</h2>
+      <p>AsyncStorage is a simple, unencrypted, asynchronous key-value storage system for React Native. It's the React Native equivalent of localStorage in web browsers. Common uses include persisting user preferences, caching API responses, and storing tokens.</p>
+      <p><code>@react-native-async-storage/async-storage</code> is the community-maintained version that works on iOS, Android, and Web.</p>
+
+      <h2>Installation</h2>
+      <pre><code>npm install @react-native-async-storage/async-storage</code></pre>
+
+      <h2>Basic Operations</h2>
+      <p>AsyncStorage provides three core methods: <code>setItem</code>, <code>getItem</code>, and <code>removeItem</code>. All operations are asynchronous:</p>
+      <pre><code>import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// Save a value
+await AsyncStorage.setItem('user_token', 'abc123');
+
+// Read a value
+const token = await AsyncStorage.getItem('user_token');
+console.log(token); // 'abc123'
+
+// Delete a value
+await AsyncStorage.removeItem('user_token');
+
+// Check if key exists
+const exists = await AsyncStorage.getItem('user_token');
+if (exists !== null) {
+  // Key exists
+}</code></pre>
+
+      <h2>JSON Stringify and Parse</h2>
+      <p>AsyncStorage only stores strings. To persist objects and arrays, serialize with JSON:</p>
+      <pre><code>// Save an object
+const settings = { notifications: true, darkMode: false, fontSize: 16 };
+await AsyncStorage.setItem('app_settings', JSON.stringify(settings));
+
+// Read an object
+const raw = await AsyncStorage.getItem('app_settings');
+const settings = raw ? JSON.parse(raw) : null;
+
+// Save an array
+const favorites = [1, 2, 3, 4, 5];
+await AsyncStorage.setItem('favorites', JSON.stringify(favorites));
+
+// Read an array
+const rawFavorites = await AsyncStorage.getItem('favorites');
+const favorites = rawFavorites ? JSON.parse(rawFavorites) : [];</code></pre>
+
+      <h2>Batch Operations</h2>
+      <p>For multiple operations, use <code>multiGet</code> and <code>multiSet</code> for better performance:</p>
+      <pre><code>// Get multiple keys at once
+const keys = ['user_token', 'app_settings', 'favorites'];
+const result = await AsyncStorage.multiGet(keys);
+// result is an array of [key, value] pairs
+
+// Set multiple key-value pairs
+const pairs = [
+  ['user_token', 'abc123'],
+  ['app_settings', JSON.stringify({ darkMode: true })],
+];
+await AsyncStorage.multiSet(pairs);
+
+// Remove multiple keys
+await AsyncStorage.multiRemove(['user_token', 'app_settings']);</code></pre>
+
+      <h2>Storage Limits</h2>
+      <p>AsyncStorage has platform-specific limits:</p>
+      <ul>
+        <li><strong>iOS:</strong> Approximately 6MB total storage</li>
+        <li><strong>Android:</strong> No hard limit, but performance degrades with large amounts</li>
+        <li><strong>Best practice:</strong> Keep data under 6MB total. Use files for large data</li>
+      </ul>
+
+      <h2>useAsyncStorage Hook</h2>
+      <p>Create a reusable hook that wraps AsyncStorage with React state management:</p>
+      <pre><code>import { useState, useEffect, useCallback } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+function useAsyncStorage(key, initialValue) {
+  const [value, setValue] = useState(initialValue);
+  const [loading, setLoading] = useState(true);
+
+  // Load stored value on mount
+  useEffect(() =&gt; {
+    async function load() {
+      try {
+        const stored = await AsyncStorage.getItem(key);
+        if (stored !== null) {
+          setValue(JSON.parse(stored));
+        }
+      } catch (error) {
+        console.error('Error loading from storage:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [key]);
+
+  // Update value and persist
+  const setStoredValue = useCallback(async (newValue) =&gt; {
+    try {
+      const valueToStore = newValue instanceof Function ? newValue(value) : newValue;
+      setValue(valueToStore);
+      await AsyncStorage.setItem(key, JSON.stringify(valueToStore));
+    } catch (error) {
+      console.error('Error saving to storage:', error);
+    }
+  }, [key, value]);
+
+  return [value, setStoredValue, loading];
+}
+
+// Usage
+function SettingsScreen() {
+  const [darkMode, setDarkMode] = useAsyncStorage('darkMode', false);
+
+  return (
+    &lt;View&gt;
+      &lt;Switch
+        value={darkMode}
+        onValueChange={setDarkMode}
+      /&gt;
+      &lt;Text&gt;Dark Mode: {darkMode ? 'On' : 'Off'}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What type of data does AsyncStorage store natively?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Objects and arrays</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Strings only</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Binary data</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you persist a JavaScript object to AsyncStorage?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Pass the object directly to setItem</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Use JSON.stringify() to serialize before saving</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Use the multiSet method with object notation</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What is the approximate storage limit for AsyncStorage on iOS?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> 1MB</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Approximately 6MB</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Unlimited</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Settings Screen with Persistent Preferences</h3>
+        <p>Build a settings screen that persists user preferences (notifications, dark mode, font size) using AsyncStorage and a custom useAsyncStorage hook.</p>
+        <pre><code>import React from 'react';
+import { View, Text, Switch, Slider, StyleSheet, SafeAreaView } from 'react-native';
+import { useAsyncStorage } from './useAsyncStorage'; // Custom hook from above
+
+function SettingsScreen() {
+  const [notifications, setNotifications] = useAsyncStorage('notifications', true);
+  const [darkMode, setDarkMode] = useAsyncStorage('darkMode', false);
+  const [fontSize, setFontSize] = useAsyncStorage('fontSize', 16);
+
+  return (
+    &lt;SafeAreaView style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Settings&lt;/Text&gt;
+
+      &lt;View style={styles.row}&gt;
+        &lt;Text style={styles.label}&gt;Notifications&lt;/Text&gt;
+        &lt;Switch value={notifications} onValueChange={setNotifications} /&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.row}&gt;
+        &lt;Text style={styles.label}&gt;Dark Mode&lt;/Text&gt;
+        &lt;Switch value={darkMode} onValueChange={setDarkMode} /&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.row}&gt;
+        &lt;Text style={styles.label}&gt;Font Size: {fontSize}&lt;/Text&gt;
+        &lt;Slider
+          style={styles.slider}
+          minimumValue={12}
+          maximumValue={24}
+          step={1}
+          value={fontSize}
+          onValueChange={setFontSize}
+        /&gt;
+      &lt;/View&gt;
+
+      &lt;View style={styles.preview}&gt;
+        &lt;Text style={[styles.previewText, { fontSize }]}&gt;
+          Preview text at {fontSize}px
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/SafeAreaView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30 },
+  row: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'center', paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: '#ddd',
+  },
+  label: { fontSize: 18 },
+  slider: { flex: 1, marginLeft: 20 },
+  preview: { marginTop: 30, padding: 20, backgroundColor: 'white', borderRadius: 8 },
+  previewText: { textAlign: 'center' },
+});
+
+export default SettingsScreen;</code></pre>
+        <p>Your settings will persist between app launches. The useAsyncStorage hook automatically loads saved values on mount and saves when you change them.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>AsyncStorage provides asynchronous key-value storage for React Native apps</li>
+        <li>Always use <code>JSON.stringify()</code> and <code>JSON.parse()</code> for objects and arrays</li>
+        <li><code>multiGet</code> and <code>multiSet</code> batch operations for better performance</li>
+        <li>iOS has an approximate 6MB storage limit; keep data minimal</li>
+        <li>A custom <code>useAsyncStorage</code> hook combines AsyncStorage with React state management</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>AsyncStorage GitHub Docs</strong> — Official documentation with API reference, migration guide, and platform-specific notes. <a href="https://github.com/react-native-async-storage/async-storage" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

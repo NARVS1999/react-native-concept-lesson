@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0030: Gesture Handler</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0030: Gesture Handler</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Implement gesture recognition using react-native-gesture-handler, combine gestures with React Native Reanimated for smooth animations, and build interactive components like swipeable cards.
+      </div>
+
+      <h2>Introduction to Gesture Handler</h2>
+      <p>React Native Gesture Handler is a library that provides native-driven gesture recognition. It replaces the JavaScript-based responder system with native handlers that run on the UI thread, resulting in 60fps gesture interactions without blocking the main thread.</p>
+      <p>Key benefits include better performance, more precise gesture recognition, and support for simultaneous and composed gestures.</p>
+
+      <h2>GestureHandlerRootView</h2>
+      <p>Every app using Gesture Handler must wrap its content in a <code>GestureHandlerRootView</code>. This is analogous to React Navigation's <code>NavigationContainer</code>:</p>
+      <pre><code>import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+export default function App() {
+  return (
+    &lt;GestureHandlerRootView style={{ flex: 1 }}&gt;
+      {/* Your app content */}
+    &lt;/GestureHandlerRootView&gt;
+  );
+}</code></pre>
+
+      <h2>PanGesture for Dragging</h2>
+      <p>The <code>Pan</code> gesture detects dragging motions. Combined with Reanimated's <code>useAnimatedStyle</code>, you can create smooth drag interactions:</p>
+      <pre><code>import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+function DraggableBox() {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) =&gt; {
+      translateX.value = event.translationX;
+      translateY.value = event.translationY;
+    })
+    .onEnd(() =&gt; {
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+    });
+
+  const animatedStyle = useAnimatedStyle(() =&gt; ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  return (
+    &lt;GestureDetector gesture={panGesture}&gt;
+      &lt;Animated.View
+        style={[{ width: 100, height: 100, backgroundColor: 'blue' }, animatedStyle]}
+      /&gt;
+    &lt;/GestureDetector&gt;
+  );
+}</code></pre>
+
+      <h2>TapGesture for Taps</h2>
+      <p>The <code>Tap</code> gesture detects tap and double-tap interactions:</p>
+      <pre><code>const tapGesture = Gesture.Tap()
+  .numberOfTaps(2)
+  .onEnd((event, success) =&gt; {
+    if (success) {
+      console.log('Double tapped at', event.absoluteX, event.absoluteY);
+    }
+  });
+
+return (
+  &lt;GestureDetector gesture={tapGesture}&gt;
+    &lt;View style={{ width: 200, height: 200, backgroundColor: 'red' }} /&gt;
+  &lt;/GestureDetector&gt;
+);</code></pre>
+
+      <h2>Swipeable Component</h2>
+      <p>The <code>Swipeable</code> component provides built-in left/right swipe actions, commonly used for delete or archive actions in lists:</p>
+      <pre><code>import { Swipeable } from 'react-native-gesture-handler';
+
+function SwipeableItem({ onDelete }) {
+  const renderRightActions = () =&gt; (
+    &lt;TouchableOpacity onPress={onDelete}&gt;
+      &lt;View style={{ backgroundColor: 'red', justifyContent: 'center', padding: 20 }}&gt;
+        &lt;Text style={{ color: 'white' }}&gt;Delete&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+
+  return (
+    &lt;Swipeable renderRightActions={renderRightActions}&gt;
+      &lt;View style={{ padding: 20, backgroundColor: 'white' }}&gt;
+        &lt;Text&gt;Swipe me left to delete&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/Swipeable&gt;
+  );
+}</code></pre>
+
+      <h2>Composing Gestures</h2>
+      <p>You can combine multiple gestures using <code>Gesture.Exclusive</code> or <code>Gesture.Simultaneous</code>:</p>
+      <pre><code>// Only one gesture wins (priority order)
+const composed = Gesture.Exclusive(panGesture, tapGesture);
+
+// Both gestures can run at the same time
+const simultaneous = Gesture.Simultaneous(panGesture, rotateGesture);</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What component must wrap the root of an app that uses gesture handler?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> GestureProvider</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> GestureHandlerRootView</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> GestureContainer</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. Which gesture detects drag motions and provides translation values?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Gesture.Tap</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Gesture.Pan</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Gesture.Swipe</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What does GestureHandlerRootView do for gesture performance?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> It runs gesture recognition on the JS thread</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> It enables native-driven gesture recognition on the UI thread</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> It caches gesture handlers for faster startup</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Swipeable Card</h3>
+        <p>Build a card component that can be swiped left to reveal a delete action and right to reveal a favorite action, with smooth spring animations.</p>
+        <pre><code>import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolateColor,
+} from 'react-native-reanimated';
+
+export default function SwipeableCard({ title, onDelete, onFavorite }) {
+  const translateX = useSharedValue(0);
+  const cardWidth = 300;
+  const threshold = cardWidth * 0.3;
+
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-20, 20])
+    .onUpdate((event) =&gt; {
+      translateX.value = event.translationX;
+    })
+    .onEnd((event) =&gt; {
+      if (event.translationX &lt; -threshold) {
+        translateX.value = withSpring(-cardWidth);
+        onDelete?.();
+      } else if (event.translationX &gt; threshold) {
+        translateX.value = withSpring(cardWidth);
+        onFavorite?.();
+      } else {
+        translateX.value = withSpring(0);
+      }
+    });
+
+  const animatedStyle = useAnimatedStyle(() =&gt; ({
+    transform: [{ translateX: translateX.value }],
+    backgroundColor: interpolateColor(
+      translateX.value,
+      [-cardWidth, 0, cardWidth],
+      ['#ff4444', '#ffffff', '#44ff44']
+    ),
+  }));
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.actionLeft}&gt;
+        &lt;Text style={styles.actionText}&gt;FAVORITE&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={styles.actionRight}&gt;
+        &lt;Text style={styles.actionText}&gt;DELETE&lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;GestureDetector gesture={panGesture}&gt;
+        &lt;Animated.View style={[styles.card, animatedStyle]}&gt;
+          &lt;Text style={styles.cardTitle}&gt;{title}&lt;/Text&gt;
+        &lt;/Animated.View&gt;
+      &lt;/GestureDetector&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { marginVertical: 8, alignItems: 'center' },
+  card: {
+    width: 300,
+    padding: 20,
+    borderRadius: 12,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  cardTitle: { fontSize: 18, fontWeight: '600', color: '#333' },
+  actionLeft: {
+    position: 'absolute', left: 10, top: 8,
+    backgroundColor: '#44ff44', padding: 20, borderRadius: 8,
+  },
+  actionRight: {
+    position: 'absolute', right: 10, top: 8,
+    backgroundColor: '#ff4444', padding: 20, borderRadius: 8,
+  },
+  actionText: { color: 'white', fontWeight: 'bold' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Gesture Handler provides native-driven gesture recognition running on the UI thread for 60fps performance</li>
+        <li>Wrap your app root in <code>GestureHandlerRootView</code> before using any gesture components</li>
+        <li><code>Gesture.Pan</code> detects drag motions with translation and velocity values</li>
+        <li><code>Gesture.Tap</code> detects single and multi-tap interactions</li>
+        <li>Combine gestures with React Native Reanimated for smooth, performant animations</li>
+        <li>The built-in <code>Swipeable</code> component simplifies left/right action patterns</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Gesture Handler Docs</strong> — Complete reference for all gesture types, configuration options, and composition patterns. <a href="https://docs.swmansion.com/react-native-gesture-handler/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

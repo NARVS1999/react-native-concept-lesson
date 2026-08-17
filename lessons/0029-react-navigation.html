@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0029: React Navigation</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0029: React Navigation</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Install and configure React Navigation with its required dependencies, set up a NavigationContainer, and implement deep linking in a React Native app.
+      </div>
+
+      <h2>Why React Navigation?</h2>
+      <p>React Navigation is the most popular navigation library for React Native. It provides a native-like navigation experience on both iOS and Android, handling stack transitions, tab bars, drawer menus, and deep linking out of the box.</p>
+      <p>Unlike basic screen switching, React Navigation integrates with the native navigation stack, giving you back-button support, smooth animations, and proper memory management.</p>
+
+      <h2>Installing Dependencies</h2>
+      <p>React Navigation requires several peer dependencies to work correctly:</p>
+      <pre><code>npm install @react-navigation/native
+npm install react-native-screens
+npm install react-native-safe-area-context</code></pre>
+      <p><code>react-native-screens</code> wraps native navigation primitives for performance. <code>react-native-safe-area-context</code> handles notches and status bars. Both are required for production-quality navigation.</p>
+
+      <h2>Setting Up NavigationContainer</h2>
+      <p>The <code>NavigationContainer</code> is the root component that manages your navigation tree. It should wrap your entire app:</p>
+      <pre><code>import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from './screens/HomeScreen';
+import DetailScreen from './screens/DetailScreen';
+
+const Stack = createNativeStackNavigator();
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator initialRouteName="Home"&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Detail" component={DetailScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Passing Parameters</h2>
+      <p>Screens can receive parameters via the <code>params</code> prop:</p>
+      <pre><code>// Navigate with params
+navigation.navigate('Detail', { itemId: 42, title: 'Item Details' });
+
+// Access in destination screen
+function DetailScreen({ route, navigation }) {
+  const { itemId, title } = route.params;
+  return &lt;Text&gt;{title} (ID: {itemId})&lt;/Text&gt;;
+}</code></pre>
+
+      <h2>The Linking API</h2>
+      <p>The Linking API maps URLs to screen names, enabling deep links that open specific screens directly:</p>
+      <pre><code>const linking = {
+  prefixes: ['myapp://', 'https://myapp.com'],
+  config: {
+    screens: {
+      Home: '',
+      Detail: 'item/:id',
+    },
+  },
+};
+
+export default function App() {
+  return (
+    &lt;NavigationContainer linking={linking}&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Detail" component={DetailScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+      <p>With this config, opening <code>myapp://item/42</code> will navigate directly to the Detail screen with <code>id=42</code>.</p>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the required root component that manages the navigation tree in React Navigation?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> NavigatorContainer</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> NavigationContainer</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> RouteContainer</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. Which package provides native screen primitives for better navigation performance?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> react-native-gesture</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> react-native-screens</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> react-native-primitives</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. In the Linking API config, what does the prefix array define?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Screen component paths</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> URL schemes that trigger deep linking</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Navigation animation types</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: React Navigation with Deep Linking</h3>
+        <p>Set up a complete React Navigation stack with three screens (Home, Profile, Settings) and configure the Linking API so that deep links can open any screen directly.</p>
+        <pre><code>import React from 'react';
+import { Text, Button, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const Stack = createNativeStackNavigator();
+
+const linking = {
+  prefixes: ['myapp://', 'https://myapp.com'],
+  config: {
+    screens: {
+      Home: '',
+      Profile: 'profile/:userId',
+      Settings: 'settings',
+    },
+  },
+};
+
+function HomeScreen({ navigation }) {
+  return (
+    &lt;View style={{ padding: 20 }}&gt;
+      &lt;Text style={{ fontSize: 24 }}&gt;Home&lt;/Text&gt;
+      &lt;Button
+        title="Go to Profile"
+        onPress={() =&gt; navigation.navigate('Profile', { userId: '123' })}
+      /&gt;
+      &lt;Button
+        title="Go to Settings"
+        onPress={() =&gt; navigation.navigate('Settings')}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+function ProfileScreen({ route }) {
+  const { userId } = route.params;
+  return (
+    &lt;View style={{ padding: 20 }}&gt;
+      &lt;Text style={{ fontSize: 24 }}&gt;Profile - User {userId}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+function SettingsScreen() {
+  return (
+    &lt;View style={{ padding: 20 }}&gt;
+      &lt;Text style={{ fontSize: 24 }}&gt;Settings&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;NavigationContainer linking={linking}&gt;
+      &lt;Stack.Navigator initialRouteName="Home"&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Profile" component={ProfileScreen} /&gt;
+        &lt;Stack.Screen name="Settings" component={SettingsScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+        <p>Test the deep linking by running: <code>npx uri-scheme open myapp://settings --android</code></p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>React Navigation requires <code>react-native-screens</code> and <code>react-native-safe-area-context</code> as peer dependencies</li>
+        <li>The <code>NavigationContainer</code> is the root component that wraps your navigation tree</li>
+        <li>Use <code>createNativeStackNavigator</code> for stack-based navigation with native transitions</li>
+        <li>The Linking API maps URL patterns (prefixes + screen configs) to deep link routes</li>
+        <li>Parameters can be passed between screens via the <code>route.params</code> prop</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Navigation Docs</strong> — The official documentation covers all navigation types, configuration options, and advanced patterns. <a href="https://reactnavigation.org/docs/getting-started" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

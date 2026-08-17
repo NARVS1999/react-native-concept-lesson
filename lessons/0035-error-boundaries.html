@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0035: Error Boundaries</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0035: Error Boundaries</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Implement class component error boundaries using getDerivedStateFromError and componentDidCatch, provide fallback UI for crashed components, and understand when and where to use Error Boundaries in a React Native app.
+      </div>
+
+      <h2>What Are Error Boundaries?</h2>
+      <p>Error Boundaries are React components that catch JavaScript errors anywhere in their child component tree, log those errors, and display a fallback UI instead of crashing the entire app. They work like a try-catch block for React components.</p>
+      <p>Without Error Boundaries, an error in a single component can unmount the entire component tree, showing a blank screen or crashing the app.</p>
+
+      <h2>Creating an Error Boundary</h2>
+      <p>Error Boundaries must be class components with two special lifecycle methods:</p>
+      <pre><code>import React, { Component } from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render shows fallback UI
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to monitoring service
+    console.error('ErrorBoundary caught:', error);
+    console.error('Component stack:', errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        &lt;View style={styles.fallback}&gt;
+          &lt;Text style={styles.fallbackTitle}&gt;Something went wrong&lt;/Text&gt;
+          &lt;Text style={styles.fallbackMessage}&gt;
+            {this.state.error?.message || 'An unexpected error occurred.'}
+          &lt;/Text&gt;
+          &lt;Button
+            title="Try Again"
+            onPress={() =&gt; this.setState({ hasError: false, error: null })}
+          /&gt;
+        &lt;/View&gt;
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+const styles = StyleSheet.create({
+  fallback: {
+    flex: 1, justifyContent: 'center', alignItems: 'center',
+    padding: 20, backgroundColor: '#fff3f3',
+  },
+  fallbackTitle: { fontSize: 20, fontWeight: 'bold', color: '#d32f2f', marginBottom: 8 },
+  fallbackMessage: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 16 },
+});</code></pre>
+
+      <h2>getDerivedStateFromError</h2>
+      <p>This static method is called during the render phase when a child component throws an error. It receives the error and must return an object to update state:</p>
+      <pre><code>// Called during render — update state to show fallback
+static getDerivedStateFromError(error) {
+  return { hasError: true, error };
+}</code></pre>
+      <p>Important: This method runs during rendering, so you cannot perform side effects here. Use <code>componentDidCatch</code> for logging.</p>
+
+      <h2>componentDidCatch</h2>
+      <p>This method is called during the commit phase after an error has been thrown. It receives the error and an error info object with the component stack trace:</p>
+      <pre><code>// Called after commit — log for debugging
+componentDidCatch(error, errorInfo) {
+  // Send to error reporting service
+  logErrorToService(error, errorInfo.componentStack);
+}</code></pre>
+
+      <h2>Fallback UI Patterns</h2>
+      <p>Design fallback UIs that help users recover gracefully:</p>
+      <pre><code>// Pattern 1: Simple error message
+function FallbackUI({ error, onRetry }) {
+  return (
+    &lt;View style={styles.fallback}&gt;
+      &lt;Text&gt;Oops! Something went wrong.&lt;/Text&gt;
+      &lt;Button title="Retry" onPress={onRetry} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Pattern 2: Detailed error info for development
+function DevFallback({ error, componentStack }) {
+  return (
+    &lt;View style={styles.devFallback}&gt;
+      &lt;Text style={styles.errorTitle}&gt;Error Details&lt;/Text&gt;
+      &lt;ScrollView&gt;
+        &lt;Text style={styles.errorMessage}&gt;{error.message}&lt;/Text&gt;
+        &lt;Text style={styles.stackTrace}&gt;{componentStack}&lt;/Text&gt;
+      &lt;/ScrollView&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>When to Use Error Boundaries</h2>
+      <ul>
+        <li><strong>Wrap feature sections:</strong> Isolate crashes in one feature from affecting others</li>
+        <li><strong>Wrap complex components:</strong> Charts, maps, or third-party components that might fail</li>
+        <li><strong>Wrap screen-level components:</strong> Prevent a single screen crash from killing the entire app</li>
+        <li><strong>Avoid wrapping:</strong> Event handlers, async code, server-side rendering, and the root component</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What type of component must an Error Boundary be?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> A functional component with hooks</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> A class component</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Either class or functional</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What does getDerivedStateFromError return?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> The error object directly</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> An object to update state for rendering fallback UI</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> The fallback React element</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. Where should you NOT place an Error Boundary?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Around individual feature sections</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Inside event handlers and async callbacks</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> Around complex third-party components</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Wrap a Risky Component in an Error Boundary</h3>
+        <p>Create an Error Boundary and wrap a component that might throw an error during rendering. Include a retry button that resets the boundary state.</p>
+        <pre><code>import React, { Component } from 'react';
+import { View, Text, Button, StyleSheet } from 'react-native';
+
+// Error Boundary component
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught:', error.message);
+    console.error('Component stack:', errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        &lt;View style={styles.fallback}&gt;
+          &lt;Text style={styles.fallbackTitle}&gt;Component Crashed&lt;/Text&gt;
+          &lt;Text style={styles.fallbackMessage}&gt;
+            {this.state.error?.message}
+          &lt;/Text&gt;
+          &lt;Button
+            title="Try Again"
+            onPress={() =&gt; this.setState({ hasError: false, error: null })}
+          /&gt;
+        &lt;/View&gt;
+      );
+    }
+    return this.props.children;
+  }
+}
+
+// Risky component that might throw
+function RiskyComponent({ shouldCrash }) {
+  if (shouldCrash) {
+    throw new Error('Simulated render error!');
+  }
+  return (
+    &lt;View style={styles.safeContent}&gt;
+      &lt;Text style={styles.safeText}&gt;Component is working fine!&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// App using Error Boundary
+export default function App() {
+  const [crash, setCrash] = React.useState(false);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Error Boundary Demo&lt;/Text&gt;
+
+      &lt;ErrorBoundary&gt;
+        &lt;RiskyComponent shouldCrash={crash} /&gt;
+      &lt;/ErrorBoundary&gt;
+
+      &lt;View style={styles.controls}&gt;
+        &lt;Button
+          title={crash ? 'Fix Component' : 'Crash Component'}
+          onPress={() =&gt; setCrash(!crash)}
+        /&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 20 },
+  fallback: {
+    padding: 20, backgroundColor: '#fff3f3', borderRadius: 8,
+    borderWidth: 2, borderColor: '#ffcdd2', marginVertical: 10,
+  },
+  fallbackTitle: { fontSize: 18, fontWeight: 'bold', color: '#d32f2f', marginBottom: 8 },
+  fallbackMessage: { fontSize: 14, color: '#666', marginBottom: 16 },
+  safeContent: {
+    padding: 20, backgroundColor: '#e8f5e9', borderRadius: 8,
+    borderWidth: 2, borderColor: '#a5d6a7', marginVertical: 10,
+  },
+  safeText: { fontSize: 16, color: '#2e7d32', textAlign: 'center' },
+  controls: { marginTop: 20 },
+});</code></pre>
+        <p>Toggle the "Crash Component" button to see the Error Boundary catch the error and show the fallback UI. Click "Try Again" to reset the boundary.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Error Boundaries are class components that catch errors in their child component tree</li>
+        <li><code>getDerivedStateFromError</code> updates state to render fallback UI (runs during render)</li>
+        <li><code>componentDidCatch</code> logs errors and component stack traces (runs after commit)</li>
+        <li>Place Error Boundaries around features, screens, and complex components</li>
+        <li>Do not use Error Boundaries for event handlers, async code, or the root component</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Docs: Error Handling with Error Boundaries</strong> — Official guide explaining the lifecycle methods, usage patterns, and limitations of Error Boundaries. <a href="https://react.dev/reference/react/Component#catching-rendering-errors-with-an-error-boundary" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0036: Linking</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0036: Linking</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Use the Linking API to open URLs, check if apps can handle links, open device settings, configure deep linking with URL schemes, and handle incoming links in your React Native app.
+      </div>
+
+      <h2>Introduction to Linking</h2>
+      <p>The Linking API gives your React Native app the ability to open external URLs, interact with other apps, and handle deep links. It works on both iOS and Android with platform-specific behaviors.</p>
+
+      <h2>Opening URLs with openURL</h2>
+      <p>The most common use case is opening a URL in the device's default browser:</p>
+      <pre><code>import { Linking } from 'react-native';
+
+// Open a website
+async function openWebsite() {
+  const url = 'https://reactnative.dev';
+  const supported = await Linking.canOpenURL(url);
+
+  if (supported) {
+    await Linking.openURL(url);
+  } else {
+    console.log("Don't know how to open this URL:", url);
+  }
+}
+
+// Open an email compose
+function openEmail() {
+  Linking.openURL('mailto:support@example.com?subject=Help&body=Hello');
+}
+
+// Open a phone dialer
+function openPhone() {
+  Linking.openURL('tel:+1234567890');
+}
+
+// Open SMS
+function openSMS() {
+  Linking.openURL('sms:+1234567890?body=Hello!');
+}</code></pre>
+
+      <h2>Checking with canOpenURL</h2>
+      <p>Always check if a URL can be opened before attempting to open it. This prevents crashes and allows you to provide fallbacks:</p>
+      <pre><code>async function shareOrFallback(url, fallbackMessage) {
+  const canOpen = await Linking.canOpenURL(url);
+
+  if (canOpen) {
+    await Linking.openURL(url);
+  } else {
+    // App for this URL scheme is not installed
+    Alert.alert('Not Available', fallbackMessage);
+  }
+}
+
+// Example: Open in specific app or show web fallback
+async function openInMap(address) {
+  const mapUrl = `maps:q=${address}`;
+  const webMapUrl = `https://maps.google.com?q=${address}`;
+
+  if (await Linking.canOpenURL(mapUrl)) {
+    await Linking.openURL(mapUrl);
+  } else {
+    await Linking.openURL(webMapUrl);
+  }
+}</code></pre>
+
+      <h2>Opening Device Settings</h2>
+      <p>On iOS, you can open the app's settings page directly. On Android, you can open the general settings:</p>
+      <pre><code>async function openAppSettings() {
+  // iOS: Opens this app's settings page
+  // Android: Opens general app settings
+  const supported = await Linking.canOpenURL('app-settings:');
+
+  if (supported) {
+    await Linking.openURL('app-settings:');
+  } else {
+    // Fallback for platforms that don't support app-settings scheme
+    Linking.openURL('package:com.myapp');
+  }
+}</code></pre>
+
+      <h2>Deep Linking Setup</h2>
+      <p>Deep linking allows external sources (other apps, web pages, QR codes) to open specific screens in your app. Configure URL schemes in your native projects:</p>
+      <pre><code>// In ios/MyApp/Info.plist — add URL scheme
+// &lt;key&gt;CFBundleURLSchemes&lt;/key&gt;
+// &lt;array&gt;
+//   &lt;string&gt;myapp&lt;/string&gt;
+// &lt;/array&gt;
+
+// In android/app/src/main/AndroidManifest.xml — add intent filter
+// &lt;intent-filter&gt;
+//   &lt;action android:name="android.intent.action.VIEW" /&gt;
+//   &lt;category android:name="android.intent.category.DEFAULT" /&gt;
+//   &lt;category android:name="android.intent.category.BROWSABLE" /&gt;
+//   &lt;data android:scheme="myapp" android:host="open" /&gt;
+// &lt;/intent-filter&gt;</code></pre>
+
+      <h2>Handling Incoming Links</h2>
+      <p>Use <code>Linking.addEventListener</code> to respond when the app is opened via a deep link:</p>
+      <pre><code>import { Linking } from 'react-native';
+
+function DeepLinkHandler({ navigation }) {
+  useEffect(() =&gt; {
+    // Handle links that opened the app
+    async function handleInitialURL() {
+      const initialUrl = await Linking.getInitialURL();
+      if (initialUrl) {
+        handleDeepLink(initialUrl);
+      }
+    }
+
+    // Listen for links while the app is running
+    const subscription = Linking.addEventListener('url', (event) =&gt; {
+      handleDeepLink(event.url);
+    });
+
+    handleInitialURL();
+
+    return () =&gt; subscription?.remove();
+  }, []);
+
+  function handleDeepLink(url) {
+    // Parse the URL and navigate to the right screen
+    const route = url.replace('myapp://open/', '');
+    const [screen, param] = route.split('/');
+
+    switch (screen) {
+      case 'profile':
+        navigation.navigate('Profile', { userId: param });
+        break;
+      case 'settings':
+        navigation.navigate('Settings');
+        break;
+      default:
+        navigation.navigate('Home');
+    }
+  }
+
+  return null; // This component doesn't render anything
+}</code></pre>
+
+      <h2>URL Scheme Patterns</h2>
+      <p>Design clear, consistent URL schemes for your app:</p>
+      <pre><code>// Custom scheme
+myapp://open/profile/123
+myapp://open/settings
+myapp://open/order/456
+
+// Universal links (iOS) / App links (Android)
+https://myapp.com/profile/123
+https://myapp.com/settings</code></pre>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What method should you call before openURL to check if the URL can be handled?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Linking.isValidURL()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Linking.canOpenURL()</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Linking.checkURL()</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How do you listen for deep links while the app is already running?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> Linking.getInitialURL()</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Linking.addEventListener('url', callback)</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> Linking.onDeepLink(callback)</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What URL scheme format opens the device's phone dialer?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> phone:+1234567890</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> tel:+1234567890</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> call:+1234567890</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Help Screen with Links</h3>
+        <p>Build a help screen with buttons that open email, website, phone, and device settings using the Linking API.</p>
+        <pre><code>import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Linking, Alert } from 'react-native';
+
+function HelpScreen() {
+  const openEmail = async () =&gt; {
+    const url = 'mailto:support@myapp.com?subject=Help Request';
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'No email app found');
+    }
+  };
+
+  const openWebsite = async () =&gt; {
+    const url = 'https://myapp.com/help';
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Cannot open browser');
+    }
+  };
+
+  const openPhone = async () =&gt; {
+    const url = 'tel:+18005551234';
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Error', 'Phone not available on this device');
+    }
+  };
+
+  const openSettings = async () =&gt; {
+    const url = 'app-settings:';
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('Info', 'Open Settings app manually');
+    }
+  };
+
+  return (
+    &lt;ScrollView style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Help &amp; Support&lt;/Text&gt;
+
+      &lt;TouchableOpacity style={styles.button} onPress={openEmail}&gt;
+        &lt;Text style={styles.buttonIcon}&gt;✉️&lt;/Text&gt;
+        &lt;View style={styles.buttonTextContainer}&gt;
+          &lt;Text style={styles.buttonTitle}&gt;Email Support&lt;/Text&gt;
+          &lt;Text style={styles.buttonDesc}&gt;support@myapp.com&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/TouchableOpacity&gt;
+
+      &lt;TouchableOpacity style={styles.button} onPress={openWebsite}&gt;
+        &lt;Text style={styles.buttonIcon}&gt;🌐&lt;/Text&gt;
+        &lt;View style={styles.buttonTextContainer}&gt;
+          &lt;Text style={styles.buttonTitle}&gt;Visit Website&lt;/Text&gt;
+          &lt;Text style={styles.buttonDesc}&gt;myapp.com/help&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/TouchableOpacity&gt;
+
+      &lt;TouchableOpacity style={styles.button} onPress={openPhone}&gt;
+        &lt;Text style={styles.buttonIcon}&gt;📞&lt;/Text&gt;
+        &lt;View style={styles.buttonTextContainer}&gt;
+          &lt;Text style={styles.buttonTitle}&gt;Call Us&lt;/Text&gt;
+          &lt;Text style={styles.buttonDesc}&gt;1-800-555-1234&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/TouchableOpacity&gt;
+
+      &lt;TouchableOpacity style={styles.button} onPress={openSettings}&gt;
+        &lt;Text style={styles.buttonIcon}&gt;⚙️&lt;/Text&gt;
+        &lt;View style={styles.buttonTextContainer}&gt;
+          &lt;Text style={styles.buttonTitle}&gt;App Settings&lt;/Text&gt;
+          &lt;Text style={styles.buttonDesc}&gt;Manage permissions&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#f5f5f5' },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 30, textAlign: 'center' },
+  button: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'white', padding: 16, marginBottom: 12,
+    borderRadius: 12, elevation: 2,
+  },
+  buttonIcon: { fontSize: 28, marginRight: 16 },
+  buttonTextContainer: { flex: 1 },
+  buttonTitle: { fontSize: 18, fontWeight: '600' },
+  buttonDesc: { fontSize: 14, color: '#666', marginTop: 2 },
+});
+
+export default HelpScreen;</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>Linking.openURL()</code> opens URLs in the default browser, email, phone, or SMS app</li>
+        <li><code>Linking.canOpenURL()</code> checks if a URL scheme is supported before opening</li>
+        <li><code>Linking.getInitialURL()</code> gets the URL that opened the app (cold start deep link)</li>
+        <li><code>Linking.addEventListener('url', callback)</code> handles deep links while the app is running</li>
+        <li>Configure custom URL schemes (e.g., <code>myapp://</code>) in native project settings for deep linking</li>
+        <li>Always provide fallbacks when a URL scheme is not available on the device</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Linking API Docs</strong> — Official documentation covering all Linking methods, URL schemes, and platform-specific behaviors. <a href="https://reactnative.dev/docs/linking" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

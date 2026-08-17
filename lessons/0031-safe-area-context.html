@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0031: Safe Area Context</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 0031: Safe Area Context</h1>
+      <p><em>Phase 4 — Integration Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Use SafeAreaProvider and SafeAreaView to handle device notches and status bars, and leverage the useSafeAreaInsets hook for custom safe area layouts in any component.
+      </div>
+
+      <h2>Why Safe Areas Matter</h2>
+      <p>Modern devices have notches, rounded corners, and status bars that can overlap your app content. Safe areas ensure your UI renders within the visible, unobstructed portion of the screen. Without proper safe area handling, content may be hidden behind the notch or status bar.</p>
+
+      <h2>SafeAreaProvider</h2>
+      <p><code>SafeAreaProvider</code> should wrap your entire app (similar to <code>NavigationContainer</code>). It provides safe area insets to all child components via context:</p>
+      <pre><code>import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+export default function App() {
+  return (
+    &lt;SafeAreaProvider&gt;
+      {/* Your app content, NavigationContainer, etc. */}
+    &lt;/SafeAreaProvider&gt;
+  );
+}</code></pre>
+
+      <h2>SafeAreaView</h2>
+      <p><code>SafeAreaView</code> is a drop-in replacement for <code>View</code> that adds padding automatically based on device insets:</p>
+      <pre><code>import { SafeAreaView, Text, StyleSheet } from 'react-native';
+
+function HomeScreen() {
+  return (
+    &lt;SafeAreaView style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;My App&lt;/Text&gt;
+      &lt;Text&gt;This content is safe from notches and status bars.&lt;/Text&gt;
+    &lt;/SafeAreaView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  title: { fontSize: 24, fontWeight: 'bold' },
+});</code></pre>
+      <p><code>SafeAreaView</code> automatically applies padding to the top, bottom, left, and right based on the device's safe area insets.</p>
+
+      <h2>useSafeAreaInsets Hook</h2>
+      <p>For more precise control, use the <code>useSafeAreaInsets</code> hook to get individual inset values and apply them manually:</p>
+      <pre><code>import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function CustomHeader() {
+  const insets = useSafeAreaInsets();
+
+  return (
+    &lt;View style={{
+      paddingTop: insets.top,
+      paddingLeft: insets.left,
+      paddingRight: insets.right,
+      backgroundColor: '#2196F3',
+    }}&gt;
+      &lt;Text style={{ color: 'white', fontSize: 18 }}&gt;
+        Custom Header
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      <p>The hook returns an object with <code>top</code>, <code>bottom</code>, <code>left</code>, and <code>right</code> values in pixels.</p>
+
+      <h2>Safe Areas in Scroll Views</h2>
+      <p>When using <code>ScrollView</code> or <code>FlatList</code>, combine safe areas with content container styling:</p>
+      <pre><code>import { SafeAreaView, FlatList, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function SafeScrollList({ data }) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    &lt;SafeAreaView style={{ flex: 1 }}&gt;
+      &lt;FlatList
+        data={data}
+        contentContainerStyle={{
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        }}
+        renderItem={({ item }) =&gt; (
+          &lt;Text style={{ padding: 16 }}&gt;{item.title}&lt;/Text&gt;
+        )}
+        keyExtractor={(item) =&gt; item.id}
+      /&gt;
+    &lt;/SafeAreaView&gt;
+  );
+}</code></pre>
+
+      <h2>Handling Orientation Changes</h2>
+      <p>Safe area insets update dynamically when the device orientation changes. The <code>useSafeAreaInsets</code> hook automatically re-renders with new values, so your layout adjusts without extra work.</p>
+
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What component provides safe area inset context to the entire app?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> SafeAreaView</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> SafeAreaProvider</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> SafeAreaContext</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. Which hook returns individual inset values (top, bottom, left, right) for custom safe area layouts?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> useInsets</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> useSafeAreaInsets</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> useSafeArea</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. What does SafeAreaView do compared to a regular View?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> It adds border radius to avoid rounded corners</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> It adds padding based on device safe area insets</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> It hides content behind the notch for a sleek look</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Screen with Safe Area Headers and Scroll Content</h3>
+        <p>Build a screen with a custom header that respects the top safe area, a scrollable content area with proper bottom padding, and a floating bottom bar that sits above the home indicator.</p>
+        <pre><code>import React from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+
+function AppContent() {
+  const insets = useSafeAreaInsets();
+
+  return (
+    &lt;View style={styles.root}&gt;
+      {/* Custom header respecting top safe area */}
+      &lt;View style={[styles.header, { paddingTop: insets.top }]}&gt;
+        &lt;Text style={styles.headerTitle}&gt;My Safe App&lt;/Text&gt;
+      &lt;/View&gt;
+
+      {/* Scrollable content */}
+      &lt;ScrollView
+        style={styles.content}
+        contentContainerStyle={{
+          paddingTop: 20,
+          paddingBottom: insets.bottom + 80,
+        }}
+      &gt;
+        {Array.from({ length: 20 }, (_, i) =&gt; (
+          &lt;View key={i} style={styles.card}&gt;
+            &lt;Text style={styles.cardTitle}&gt;Item {i + 1}&lt;/Text&gt;
+            &lt;Text style={styles.cardBody}&gt;
+              This is scrollable content that respects safe areas.
+            &lt;/Text&gt;
+          &lt;/View&gt;
+        ))}
+      &lt;/ScrollView&gt;
+
+      {/* Bottom bar above home indicator */}
+      &lt;View style={[styles.bottomBar, { paddingBottom: insets.bottom }]}&gt;
+        &lt;Text style={styles.bottomText}&gt;Bottom Navigation Bar&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;SafeAreaProvider&gt;
+      &lt;AppContent /&gt;
+    &lt;/SafeAreaProvider&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#f5f5f5' },
+  header: {
+    backgroundColor: '#2196F3',
+    paddingBottom: 16,
+    paddingHorizontal: 20,
+  },
+  headerTitle: { fontSize: 22, fontWeight: 'bold', color: 'white' },
+  content: { flex: 1 },
+  card: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginVertical: 6,
+    padding: 16,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  cardTitle: { fontSize: 16, fontWeight: '600' },
+  cardBody: { marginTop: 4, color: '#666' },
+  bottomBar: {
+    backgroundColor: 'white',
+    paddingTop: 12,
+    paddingHorizontal: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  bottomText: { textAlign: 'center', fontSize: 14, color: '#333' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>SafeAreaProvider</code> wraps your app to provide safe area context to all child components</li>
+        <li><code>SafeAreaView</code> is a drop-in View replacement that adds automatic safe area padding</li>
+        <li><code>useSafeAreaInsets</code> hook gives you individual inset values for custom layouts</li>
+        <li>Safe areas handle notches, status bars, rounded corners, and home indicators</li>
+        <li>Insets update dynamically on orientation changes without extra code</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Review the material or ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>react-native-safe-area-context Docs</strong> — Official documentation with API reference, usage examples, and integration guides. <a href="https://github.com/th3rdwave/react-native-safe-area-context" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
