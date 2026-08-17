@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0005: Styling and Flexbox</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 0005: Styling and Flexbox</h1>
+      <p><em>Phase 2 — Core Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Use StyleSheet and Flexbox to create responsive, well-structured layouts in React Native.
+      </div>
+
+      <!-- ======== Section 1 ======== -->
+      <h2>Stylesheet: Declarative Styling</h2>
+      <p>React Native uses JavaScript objects for styles. The <code>StyleSheet.create</code> API optimizes these objects for performance:</p>
+
+<pre><code>import { StyleSheet, View, Text } from 'react-native';
+
+function StyledBox() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Hello&lt;/Text&gt;
+      &lt;Text style={styles.subtitle}&gt;World&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 20, backgroundColor: '#f5f5f5', borderRadius: 8 },
+  title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+  subtitle: { fontSize: 16, color: '#666', marginTop: 8 },
+});</code></pre>
+
+      <div class="tip">
+        <strong>Why StyleSheet.create?</strong>
+        It validates styles at build time and sends them to the native layer as IDs instead of plain objects — more efficient than inline styles.
+      </div>
+
+      <!-- ======== Section 2 ======== -->
+      <h2>Flexbox: The Layout System</h2>
+      <p>React Native uses Flexbox for layout. By default, Flexbox in RN is <strong>column-based</strong> (not row-based like web CSS).</p>
+
+      <table>
+        <tr><th>Property</th><th>Values</th><th>What it does</th></tr>
+        <tr><td><code>flexDirection</code></td><td><code>row</code>, <code>column</code> (default)</td><td>Direction of the main axis</td></tr>
+        <tr><td><code>justifyContent</code></td><td><code>flex-start</code>, <code>center</code>, <code>space-between</code>, <code>space-around</code>, <code>space-evenly</code></td><td>Alignment along the main axis</td></tr>
+        <tr><td><code>alignItems</code></td><td><code>flex-start</code>, <code>center</code>, <code>stretch</code> (default), <code>flex-end</code></td><td>Alignment along the cross axis</td></tr>
+        <tr><td><code>flex</code></td><td>Number (e.g., <code>1</code>, <code>2</code>)</td><td>How much space an item should take relative to siblings</td></tr>
+        <tr><td><code>gap</code></td><td>Number</td><td>Spacing between items</td></tr>
+      </table>
+
+<pre><code>// Center content both horizontally and vertically
+&lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+  &lt;Text&gt;Centered!&lt;/Text&gt;
+&lt;/View&gt;
+
+// Side-by-side layout
+&lt;View style={{ flexDirection: 'row', gap: 8 }}&gt;
+  &lt;View style={{ flex: 1, backgroundColor: '#e3f2fd' }}&gt;
+    &lt;Text&gt;Left&lt;/Text&gt;
+  &lt;/View&gt;
+  &lt;View style={{ flex: 1, backgroundColor: '#fce4ec' }}&gt;
+    &lt;Text&gt;Right&lt;/Text&gt;
+  &lt;/View&gt;
+&lt;/View&gt;</code></pre>
+
+      <!-- ======== Section 3 ======== -->
+      <h2>Dimensions: Screen Size</h2>
+      <p>Use the <code>Dimensions</code> API to get the screen width and height for responsive layouts:</p>
+
+<pre><code>import { Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
+// Use width to calculate responsive sizes
+const cardWidth = width * 0.9;</code></pre>
+
+      <p>You can also use <code>useWindowDimensions()</code> hook which updates when the screen rotates:</p>
+
+<pre><code>import { useWindowDimensions } from 'react-native';
+
+function ResponsiveLayout() {
+  const { width, height } = useWindowDimensions();
+  return (
+    &lt;View style={{ width: width * 0.9, padding: 16 }}&gt;
+      &lt;Text&gt;Screen: {width} x {height}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <!-- ======== Quiz ======== -->
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is the default flexDirection in React Native?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> row</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> column</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> grid</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. Which property centers items along the main axis?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> alignItems</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> justifyContent</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> alignSelf</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. Why use StyleSheet.create instead of plain objects?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> It adds CSS support</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> It validates styles and sends them as IDs to native</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> It is required by React Native</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <!-- ======== Project ======== -->
+      <div class="project">
+        <h3>Mini-Project: Price Tag Row</h3>
+        <p>Create a horizontal row with a product name on the left and a price on the right, using <code>flexDirection: 'row'</code> and <code>justifyContent: 'space-between'</code>.</p>
+        <pre><code>function PriceTag({ name, price }) {
+  return (
+    &lt;View style={styles.row}&gt;
+      &lt;Text style={styles.name}&gt;{name}&lt;/Text&gt;
+      &lt;Text style={styles.price}&gt;{price}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  row: { flexDirection: 'row', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  name: { fontSize: 16 },
+  price: { fontSize: 16, fontWeight: 'bold', color: '#2b8a3e' },
+});</code></pre>
+      </div>
+
+      <!-- ======== Summary ======== -->
+      <h2>Summary</h2>
+      <ul>
+        <li>Use <code>StyleSheet.create</code> for optimized, validated styles</li>
+        <li>Flexbox defaults to <strong>column</strong> direction (not row like web CSS)</li>
+        <li><code>justifyContent</code> = main axis, <code>alignItems</code> = cross axis</li>
+        <li>Use <code>useWindowDimensions()</code> for responsive layouts that update on rotation</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native — Layout with Flexbox</strong> — Official guide to Flexbox in RN. <a href="https://reactnative.dev/docs/flexbox" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
