@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0015: Native Bridge and Modules</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 0015: Native Bridge and Modules</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Understand how React Native bridges to native code, when to use native modules, and the new Turbo Modules architecture.
+      </div>
+
+      <!-- ======== Section 1 ======== -->
+      <h2>The Bridge (Old Architecture)</h2>
+      <p>In the old architecture, React Native communicates between JavaScript and native code through an asynchronous bridge:</p>
+
+      <pre><code>JS Thread → Bridge → Native Thread → Bridge → JS Thread</code></pre>
+
+      <p>This is asynchronous — JS sends a message and continues. The native side processes it and sends a message back. This causes performance bottlenecks for fast animations and heavy UI updates.</p>
+
+      <!-- ======== Section 2 ======== -->
+      <h2>Native Modules</h2>
+      <p>Native Modules let you call native iOS/Android code from JavaScript. Use them when React Native doesn't expose an API you need:</p>
+
+<pre><code>// JavaScript side
+import { NativeModules } from 'react-native';
+const { BatteryModule } = NativeModules;
+
+const level = await BatteryModule.getBatteryLevel();</code></pre>
+
+      <p>Native Modules are written in Swift/Objective-C (iOS) and Kotlin/Java (Android). They require knowledge of the native platform.</p>
+
+      <div class="warning">
+        <strong>When to use Native Modules</strong>
+        Only when no existing library provides the functionality. Writing native code adds complexity and platform-specific maintenance.
+      </div>
+
+      <!-- ======== Section 3 ======== -->
+      <h2>Turbo Modules (New Architecture)</h2>
+      <p>Turbo Modules are the new architecture's replacement for Native Modules. Key improvements:</p>
+
+      <table>
+        <tr><th>Feature</th><th>Native Modules (Old)</th><th>Turbo Modules (New)</th></tr>
+        <tr><td>Loading</td><td>Eager (all loaded at startup)</td><td>Lazy (loaded on demand)</td></tr>
+        <tr><td>Communication</td><td>Asynchronous JSON bridge</td><td>Synchronous (JSI interface)</td></tr>
+        <tr><td>Type Safety</td><td>Manual</td><td>Codegen with TypeScript/Flow specs</td></tr>
+        <tr><td>Performance</td><td>Slower</td><td>Faster (no serialization)</td></tr>
+      </table>
+
+<pre><code>// Turbo Module spec (TypeScript)
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  getBatteryLevel(): Promise&lt;number&gt;;
+}
+
+export default TurboModuleRegistry.getEnforcing&lt;Spec&gt;('BatteryModule');</code></pre>
+
+      <!-- ======== Section 4 ======== -->
+      <h2>File System</h2>
+      <p>React Native provides APIs for file operations, typically through libraries:</p>
+
+<pre><code>import * as FileSystem from 'expo-file-system';
+
+// Write a file
+await FileSystem.writeAsStringAsync(
+  FileSystem.documentDirectory + 'notes.txt',
+  'Hello, world!'
+);
+
+// Read a file
+const content = await FileSystem.readAsStringAsync(
+  FileSystem.documentDirectory + 'notes.txt'
+);
+
+// Check if file exists
+const info = await FileSystem.getInfoAsync(
+  FileSystem.documentDirectory + 'notes.txt'
+);</code></pre>
+
+      <!-- ======== Quiz ======== -->
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. Why is the old bridge a performance bottleneck?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> It is too fast</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> It is asynchronous and requires JSON serialization</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> It only supports iOS</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What is the main advantage of Turbo Modules?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> They support more platforms</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> Lazy loading and synchronous communication via JSI</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> They use less memory</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. When should you write a Native Module?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> Whenever possible</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> Only when no existing library provides the functionality</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> For every feature</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: File Logger</h3>
+        <p>Build a component that writes timestamped log entries to a file using expo-file-system. Display the log entries on screen by reading the file back.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>The <strong>old bridge</strong> is asynchronous and causes performance issues</li>
+        <li><strong>Native Modules</strong> let you call native code from JavaScript</li>
+        <li><strong>Turbo Modules</strong> are lazy-loaded and synchronous via JSI</li>
+        <li>Only write native modules when no library provides the functionality</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native — New Architecture</strong> — Official guide to Fabric and Turbo Modules. <a href="https://reactnative.dev/docs/new-architecture" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

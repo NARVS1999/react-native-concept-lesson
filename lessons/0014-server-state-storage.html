@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0014: Server State and Storage</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 0014: Server State and Storage</h1>
+      <p><em>Phase 5 — Architectural Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Manage server data with React Query (TanStack Query) and choose the right local storage solution.
+      </div>
+
+      <!-- ======== Section 1 ======== -->
+      <h2>React Query (TanStack Query)</h2>
+      <p>React Query manages <strong>server state</strong> — data from APIs. It handles fetching, caching, background refetching, and mutations automatically.</p>
+
+<pre><code>import { useQuery, useMutation, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient();
+
+function UserList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => fetch('https://api.example.com/users').then(r => r.json()),
+  });
+
+  if (isLoading) return &lt;Text&gt;Loading...&lt;/Text&gt;;
+  if (error) return &lt;Text&gt;Error loading users&lt;/Text&gt;;
+
+  return (
+    &lt;FlatList
+      data={data}
+      keyExtractor={item => String(item.id)}
+      renderItem={({ item }) => &lt;Text&gt;{item.name}&lt;/Text&gt;}
+    /&gt;
+  );
+}
+
+// Mutations
+function CreateUser() {
+  const mutation = useMutation({
+    mutationFn: (newUser) => fetch('https://api.example.com/users', {
+      method: 'POST',
+      body: JSON.stringify(newUser),
+    }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
+  });
+
+  return (
+    &lt;Pressable onPress={() => mutation.mutate({ name: 'New User' })}&gt;
+      &lt;Text&gt;Add User&lt;/Text&gt;
+    &lt;/Pressable&gt;
+  );
+}</code></pre>
+
+      <div class="tip">
+        <strong>Why React Query?</strong>
+        It separates <strong>server state</strong> (async, shared, can become stale) from <strong>client state</strong> (local, synchronous). This is how most production apps are architected.
+      </div>
+
+      <!-- ======== Section 2 ======== -->
+      <h2>MMKV: Fast Local Storage</h2>
+      <p>MMKV is a synchronous, encrypted key-value storage that is 30x faster than AsyncStorage:</p>
+
+<pre><code>import { MMKV } from 'react-native-mmkv';
+
+const storage = new MMKV();
+
+// Synchronous operations (no await needed!)
+storage.set('user.name', 'Ana');
+const name = storage.getString('user.name'); // 'Ana'
+storage.delete('user.name');</code></pre>
+
+      <!-- ======== Section 3 ======== -->
+      <h2>SQLite: Structured Data</h2>
+      <p>For complex queries, relationships, and structured data, use SQLite:</p>
+
+<pre><code>import * as SQLite from 'expo-sqlite';
+
+const db = await SQLite.openDatabaseAsync('app.db');
+
+// Create table
+await db.execAsync(`
+  CREATE TABLE IF NOT EXISTS todos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    completed INTEGER DEFAULT 0
+  );
+`);
+
+// Insert
+await db.runAsync('INSERT INTO todos (title) VALUES (?)', ['Learn SQLite']);
+
+// Query
+const todos = await db.getAllAsync('SELECT * FROM todos');</code></pre>
+
+      <div class="info">
+        <strong>Storage Decision Matrix</strong>
+        <ul>
+          <li><strong>AsyncStorage</strong>: Simple key-value, no encryption, small data</li>
+          <li><strong>MMKV</strong>: Fast key-value, encrypted, same use case as AsyncStorage but faster</li>
+          <li><strong>SQLite</strong>: Structured data, complex queries, relationships, offline-first</li>
+        </ul>
+      </div>
+
+      <!-- ======== Quiz ======== -->
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. What is "server state"?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> Data stored on the user's device</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> Data from APIs that is async and can become stale</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> Redux store data</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. How does MMKV differ from AsyncStorage?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> MMKV is async, AsyncStorage is sync</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> MMKV is synchronous and significantly faster</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> There is no difference</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. When should you use SQLite over key-value storage?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> For storing a theme preference</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> For complex queries, relationships, and structured data</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> For storing user tokens</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Cached API Fetcher</h3>
+        <p>Use React Query to fetch a list of posts from JSONPlaceholder. Add a "Refresh" button that refetches the data. Observe how React Query caches the data and shows it instantly on revisit.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><strong>React Query</strong> manages server state with caching, background refetch, and mutations</li>
+        <li><strong>MMKV</strong> is a fast, synchronous, encrypted alternative to AsyncStorage</li>
+        <li><strong>SQLite</strong> is for structured data with complex queries</li>
+        <li>Separate server state from client state for scalable architecture</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>TanStack Query Docs</strong> — Official React Query documentation. <a href="https://tanstack.com/query/latest/docs/framework/react/overview" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
