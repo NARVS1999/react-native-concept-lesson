@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 78: A/B Testing and Experiments</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 78: A/B Testing and Experiments</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn how to implement A/B testing in React Native using feature flags, remote config, and analytics to measure experiment results effectively.</div>
+
+      <h2>What is A/B Testing?</h2>
+      <p>A/B testing compares two versions of a feature to determine which performs better. In React Native, you can implement A/B testing using feature flags to show different variants to different user segments.</p>
+
+      <div class="info"><strong>Key Concept</strong>A/B testing is not just about UI changes—it's about measuring business outcomes like conversion rates, engagement, and retention.</div>
+
+      <h2>Feature Flags for Experiments</h2>
+      <pre><code>// Experiment configuration
+// config/experiments.js
+export const experiments = {
+  checkout_flow: {
+    id: 'checkout_flow_v2',
+    variants: {
+      control: {
+        weight: 50,
+        config: {
+          showExpressCheckout: false,
+          checkoutLayout: 'traditional',
+        },
+      },
+      treatment: {
+        weight: 50,
+        config: {
+          showExpressCheckout: true,
+          checkoutLayout: 'streamlined',
+        },
+      },
+    },
+    targeting: {
+      minAppVersion: '2.1.0',
+      userSegments: ['returning_users', 'high_value'],
+      excludeSegments: ['beta_testers'],
+    },
+  },
+};
+
+// Assignment logic
+// utils/experimentAssigner.js
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export async function assignVariant(experimentId, userId) {
+  const experiment = experiments[experimentId];
+  if (!experiment) return null;
+
+  // Check targeting rules
+  if (!isTargeted(experiment.targeting, userId)) {
+    return null;
+  }
+
+  // Check for existing assignment
+  const existing = await AsyncStorage.getItem(`experiment_${experimentId}`);
+  if (existing) return JSON.parse(existing);
+
+  // Assign variant based on weights
+  const variant = weightedRandom(experiment.variants);
+  
+  // Store assignment
+  await AsyncStorage.setItem(
+    `experiment_${experimentId}`,
+    JSON.stringify({ variant, assignedAt: Date.now() })
+  );
+
+  // Track assignment event
+  trackExperimentAssignment(experimentId, variant);
+  
+  return variant;
+}
+
+function weightedRandom(variants) {
+  const totalWeight = Object.values(variants).reduce(
+    (sum, v) => sum + v.weight, 0
+  );
+  let random = Math.random() * totalWeight;
+  
+  for (const [name, variant] of Object.entries(variants)) {
+    random -= variant.weight;
+    if (random <= 0) return name;
+  }
+  
+  return Object.keys(variants)[0];
+}
+
+// React hook for experiments
+// hooks/useExperiment.js
+import { useState, useEffect } from 'react';
+import { assignVariant } from '../utils/experimentAssigner';
+
+export function useExperiment(experimentId, userId) {
+  const [variant, setVariant] = useState(null);
+  const [config, setConfig] = useState(null);
+
+  useEffect(() => {
+    async function loadExperiment() {
+      const assignedVariant = await assignVariant(experimentId, userId);
+      if (assignedVariant) {
+        setVariant(assignedVariant);
+        setConfig(experiments[experimentId].variants[assignedVariant].config);
+      }
+    }
+    loadExperiment();
+  }, [experimentId, userId]);
+
+  return { variant, config };
+}
+
+// Usage in component
+function CheckoutScreen({ userId }) {
+  const { variant, config } = useExperiment('checkout_flow', userId);
+  
+  if (!config) return &lt;LoadingSpinner /&gt;;
+  
+  return (
+    &lt;View&gt;
+      {config.showExpressCheckout && &lt;ExpressCheckoutButton /&gt;}
+      &lt;CheckoutLayout type={config.checkoutLayout} /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Firebase Remote Config</h2>
+      <p>Firebase Remote Config provides a powerful way to manage A/B tests with server-side control:</p>
+
+      <pre><code>// Firebase Remote Config setup
+// config/firebase.js
+import firebase from '@react-native-firebase/app';
+import remoteConfig from '@react-native-firebase/remote-config';
+
+// Initialize Firebase
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    // Your Firebase config
+  });
+}
+
+// Fetch and activate config
+async function initializeRemoteConfig() {
+  await remoteConfig().setConfigSettings({
+    minimumFetchInterval: 3600, // 1 hour
+  });
+
+  await remoteConfig().setDefaults({
+    checkout_flow_enabled: false,
+    checkout_flow_variant: 'control',
+    new_ui_enabled: false,
+  });
+
+  try {
+    await remoteConfig().fetchAndActivate();
+  } catch (error) {
+    console.error('Remote config fetch failed:', error);
+  }
+}
+
+// Get experiment variant from Remote Config
+async function getExperimentVariant(experimentId) {
+  const enabled = remoteConfig().getBool(`${experimentId}_enabled`);
+  if (!enabled) return 'control';
+  
+  return remoteConfig().getString(`${experimentId}_variant`);
+}
+
+// Usage
+async function CheckoutScreen() {
+  const variant = await getExperimentVariant('checkout_flow');
+  
+  return (
+    &lt;View&gt;
+      {variant === 'treatment' ? (
+        &lt;NewCheckoutFlow /&gt;
+      ) : (
+        &lt;OldCheckoutFlow /&gt;
+      )}
+    &lt;/View&gt;
+  );
+}
+
+// Listen for config changes
+remoteConfig().onConfigUpdated(async (result) => {
+  if (result.error) {
+    console.error('Config update error:', result.error);
+    return;
+  }
+  
+  await remoteConfig().activate();
+  
+  // Re-render components with new config
+  updateExperimentUI();
+});</code></pre>
+
+      <h2>Measuring Experiment Results</h2>
+      <pre><code>// Analytics tracking for experiments
+// analytics/experimentTracker.js
+import analytics from '@react-native-firebase/analytics';
+
+class ExperimentTracker {
+  static trackAssignment(experimentId, variant, userId) {
+    analytics().logEvent('experiment_assigned', {
+      experiment_id: experimentId,
+      variant: variant,
+      user_id: userId,
+      timestamp: Date.now(),
+    });
+  }
+
+  static trackConversion(experimentId, variant, goal, value = 1) {
+    analytics().logEvent('experiment_conversion', {
+      experiment_id: experimentId,
+      variant: variant,
+      goal: goal,
+      value: value,
+      timestamp: Date.now(),
+    });
+  }
+
+  static trackMetric(experimentId, variant, metricName, metricValue) {
+    analytics().logEvent('experiment_metric', {
+      experiment_id: experimentId,
+      variant: variant,
+      metric_name: metricName,
+      metric_value: metricValue,
+      timestamp: Date.now(),
+    });
+  }
+}
+
+// Example: Track checkout conversion
+function CheckoutComplete({ experimentId, variant, orderId, total }) {
+  useEffect(() => {
+    ExperimentTracker.trackConversion(
+      experimentId,
+      variant,
+      'checkout_complete',
+      total
+    );
+  }, []);
+
+  return &lt;View&gt;Order complete!&lt;/View&gt;;
+}
+
+// Statistical significance calculator
+function calculateSignificance(control, treatment) {
+  const n1 = control.sampleSize;
+  const n2 = treatment.sampleSize;
+  const p1 = control.conversionRate;
+  const p2 = treatment.conversionRate;
+  
+  const pooledP = (p1 * n1 + p2 * n2) / (n1 + n2);
+  const standardError = Math.sqrt(
+    pooledP * (1 - pooledP) * (1/n1 + 1/n2)
+  );
+  
+  const zScore = (p2 - p1) / standardError;
+  const pValue = 2 * (1 - normalCDF(Math.abs(zScore)));
+  
+  return {
+    significant: pValue < 0.05,
+    confidence: (1 - pValue) * 100,
+    lift: ((p2 - p1) / p1) * 100,
+    pValue,
+  };
+}
+
+// Experiment analysis hook
+function useExperimentAnalysis(experimentId) {
+  const [results, setResults] = useState(null);
+  
+  useEffect(() => {
+    async function analyzeExperiment() {
+      const data = await fetchExperimentData(experimentId);
+      const analysis = {
+        control: calculateMetrics(data.control),
+        treatment: calculateMetrics(data.treatment),
+      };
+      
+      analysis.significance = calculateSignificance(
+        analysis.control,
+        analysis.treatment
+      );
+      
+      setResults(analysis);
+    }
+    
+    analyzeExperiment();
+  }, [experimentId]);
+  
+  return results;
+}</code></pre>
+
+      <h2>Popular Tools</h2>
+      <ul>
+        <li><strong>LaunchDarkly</strong> — Feature flags with built-in experimentation</li>
+        <li><strong>Firebase Remote Config</strong> — Free tier with A/B testing capabilities</li>
+        <li><strong>Amplitude</strong> — Analytics with experiment tracking</li>
+        <li><strong>Mixpanel</strong> — Product analytics with experiment analysis</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. What is the primary purpose of A/B testing?</p>
+          <label><input type="radio" name="q1" value="a"> To fix bugs in the application</label>
+          <label><input type="radio" name="q1" value="b"> To measure which feature variant performs better</label>
+          <label><input type="radio" name="q1" value="c"> To reduce app size</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. How should you handle experiment assignments?</p>
+          <label><input type="radio" name="q2" value="a"> Randomly assign on every app open</label>
+          <label><input type="radio" name="q2" value="b"> Consistently assign the same user to the same variant</label>
+          <label><input type="radio" name="q2" value="c"> Assign based on user preferences</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. What is statistical significance in A/B testing?</p>
+          <label><input type="radio" name="q3" value="a"> When one variant has more users</label>
+          <label><input type="radio" name="q3" value="b"> When results are unlikely due to random chance</label>
+          <label><input type="radio" name="q3" value="c"> When the test runs for a specific duration</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Set Up a Simple A/B Test with Feature Flags</h3>
+        <p>Implement a complete A/B testing system for a button color experiment:</p>
+        <pre><code>// 1. Create experiment configuration
+// config/buttonExperiment.js
+export const BUTTON_EXPERIMENT = {
+  id: 'button_color_test',
+  variants: {
+    control: {
+      weight: 50,
+      color: '#007AFF', // iOS blue
+    },
+    treatment_a: {
+      weight: 25,
+      color: '#34C759', // iOS green
+    },
+    treatment_b: {
+      weight: 25,
+      color: '#FF9500', // iOS orange
+    },
+  },
+};
+
+// 2. Create experiment hook
+// hooks/useButtonExperiment.js
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export function useButtonExperiment(userId) {
+  const [variant, setVariant] = useState(null);
+
+  useEffect(() => {
+    async function assignVariant() {
+      const key = `button_experiment_${userId}`;
+      const existing = await AsyncStorage.getItem(key);
+      
+      if (existing) {
+        setVariant(JSON.parse(existing));
+        return;
+      }
+      
+      // Assign based on weights
+      const totalWeight = 100;
+      const random = Math.random() * totalWeight;
+      
+      let assigned;
+      if (random &lt; 50) assigned = 'control';
+      else if (random &lt; 75) assigned = 'treatment_a';
+      else assigned = 'treatment_b';
+      
+      await AsyncStorage.setItem(key, JSON.stringify(assigned));
+      setVariant(assigned);
+    }
+    
+    assignVariant();
+  }, [userId]);
+
+  return variant;
+}
+
+// 3. Track conversions
+// utils/analytics.js
+import analytics from '@react-native-firebase/analytics';
+
+export function trackButtonPress(experimentId, variant) {
+  analytics().logEvent('button_press', {
+    experiment_id: experimentId,
+    variant: variant,
+    timestamp: Date.now(),
+  });
+}
+
+export function trackConversion(experimentId, variant, value) {
+  analytics().logEvent('conversion', {
+    experiment_id: experimentId,
+    variant: variant,
+    value: value,
+  });
+}
+
+// 4. Create experimental button component
+// components/ExperimentalButton.js
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { BUTTON_EXPERIMENT } from '../config/buttonExperiment';
+import { trackButtonPress } from '../utils/analytics';
+
+export function ExperimentalButton({ experimentId, variant, onPress, title }) {
+  const buttonColor = BUTTON_EXPERIMENT.variants[variant]?.color || '#007AFF';
+  
+  const handlePress = () => {
+    trackButtonPress(experimentId, variant);
+    onPress();
+  };
+  
+  return (
+    &lt;TouchableOpacity
+      style={[styles.button, { backgroundColor: buttonColor }]}
+      onPress={handlePress}
+    &gt;
+      &lt;Text style={styles.buttonText}&gt;{title}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
+
+// 5. Usage in screen
+// screens/HomeScreen.js
+import React from 'react';
+import { View } from 'react-native';
+import { useButtonExperiment } from '../hooks/useButtonExperiment';
+import { ExperimentalButton } from '../components/ExperimentalButton';
+import { trackConversion } from '../utils/analytics';
+
+export function HomeScreen() {
+  const variant = useButtonExperiment('user123');
+  
+  if (!variant) return null;
+  
+  const handleButtonPress = () => {
+    trackConversion('button_color_test', variant, 1);
+    // Handle button action
+  };
+  
+  return (
+    &lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+      &lt;ExperimentalButton
+        experimentId="button_color_test"
+        variant={variant}
+        onPress={handleButtonPress}
+        title="Get Started"
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>A/B testing compares feature variants to measure performance differences</li>
+        <li>Feature flags enable consistent user assignment to experiment variants</li>
+        <li>Firebase Remote Config provides server-controlled experiment configuration</li>
+        <li>Track experiment assignments and conversions for analysis</li>
+        <li>Ensure statistical significance before declaring winners</li>
+        <li>Use proper targeting rules to reach relevant user segments</li>
+        <li>Document experiments and results for organizational learning</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Optimizely Experimentation Guide</strong> — Comprehensive resource on A/B testing methodology and implementation. <a href="https://www.optimizely.com/optimization-glossary/ab-testing/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

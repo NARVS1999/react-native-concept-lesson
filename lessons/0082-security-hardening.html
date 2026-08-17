@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 82: Security Hardening</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 82: Security Hardening</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn to secure React Native applications using SecureStore, HTTPS enforcement, certificate pinning, input validation, and following OWASP Mobile Top 10 guidelines.</div>
+
+      <h2>Why Security Matters</h2>
+      <p>Mobile apps handle sensitive data like passwords, payment info, and personal data. Security hardening protects against common vulnerabilities and ensures user trust.</p>
+      <div class="info"><strong>OWASP Mobile Top 10</strong>The most critical security risks for mobile applications, including insecure storage, communication, and authentication.</div>
+
+      <h2>SecureStore for Sensitive Data</h2>
+      <pre><code>// Expo SecureStore (recommended)
+import * as SecureStore from 'expo-secure-store';
+
+async function storeSecureData(key, value) {
+  try {
+    await SecureStore.setItemAsync(key, value, {
+      keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  } catch (error) {
+    console.error('Error storing secure data:', error);
+  }
+}
+
+async function getSecureData(key) {
+  try {
+    return await SecureStore.getItemAsync(key);
+  } catch (error) {
+    console.error('Error retrieving secure data:', error);
+    return null;
+  }
+}
+
+async function deleteSecureData(key) {
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch (error) {
+    console.error('Error deleting secure data:', error);
+  }
+}
+
+async function storeAuthToken(accessToken, refreshToken) {
+  await storeSecureData('access_token', accessToken);
+  await storeSecureData('refresh_token', refreshToken);
+}
+
+async function getAuthToken() {
+  return await getSecureData('access_token');
+}
+
+// React Native Keychain (alternative)
+import * as Keychain from 'react-native-keychain';
+
+async function storeCredentials(username, password) {
+  await Keychain.setGenericPassword(username, password, {
+    service: 'com.myapp.auth',
+    accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
+    accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+  });
+}
+
+async function getCredentials() {
+  const credentials = await Keychain.getGenericPassword({
+    service: 'com.myapp.auth',
+  });
+  if (credentials) {
+    return { username: credentials.username, password: credentials.password };
+  }
+  return null;
+}</code></pre>
+
+      <h2>HTTPS Everywhere</h2>
+      <pre><code>const HTTPS_CONFIG = {
+  forceHTTPS: __DEV__ ? false : true,
+  allowedDomains: ['api.myapp.com', 'cdn.myapp.com', 'auth.myapp.com'],
+};
+
+async function secureFetch(url, options = {}) {
+  if (!url || typeof url !== 'string') throw new Error('Invalid URL');
+  if (HTTPS_CONFIG.forceHTTPS && url.startsWith('http://')) {
+    url = url.replace('http://', 'https://');
+  }
+  const domain = new URL(url).hostname;
+  if (!HTTPS_CONFIG.allowedDomains.includes(domain)) {
+    throw new Error('Domain not allowed: ' + domain);
+  }
+  const secureOptions = {
+    ...options,
+    headers: {
+      ...options.headers,
+      'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+    },
+  };
+  return fetch(url, secureOptions);
+}</code></pre>
+
+      <h2>Certificate Pinning</h2>
+      <pre><code>import { fetch as sslFetch } from 'react-native-ssl-pinning';
+
+const CERTIFICATES = {
+  'api.myapp.com': ['sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA='],
+  'auth.myapp.com': ['sha256/BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB='],
+};
+
+async function pinnedFetch(url, options = {}) {
+  const hostname = new URL(url).hostname;
+  const pins = CERTIFICATES[hostname];
+  if (!pins) throw new Error('No pinned certificates for ' + hostname);
+  return sslFetch(url, {
+    ...options,
+    sslPinning: { certs: pins.map(pin => pin.replace('sha256/', '')) },
+    timeoutInterval: 10000,
+  });
+}</code></pre>
+
+      <h2>Input Validation</h2>
+      <pre><code>class InputValidator {
+  static validateEmail(email) {
+    const errors = [];
+    if (!email || typeof email !== 'string') {
+      errors.push('Email is required');
+      return { isValid: false, errors };
+    }
+    email = email.trim();
+    if (email.length > 254) errors.push('Email is too long');
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) errors.push('Invalid email format');
+    if (email.includes('<script>') || email.includes('javascript:')) {
+      errors.push('Email contains invalid characters');
+    }
+    return { isValid: errors.length === 0, errors, sanitized: email.toLowerCase() };
+  }
+
+  static validatePassword(password, options = {}) {
+    const errors = [];
+    const minLength = options.minLength || 8;
+    if (!password || typeof password !== 'string') {
+      errors.push('Password is required');
+      return { isValid: false, errors };
+    }
+    if (password.length < minLength)
+      errors.push('Password must be at least ' + minLength + ' characters');
+    if (!/[A-Z]/.test(password))
+      errors.push('Password must contain at least one uppercase letter');
+    if (!/[a-z]/.test(password))
+      errors.push('Password must contain at least one lowercase letter');
+    if (!/[0-9]/.test(password))
+      errors.push('Password must contain at least one number');
+    if (!/[!@#$%^&*(),.?":{}|<>]/.test(password))
+      errors.push('Password must contain at least one special character');
+    return {
+      isValid: errors.length === 0,
+      errors,
+      strength: this.calculatePasswordStrength(password),
+    };
+  }
+
+  static calculatePasswordStrength(password) {
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (password.length >= 12) score++;
+    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+    if (/[0-9]/.test(password)) score++;
+    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) score++;
+    if (score <= 2) return 'weak';
+    if (score <= 4) return 'medium';
+    return 'strong';
+  }
+
+  static sanitizeInput(input, options = {}) {
+    if (!input || typeof input !== 'string') return '';
+    let sanitized = input;
+    if (options.trim !== false) sanitized = sanitized.trim();
+    if (options.stripHtml !== false) sanitized = sanitized.replace(/<[^>]*>/g, '');
+    if (options.escapeHtml !== false) {
+      sanitized = sanitized
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+    }
+    if (options.maxLength) sanitized = sanitized.substring(0, options.maxLength);
+    return sanitized;
+  }
+
+  static luhnCheck(number) {
+    let sum = 0;
+    let isEven = false;
+    for (let i = number.length - 1; i >= 0; i--) {
+      let digit = parseInt(number.charAt(i), 10);
+      if (isEven) { digit *= 2; if (digit > 9) digit -= 9; }
+      sum += digit;
+      isEven = !isEven;
+    }
+    return sum % 10 === 0;
+  }
+}
+export default InputValidator;</code></pre>
+
+      <h2>Secure Token Storage</h2>
+      <pre><code>import * as SecureStore from 'expo-secure-store';
+
+class TokenManager {
+  static ACCESS_TOKEN_KEY = 'access_token';
+  static REFRESH_TOKEN_KEY = 'refresh_token';
+  static TOKEN_EXPIRY_KEY = 'token_expiry';
+
+  static async storeTokens(accessToken, refreshToken, expiresIn) {
+    const expiryTime = Date.now() + (expiresIn * 1000);
+    await Promise.all([
+      SecureStore.setItemAsync(this.ACCESS_TOKEN_KEY, accessToken, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+      SecureStore.setItemAsync(this.REFRESH_TOKEN_KEY, refreshToken, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+      SecureStore.setItemAsync(this.TOKEN_EXPIRY_KEY, expiryTime.toString(), {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+    ]);
+  }
+
+  static async getAccessToken() {
+    const token = await SecureStore.getItemAsync(this.ACCESS_TOKEN_KEY);
+    const expiry = await SecureStore.getItemAsync(this.TOKEN_EXPIRY_KEY);
+    if (!token || !expiry) return null;
+    if (Date.now() > parseInt(expiry, 10)) {
+      await this.clearTokens();
+      return null;
+    }
+    return token;
+  }
+
+  static async clearTokens() {
+    await Promise.all([
+      SecureStore.deleteItemAsync(this.ACCESS_TOKEN_KEY),
+      SecureStore.deleteItemAsync(this.REFRESH_TOKEN_KEY),
+      SecureStore.deleteItemAsync(this.TOKEN_EXPIRY_KEY),
+    ]);
+  }
+
+  static async refreshAccessToken() {
+    const refreshToken = await SecureStore.getItemAsync(this.REFRESH_TOKEN_KEY);
+    if (!refreshToken) throw new Error('No refresh token available');
+    try {
+      const response = await fetch('https://auth.myapp.com/refresh', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken }),
+      });
+      if (!response.ok) throw new Error('Token refresh failed');
+      const { accessToken, newRefreshToken, expiresIn } = await response.json();
+      await this.storeTokens(accessToken, newRefreshToken, expiresIn);
+      return accessToken;
+    } catch (error) {
+      await this.clearTokens();
+      throw error;
+    }
+  }
+}
+export default TokenManager;</code></pre>
+
+      <h2>OWASP Mobile Top 10</h2>
+      <pre><code>// OWASP Mobile Top 10 Mitigations
+
+// M1: Improper Platform Usage
+// Use platform security features correctly
+
+// M2: Insecure Data Storage
+// Never store sensitive data in AsyncStorage - use SecureStore
+
+// M3: Insecure Communication
+// Always use HTTPS, validate certificates
+
+// M4: Insecure Authentication
+// Use secure auth flows, store tokens securely
+
+// M5: Insufficient Cryptography
+// Use SHA-256 or better, avoid MD5/SHA-1
+
+// M6: Insecure Authorization
+// Validate permissions server-side
+
+// M7: Client Code Quality
+// Use code obfuscation, remove console.log
+
+// M8: Code Tampering
+// Use code signing, detect rooted devices
+
+// M9: Reverse Engineering
+// Obfuscate code, use native modules
+
+// M10: Extraneous Functionality
+// Remove debug features in production</code></pre>
+
+      <h2>Security Best Practices</h2>
+      <ul>
+        <li>Always use SecureStore or Keychain for sensitive data</li>
+        <li>Enforce HTTPS and validate certificates</li>
+        <li>Implement input validation and sanitization</li>
+        <li>Use proper token management with secure storage</li>
+        <li>Follow OWASP Mobile Top 10 guidelines</li>
+        <li>Regularly update dependencies for security patches</li>
+        <li>Implement proper error handling without exposing sensitive info</li>
+        <li>Use code obfuscation for production builds</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. Why should you never store sensitive data in AsyncStorage?</p>
+          <label><input type="radio" name="q1" value="a"> It has limited storage capacity</label>
+          <label><input type="radio" name="q1" value="b"> AsyncStorage is not encrypted and can be easily accessed</label>
+          <label><input type="radio" name="q1" value="c"> It only works on iOS devices</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. What is the primary purpose of certificate pinning?</p>
+          <label><input type="radio" name="q2" value="a"> To speed up network requests</label>
+          <label><input type="radio" name="q2" value="b"> To prevent man-in-the-middle attacks by validating server certificates</label>
+          <label><input type="radio" name="q2" value="c"> To compress data before sending</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. Which OWASP Mobile Top 10 risk relates to storing sensitive data insecurely?</p>
+          <label><input type="radio" name="q3" value="a"> M1: Improper Platform Usage</label>
+          <label><input type="radio" name="q3" value="b"> M2: Insecure Data Storage</label>
+          <label><input type="radio" name="q3" value="c"> M3: Insecure Communication</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Secure a Login Flow</h3>
+        <p>Implement a complete secure login system with authentication, token management, and input validation:</p>
+        <pre><code>// services/authService.js
+import * as SecureStore from 'expo-secure-store';
+import InputValidator from '../validation/inputValidator';
+
+class AuthService {
+  static async login(email, password) {
+    const emailValidation = InputValidator.validateEmail(email);
+    const passwordValidation = InputValidator.validatePassword(password);
+    if (!emailValidation.isValid) throw new Error(emailValidation.errors[0]);
+    if (!passwordValidation.isValid) throw new Error(passwordValidation.errors[0]);
+
+    const response = await fetch('https://auth.myapp.com/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: emailValidation.sanitized,
+        password: password,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
+    }
+
+    const data = await response.json();
+    await this.storeTokens(data);
+    return data.user;
+  }
+
+  static async storeTokens(data) {
+    const expiryTime = Date.now() + (data.expiresIn * 1000);
+    await Promise.all([
+      SecureStore.setItemAsync('access_token', data.accessToken, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+      SecureStore.setItemAsync('refresh_token', data.refreshToken, {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+      SecureStore.setItemAsync('token_expiry', expiryTime.toString(), {
+        keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+      }),
+    ]);
+  }
+
+  static async logout() {
+    await Promise.all([
+      SecureStore.deleteItemAsync('access_token'),
+      SecureStore.deleteItemAsync('refresh_token'),
+      SecureStore.deleteItemAsync('token_expiry'),
+    ]);
+  }
+}
+
+// screens/LoginScreen.js
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import AuthService from '../services/authService';
+import InputValidator from '../validation/inputValidator';
+
+export function LoginScreen({ navigation }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+    const emailValidation = InputValidator.validateEmail(email);
+    if (!emailValidation.isValid) newErrors.email = emailValidation.errors[0];
+    const passwordValidation = InputValidator.validatePassword(password, { minLength: 8 });
+    if (!passwordValidation.isValid) newErrors.password = passwordValidation.errors[0];
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleLogin = async () => {
+    if (!validateForm()) return;
+    setIsLoading(true);
+    try {
+      await AuthService.login(email, password);
+      navigation.reset({ index: 0, routes: [{ name: 'Main' }] });
+    } catch (error) {
+      Alert.alert('Login Failed', error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    &lt;View style={{ padding: 20 }}&gt;
+      &lt;Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}&gt;
+        Secure Login
+      &lt;/Text&gt;
+      &lt;TextInput
+        value={email}
+        onChangeText={setEmail}
+        placeholder="Email"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        accessibilityLabel="Email address"
+        style={{ borderWidth: 1, padding: 12, marginBottom: 10, borderRadius: 8 }}
+      /&gt;
+      {errors.email &amp;&amp; &lt;Text style={{ color: 'red' }}&gt;{errors.email}&lt;/Text&gt;}
+      &lt;TextInput
+        value={password}
+        onChangeText={setPassword}
+        placeholder="Password"
+        secureTextEntry
+        accessibilityLabel="Password"
+        style={{ borderWidth: 1, padding: 12, marginBottom: 10, borderRadius: 8 }}
+      /&gt;
+      {errors.password &amp;&amp; &lt;Text style={{ color: 'red' }}&gt;{errors.password}&lt;/Text&gt;}
+      &lt;TouchableOpacity
+        onPress={handleLogin}
+        disabled={isLoading}
+        style={{ backgroundColor: '#007AFF', padding: 16, borderRadius: 8, alignItems: 'center' }}
+      &gt;
+        &lt;Text style={{ color: 'white', fontWeight: '600' }}&gt;
+          {isLoading ? 'Signing in...' : 'Sign In'}
+        &lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Always use SecureStore or Keychain for sensitive data</li>
+        <li>Enforce HTTPS and validate certificates</li>
+        <li>Implement input validation and sanitization</li>
+        <li>Use proper token management with secure storage</li>
+        <li>Follow OWASP Mobile Top 10 guidelines</li>
+        <li>Regularly update dependencies for security patches</li>
+        <li>Implement proper error handling without exposing sensitive info</li>
+        <li>Use code obfuscation for production builds</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>OWASP Mobile Security Testing Guide</strong> — Comprehensive guide to mobile application security testing and best practices. <a href="https://owasp.org/www-project-mobile-security-testing-guide/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

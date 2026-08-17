@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 79: Analytics Integration</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 79: Analytics Integration</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn to integrate analytics providers like Mixpanel, Amplitude, and Firebase Analytics into React Native apps with proper event tracking, user properties, and privacy considerations.</div>
+
+      <h2>Analytics Providers Overview</h2>
+      <p>Choosing the right analytics provider depends on your needs. Here's a comparison of popular options:</p>
+
+      <ul>
+        <li><strong>Firebase Analytics</strong> — Free, Google-integrated, good for basic analytics</li>
+        <li><strong>Mixpanel</strong> — Advanced user behavior tracking, great for product analytics</li>
+        <li><strong>Amplitude</strong> — Strong cohort analysis and retention metrics</li>
+        <li><strong>Segment</strong> — Data routing to multiple analytics tools</li>
+      </ul>
+
+      <h2>Firebase Analytics Integration</h2>
+      <pre><code>// Firebase Analytics setup
+// analytics/firebase.js
+import analytics from '@react-native-firebase/analytics';
+import firebase from '@react-native-firebase/app';
+
+// Initialize (if not already done)
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    // Your Firebase config
+  });
+}
+
+// Track custom events
+export function logEvent(eventName, parameters = {}) {
+  analytics().logEvent(eventName, {
+    ...parameters,
+    timestamp: Date.now(),
+  });
+}
+
+// Example: Track screen views
+export function logScreenView(screenName) {
+  analytics().logScreenView({
+    screen_name: screenName,
+    screen_class: screenName,
+  });
+}
+
+// Example: Track user actions
+export function logAddToCart(productId, productName, price) {
+  analytics().logEvent('add_to_cart', {
+    item_id: productId,
+    item_name: productName,
+    price: price,
+    currency: 'USD',
+  });
+}
+
+// Example: Track purchase
+export function logPurchase(transactionId, items, total) {
+  analytics().logPurchase({
+    transaction_id: transactionId,
+    value: total,
+    currency: 'USD',
+    items: items.map(item => ({
+      item_id: item.id,
+      item_name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    })),
+  });
+}
+
+// Set user properties
+export function setUserProperties(userId, properties) {
+  analytics().setUserId(userId);
+  
+  Object.entries(properties).forEach(([key, value]) => {
+    analytics().setUserProperty(key, String(value));
+  });
+}
+
+// Example usage in component
+function ProductScreen({ product }) {
+  const handleAddToCart = () => {
+    logAddToCart(product.id, product.name, product.price);
+    // Add to cart logic
+  };
+
+  useEffect(() => {
+    logScreenView('ProductScreen');
+  }, []);
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{product.name}&lt;/Text&gt;
+      &lt;TouchableOpacity onPress={handleAddToCart}&gt;
+        &lt;Text&gt;Add to Cart&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Mixpanel Integration</h2>
+      <pre><code>// Mixpanel setup
+// analytics/mixpanel.js
+import Mixpanel from 'react-native-mixpanel';
+
+// Initialize Mixpanel
+export function initializeMixpanel(token) {
+  Mixpanel.optOutTracking(); // Default to opted out
+  Mixpanel.initialize(token, {
+    trackAutomaticEvents: true,
+    useNative: true,
+  });
+}
+
+// Track events
+export function track(event, properties = {}) {
+  Mixpanel.trackWithProperties(event, {
+    ...properties,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+// Identify user
+export function identify(userId, properties = {}) {
+  Mixpanel.identify(userId);
+  Mixpanel.set(properties);
+}
+
+// Track funnel steps
+export function trackFunnelStep(funnelName, step, properties = {}) {
+  track('Funnel Step', {
+    funnel_name: funnelName,
+    step: step,
+    ...properties,
+  });
+}
+
+// Track revenue
+export function trackRevenue(amount, productId) {
+  Mixpanel.trackWithProperties('Purchase', {
+    $amount: amount,
+    product_id: productId,
+  });
+}
+
+// Example: Onboarding funnel
+function OnboardingScreen() {
+  const handleStepComplete = (step) => {
+    trackFunnelStep('onboarding', step, {
+      user_type: 'new',
+    });
+  };
+
+  return (
+    &lt;View&gt;
+      {/* Onboarding steps */}
+      &lt;TouchableOpacity onPress={() => handleStepComplete('step_1')}&gt;
+        &lt;Text&gt;Complete Step 1&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Amplitude Integration</h2>
+      <pre><code>// Amplitude setup
+// analytics/amplitude.js
+import AmplitudeReactNative from '@amplitude-react-native';
+
+// Initialize
+export function initializeAmplitude(apiKey) {
+  AmplitudeReactNative.initialize(apiKey);
+  AmplitudeReactNative.setTrackingOptions({
+    adid: false,
+    carrier: true,
+    deviceManufacturer: true,
+    deviceModel: true,
+    dma: false,
+    ip_address: false,
+    language: true,
+    os_name: true,
+    os_version: true,
+    platform: true,
+    region: true,
+    version_name: true,
+  });
+}
+
+// Track events
+export function trackEvent(eventType, eventProperties = {}) {
+  AmplitudeReactNative.logEvent(eventType, eventProperties);
+}
+
+// Set user properties
+export function setUserId(userId) {
+  AmplitudeReactNative.setUserId(userId);
+}
+
+export function setUserProperties(properties) {
+  AmplitudeReactNative.setUserProperties(properties);
+}
+
+// Track groups (for B2B analytics)
+export function setGroup(groupType, groupName) {
+  AmplitudeReactNative.setGroup(groupType, groupName);
+}
+
+// Revenue tracking
+export function trackRevenue(productId, price, quantity = 1) {
+  AmplitudeReactNative.addRevenue(productId, price, 'USD', quantity);
+}
+
+// Example: Subscription tracking
+function SubscriptionScreen({ plan, price }) {
+  const handleSubscribe = () => {
+    trackEvent('Subscription Started', {
+      plan_name: plan,
+      price: price,
+      billing_cycle: 'monthly',
+    });
+    
+    trackRevenue(plan, price);
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;TouchableOpacity onPress={handleSubscribe}&gt;
+        &lt;Text&gt;Subscribe to {plan}&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>User Properties and Cohorts</h2>
+      <pre><code>// User property management
+// analytics/userProperties.js
+class UserPropertyManager {
+  static properties = {};
+  
+  static set(key, value) {
+    this.properties[key] = value;
+    this.syncToProviders(key, value);
+  }
+  
+  static get(key) {
+    return this.properties[key];
+  }
+  
+  static syncToProviders(key, value) {
+    // Firebase
+    analytics().setUserProperty(key, String(value));
+    
+    // Mixpanel
+    Mixpanel.set({ [key]: value });
+    
+    // Amplitude
+    AmplitudeReactNative.setUserProperties({ [key]: value });
+  }
+  
+  static identify(userId) {
+    // Set user ID across all providers
+    analytics().setUserId(userId);
+    Mixpanel.identify(userId);
+    AmplitudeReactNative.setUserId(userId);
+  }
+}
+
+// Usage
+UserPropertyManager.identify('user_123');
+UserPropertyManager.set('subscription_plan', 'premium');
+UserPropertyManager.set('company_size', 'enterprise');
+UserPropertyManager.set('industry', 'technology');
+
+// Cohort-based tracking
+function trackCohort(cohortName, properties = {}) {
+  track('Cohort Joined', {
+    cohort_name: cohortName,
+    ...properties,
+  });
+  
+  UserPropertyManager.set(`cohort_${cohortName}`, true);
+}
+
+// Example: Track user segments
+function identifyUserSegment(user) {
+  const segment = calculateUserSegment(user);
+  UserPropertyManager.set('user_segment', segment);
+  
+  track('User Segmented', {
+    segment: segment,
+    account_age_days: user.accountAge,
+    total_purchases: user.purchaseCount,
+  });
+}</code></pre>
+
+      <h2>Funnels and Retention</h2>
+      <pre><code>// Funnel tracking
+// analytics/funnels.js
+class FunnelTracker {
+  static funnels = {};
+  
+  static startFunnel(funnelName, userId) {
+    this.funnels[funnelName] = {
+      userId,
+      startTime: Date.now(),
+      steps: [],
+    };
+  }
+  
+  static trackStep(funnelName, stepName, properties = {}) {
+    const funnel = this.funnels[funnelName];
+    if (!funnel) return;
+    
+    funnel.steps.push({
+      step: stepName,
+      timestamp: Date.now(),
+      ...properties,
+    });
+    
+    track('Funnel Step', {
+      funnel_name: funnelName,
+      step: stepName,
+      step_number: funnel.steps.length,
+      ...properties,
+    });
+  }
+  
+  static completeFunnel(funnelName, success = true) {
+    const funnel = this.funnels[funnelName];
+    if (!funnel) return;
+    
+    const duration = Date.now() - funnel.startTime;
+    
+    track('Funnel Completed', {
+      funnel_name: funnelName,
+      completed: success,
+      duration_ms: duration,
+      steps_completed: funnel.steps.length,
+    });
+    
+    delete this.funnels[funnelName];
+  }
+}
+
+// Retention tracking
+function trackRetention(userId, daysSinceInstall) {
+  track('Daily Active', {
+    user_id: userId,
+    days_since_install: daysSinceInstall,
+    retention_day: daysSinceInstall,
+  });
+}
+
+// Example: E-commerce funnel
+function CheckoutFlow() {
+  useEffect(() => {
+    FunnelTracker.startFunnel('checkout', userId);
+  }, []);
+  
+  const handleShippingSubmit = () => {
+    FunnelTracker.trackStep('checkout', 'shipping_info', {
+      shipping_method: 'standard',
+    });
+    // Proceed to payment
+  };
+  
+  const handlePaymentSubmit = () => {
+    FunnelTracker.trackStep('checkout', 'payment_info');
+    // Process payment
+  };
+  
+  const handleOrderComplete = () => {
+    FunnelTracker.completeFunnel('checkout', true);
+  };
+  
+  return (
+    &lt;View&gt;
+      {/* Checkout steps */}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Privacy Considerations</h2>
+      <pre><code>// Privacy-first analytics
+// analytics/privacy.js
+class PrivacyManager {
+  static hasConsent = false;
+  
+  static async requestConsent() {
+    // Show consent dialog
+    const consent = await showConsentDialog();
+    this.hasConsent = consent;
+    
+    if (consent) {
+      this.enableTracking();
+    } else {
+      this.disableTracking();
+    }
+    
+    return consent;
+  }
+  
+  static enableTracking() {
+    analytics().setAnalyticsCollectionEnabled(true);
+    Mixpanel.optInTracking();
+    AmplitudeReactNative.setOptOut(false);
+  }
+  
+  static disableTracking() {
+    analytics().setAnalyticsCollectionEnabled(false);
+    Mixpanel.optOutTracking();
+    AmplitudeReactNative.setOptOut(true);
+  }
+  
+  static anonymizeData(data) {
+    // Remove PII before tracking
+    return {
+      ...data,
+      email: undefined,
+      phone: undefined,
+      ip_address: undefined,
+      user_id: hashUserId(data.user_id),
+    };
+  }
+  
+  static deleteUserData(userId) {
+    // GDPR/CCPA compliance
+    analytics().deleteAnalyticsData();
+    // Additional provider-specific deletion
+  }
+}
+
+// GDPR/CCPA compliant event tracking
+function trackEventWithPrivacy(eventName, properties = {}) {
+  if (!PrivacyManager.hasConsent) return;
+  
+  const anonymizedProperties = PrivacyManager.anonymizeData(properties);
+  track(eventName, anonymizedProperties);
+}
+
+// Usage with consent
+async function initializeAnalytics() {
+  const hasConsent = await PrivacyManager.requestConsent();
+  
+  if (hasConsent) {
+    initializeMixpanel('your_token');
+    initializeAmplitude('your_api_key');
+  }
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. Which analytics provider is best for basic, free analytics?</p>
+          <label><input type="radio" name="q1" value="a"> Mixpanel</label>
+          <label><input type="radio" name="q1" value="b"> Firebase Analytics</label>
+          <label><input type="radio" name="q1" value="c"> Amplitude</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. What is the primary purpose of user properties?</p>
+          <label><input type="radio" name="q2" value="a"> Tracking screen views</label>
+          <label><input type="radio" name="q2" value="b"> Segmenting users into cohorts for analysis</label>
+          <label><input type="radio" name="q2" value="c"> Managing app settings</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. Why is privacy-first analytics important?</p>
+          <label><input type="radio" name="q3" value="a"> To reduce app size</label>
+          <label><input type="radio" name="q3" value="b"> To comply with regulations like GDPR and CCPA</label>
+          <label><input type="radio" name="q3" value="c"> To improve app performance</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Add Analytics Event Tracking</h3>
+        <p>Implement a complete analytics system with multiple providers and privacy controls:</p>
+        <pre><code>// 1. Create unified analytics service
+// services/analyticsService.js
+import firebase from '@react-native-firebase/app';
+import analytics from '@react-native-firebase/analytics';
+import Mixpanel from 'react-native-mixpanel';
+
+class AnalyticsService {
+  static initialized = false;
+  
+  static initialize() {
+    if (this.initialized) return;
+    
+    // Initialize providers
+    if (!firebase.apps.length) {
+      firebase.initializeApp({
+        // Your config
+      });
+    }
+    
+    Mixpanel.initialize('your_mixpanel_token');
+    this.initialized = true;
+  }
+  
+  static track(event, properties = {}) {
+    if (!this.initialized) return;
+    
+    const enrichedProperties = {
+      ...properties,
+      timestamp: Date.now(),
+      platform: Platform.OS,
+      app_version: appVersion,
+    };
+    
+    // Track to all providers
+    analytics().logEvent(event, enrichedProperties);
+    Mixpanel.trackWithProperties(event, enrichedProperties);
+  }
+  
+  static identify(userId, properties = {}) {
+    if (!this.initialized) return;
+    
+    analytics().setUserId(userId);
+    Mixpanel.identify(userId);
+    Mixpanel.set(properties);
+  }
+  
+  static setUserProperty(key, value) {
+    if (!this.initialized) return;
+    
+    analytics().setUserProperty(key, String(value));
+    Mixpanel.set({ [key]: value });
+  }
+  
+  static trackScreen(screenName) {
+    this.track('screen_view', {
+      screen_name: screenName,
+    });
+  }
+  
+  static trackUserAction(action, target, properties = {}) {
+    this.track('user_action', {
+      action,
+      target,
+      ...properties,
+    });
+  }
+  
+  static trackError(error, context = {}) {
+    this.track('app_error', {
+      error_message: error.message,
+      error_stack: error.stack,
+      ...context,
+    });
+  }
+}
+
+// 2. Create React hook
+// hooks/useAnalytics.js
+import { useCallback } from 'react';
+import AnalyticsService from '../services/analyticsService';
+
+export function useAnalytics() {
+  const track = useCallback((event, properties) => {
+    AnalyticsService.track(event, properties);
+  }, []);
+  
+  const identify = useCallback((userId, properties) => {
+    AnalyticsService.identify(userId, properties);
+  }, []);
+  
+  const trackScreen = useCallback((screenName) => {
+    AnalyticsService.trackScreen(screenName);
+  }, []);
+  
+  const trackAction = useCallback((action, target, properties) => {
+    AnalyticsService.trackUserAction(action, target, properties);
+  }, []);
+  
+  return {
+    track,
+    identify,
+    trackScreen,
+    trackAction,
+  };
+}
+
+// 3. Usage in components
+// screens/ProductScreen.js
+function ProductScreen({ product }) {
+  const { trackScreen, trackAction } = useAnalytics();
+  
+  useEffect(() => {
+    trackScreen('ProductScreen');
+  }, []);
+  
+  const handleAddToCart = () => {
+    trackAction('add_to_cart', 'product', {
+      product_id: product.id,
+      product_name: product.name,
+      price: product.price,
+    });
+  };
+  
+  const handleShare = () => {
+    trackAction('share', 'product', {
+      product_id: product.id,
+      share_method: 'social',
+    });
+  };
+  
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{product.name}&lt;/Text&gt;
+      &lt;TouchableOpacity onPress={handleAddToCart}&gt;
+        &lt;Text&gt;Add to Cart&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+      &lt;TouchableOpacity onPress={handleShare}&gt;
+        &lt;Text&gt;Share&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}
+
+// 4. Privacy consent wrapper
+// components/AnalyticsProvider.js
+function AnalyticsProvider({ children }) {
+  const [hasConsent, setHasConsent] = useState(false);
+  
+  useEffect(() => {
+    async function checkConsent() {
+      const consent = await AsyncStorage.getItem('analytics_consent');
+      setHasConsent(consent === 'true');
+    }
+    checkConsent();
+  }, []);
+  
+  if (!hasConsent) {
+    return (
+      &lt;ConsentDialog
+        onAccept={() => {
+          AsyncStorage.setItem('analytics_consent', 'true');
+          setHasConsent(true);
+          AnalyticsService.initialize();
+        }}
+        onDecline={() => {
+          AsyncStorage.setItem('analytics_consent', 'false');
+        }}
+      /&gt;
+    );
+  }
+  
+  return children;
+}
+
+// 5. Wrap app with provider
+// App.js
+function App() {
+  return (
+    &lt;AnalyticsProvider&gt;
+      &lt;NavigationContainer&gt;
+        {/* Your app navigation */}
+      &lt;/NavigationContainer&gt;
+    &lt;/AnalyticsProvider&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Firebase Analytics is free and good for basic tracking needs</li>
+        <li>Mixpanel and Amplitude offer advanced user behavior analytics</li>
+        <li>User properties enable cohort-based analysis and segmentation</li>
+        <li>Funnel tracking helps identify conversion drop-offs</li>
+        <li>Privacy-first analytics ensures GDPR/CCPA compliance</li>
+        <li>Consent management is essential before tracking user data</li>
+        <li>Unified analytics services simplify multi-provider integration</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Mixpanel Product Analytics Guide</strong> — Comprehensive resource on event tracking and user behavior analysis. <a href="https://docs.mixpanel.com/docs/analysis/reports/funnels" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

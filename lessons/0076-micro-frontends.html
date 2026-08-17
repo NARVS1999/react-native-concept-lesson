@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 76: Micro-Frontends in React Native</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 76: Micro-Frontends in React Native</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Understand micro-frontend architecture, module federation, feature flags, and when to use micro-frontends vs monoliths in React Native applications.</div>
+
+      <h2>What Are Micro-Frontends?</h2>
+      <p>Micro-frontends extend the microservices concept to the frontend. Instead of one monolithic app, you decompose your application into smaller, independently deployable pieces. In React Native, this means different team-owned features can be developed, tested, and deployed separately.</p>
+
+      <div class="info"><strong>Key Principle</strong>Each micro-frontend should be a self-contained piece of business functionality that can be independently developed and deployed.</div>
+
+      <h2>Monolith vs Micro-Frontend</h2>
+      <pre><code>// Monolith: Single codebase, all features together
+// src/screens/HomeScreen.js
+// src/screens/ProfileScreen.js
+// src/screens/SettingsScreen.js
+// All tightly coupled, deploy together
+
+// Micro-Frontend: Independent feature packages
+// packages/home/src/HomeFeature.js
+// packages/profile/src/ProfileFeature.js
+// packages/settings/src/SettingsFeature.js
+// Each owned by different teams, deployed independently</code></pre>
+
+      <h2>Module Federation in React Native</h2>
+      <p>Module Federation allows you to load code from separate builds at runtime. While traditional Webpack Module Federation is web-only, React Native has alternatives:</p>
+
+      <pre><code>// Using a shared package registry approach
+// packages/shared-features/src/index.js
+export { HomeFeature } from './HomeFeature';
+export { ProfileFeature } from './ProfileFeature';
+export { SettingsFeature } from './SettingsFeature';
+
+// App shell loads features dynamically
+// App.js
+import React, { lazy, Suspense } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+
+const HomeFeature = lazy(() => import('home/HomeFeature'));
+const ProfileFeature = lazy(() => import('profile/ProfileFeature'));
+
+function App() {
+  const [currentFeature, setCurrentFeature] = useState('home');
+
+  return (
+    &lt;Suspense fallback={&lt;ActivityIndicator /&gt;}&gt;
+      {currentFeature === 'home' && &lt;HomeFeature /&gt;}
+      {currentFeature === 'profile' && &lt;ProfileFeature /&gt;}
+    &lt;/Suspense&gt;
+  );
+}</code></pre>
+
+      <h2>Feature Flags</h2>
+      <p>Feature flags let you toggle features without deploying new code. This is essential for micro-frontends to control which features are active:</p>
+
+      <pre><code>// Feature flag system
+// utils/featureFlags.js
+const featureFlags = {
+  newCheckout: false,
+  darkMode: true,
+  betaFeatures: false,
+};
+
+export function isFeatureEnabled(flagName) {
+  return featureFlags[flagName] === true;
+}
+
+// Usage in components
+import { isFeatureEnabled } from '../utils/featureFlags';
+
+function CheckoutButton() {
+  if (isFeatureEnabled('newCheckout')) {
+    return &lt;NewCheckoutFlow /&gt;;
+  }
+  return &lt;LegacyCheckoutFlow /&gt;;
+}
+
+// Dynamic feature loading with flags
+function DynamicFeature({ featureName }) {
+  const [Feature, setFeature] = useState(null);
+
+  useEffect(() => {
+    if (isFeatureEnabled(featureName)) {
+      import(`../features/${featureName}`).then(mod => {
+        setFeature(() => mod.default);
+      });
+    }
+  }, [featureName]);
+
+  return Feature ? &lt;Feature /&gt; : null;
+}</code></pre>
+
+      <h2>When to Use Micro-Frontends</h2>
+      <ul>
+        <li>Large teams (10+) working on the same app</li>
+        <li>Different parts need different release cycles</li>
+        <li>Multiple products sharing a shell app</li>
+        <li>Gradual migration from a monolith</li>
+        <li>Need for independent scaling of features</li>
+      </ul>
+
+      <h2>Implementation Patterns</h2>
+      <pre><code>// Package-based micro-frontends with monorepo
+// Using Yarn Workspaces or Nx
+
+// Root package.json
+{
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ]
+}
+
+// packages/feature-auth/package.json
+{
+  "name": "@myorg/feature-auth",
+  "main": "src/index.js",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-native": "^0.72.0"
+  }
+}
+
+// Shell app consumes features
+// App.js
+import { AuthFeature } from '@myorg/feature-auth';
+import { ShopFeature } from '@myorg/feature-shop';
+
+function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Auth" component={AuthFeature} /&gt;
+        &lt;Stack.Screen name="Shop" component={ShopFeature} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. What is the primary benefit of micro-frontends over monoliths?</p>
+          <label><input type="radio" name="q1" value="a"> Faster runtime performance</label>
+          <label><input type="radio" name="q1" value="b"> Independent development and deployment</label>
+          <label><input type="radio" name="q1" value="c"> Smaller bundle sizes</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. What is the main purpose of feature flags in micro-frontend architecture?</p>
+          <label><input type="radio" name="q2" value="a"> Improving app performance</label>
+          <label><input type="radio" name="q2" value="b"> Toggling features without deploying new code</label>
+          <label><input type="radio" name="q2" value="c"> Managing user authentication</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. When should you consider using micro-frontends?</p>
+          <label><input type="radio" name="q3" value="a"> For small apps with 1-2 developers</label>
+          <label><input type="radio" name="q3" value="b"> When you need independent deployment cycles</label>
+          <label><input type="radio" name="q3" value="c"> For apps that don't need updates</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Implement a Feature Flag System</h3>
+        <p>Create a complete feature flag system with the following features:</p>
+        <pre><code>// 1. Create feature flag configuration
+// config/featureFlags.js
+export const FEATURE_FLAGS = {
+  NEW_ONBOARDING: {
+    enabled: false,
+    rolloutPercentage: 0,
+    allowedUsers: [],
+  },
+  DARK_MODE: {
+    enabled: true,
+    rolloutPercentage: 100,
+  },
+  BETA_FEATURES: {
+    enabled: false,
+    rolloutPercentage: 10,
+  },
+};
+
+// 2. Create flag evaluation logic
+// utils/flagEvaluator.js
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+export async function evaluateFlag(flagName, userId) {
+  const flag = FEATURE_FLAGS[flagName];
+  if (!flag) return false;
+  if (!flag.enabled) return false;
+  if (flag.allowedUsers?.includes(userId)) return true;
+  if (flag.rolloutPercentage === 100) return true;
+  if (flag.rolloutPercentage === 0) return false;
+  
+  // Consistent hashing for user-based rollout
+  const hash = hashString(userId + flagName);
+  return (hash % 100) &lt; flag.rolloutPercentage;
+}
+
+// 3. Create React hook
+// hooks/useFeatureFlag.js
+import { useState, useEffect } from 'react';
+import { evaluateFlag } from '../utils/flagEvaluator';
+
+export function useFeatureFlag(flagName, userId) {
+  const [enabled, setEnabled] = useState(false);
+
+  useEffect(() => {
+    evaluateFlag(flagName, userId).then(setEnabled);
+  }, [flagName, userId]);
+
+  return enabled;
+}
+
+// 4. Usage in components
+function OnboardingScreen() {
+  const isNewOnboarding = useFeatureFlag('NEW_ONBOARDING', userId);
+  
+  return isNewOnboarding ? (
+    &lt;NewOnboardingFlow /&gt;
+  ) : (
+    &lt;LegacyOnboardingFlow /&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Micro-frontends decompose monolithic apps into independently deployable pieces</li>
+        <li>Feature flags control feature visibility without code deployments</li>
+        <li>Module federation patterns enable dynamic code loading in React Native</li>
+        <li>Use micro-frontends when teams need independent release cycles</li>
+        <li>Package-based approaches with monorepos work well for React Native micro-frontends</li>
+        <li>Feature flags enable gradual rollouts and A/B testing</li>
+        <li>Consider the overhead—micro-frontends add complexity, so use them when benefits outweigh costs</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Micro-Frontends in Action</strong> — Comprehensive guide to micro-frontend architecture and implementation patterns. <a href="https://www.manning.com/books/micro-frontends-in-action" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

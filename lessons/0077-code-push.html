@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 77: Code Push and Instant Updates</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 77: Code Push and Instant Updates</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Master App Center Code Push, EAS Update, and strategies for delivering JavaScript-only updates without app store approval.</div>
+
+      <h2>Why Instant Updates?</h2>
+      <p>Traditional app updates require users to download from the App Store or Play Store, which can take days for approval. Code push solutions allow you to push JavaScript bundle updates directly to users' devices instantly.</p>
+
+      <div class="info"><strong>Key Limitation</strong>Code push can only update JavaScript code, not native modules. Native changes still require a full app store release.</div>
+
+      <h2>App Center Code Push</h2>
+      <p>Microsoft App Center provides a mature code push solution for React Native:</p>
+
+      <pre><code>// Installation
+// npm install appcenter-codepush
+
+// iOS Setup
+// ios/Podfile
+pod 'CodePush', :path => '../node_modules/appcenter-codepush'
+
+// Android Setup
+// android/settings.gradle
+include ':appcenter-codepush'
+project(':appcenter-codepush').projectDir = new File(rootProject.projectDir, '../node_modules/appcenter-codepush/android')
+
+// App.js - Wrap root component
+import codePush from 'appcenter-codepush';
+
+function App() {
+  return (
+    &lt;Provider store={store}&gt;
+      &lt;AppNavigator /&gt;
+    &lt;/Provider&gt;
+  );
+}
+
+// Apply code push updates
+const codePushOptions = {
+  checkFrequency: codePush.CheckFrequency.ON_APP_RESUME,
+  installMode: codePush.InstallMode.ON_NEXT_RESTART,
+};
+
+export default codePush(codePushOptions)(App);
+
+// Manual update check
+import codePush from 'appcenter-codepush';
+
+async function checkForUpdate() {
+  try {
+    const update = await codePush.checkForUpdate();
+    if (update) {
+      console.log('Update available:', update.description);
+      // Optionally show update dialog
+      showUpdateDialog(update);
+    }
+  } catch (error) {
+    console.error('Error checking for update:', error);
+  }
+}
+
+// Download and apply update
+async function applyUpdate() {
+  try {
+    await codePush.sync(
+      {
+        installMode: codePush.InstallMode.IMMEDIATE,
+        updateDialog: true,
+      },
+      (status) => {
+        switch (status) {
+          case codePush.SyncStatus.DOWNLOADING_PACKAGE:
+            console.log('Downloading update...');
+            break;
+          case codePush.SyncStatus.INSTALLING_UPDATE:
+            console.log('Installing update...');
+            break;
+          case codePush.SyncStatus.UP_TO_DATE:
+            console.log('App is up to date');
+            break;
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error applying update:', error);
+  }
+}</code></pre>
+
+      <h2>EAS Update (Expo Application Services)</h2>
+      <p>EAS Update is Expo's solution for instant updates, tightly integrated with the Expo ecosystem:</p>
+
+      <pre><code>// Installation and setup
+// npm install -g eas-cli
+// eas login
+// eas build:configure
+
+// eas.json configuration
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {}
+  },
+  "update": {
+    "branch": "production",
+    "sdkVersion": "49.0.0"
+  }
+}
+
+// Publishing updates
+// eas update --branch production --message "Fix login bug"
+
+// In-app update handling
+import * as Updates from 'expo-updates';
+
+async function checkForUpdates() {
+  try {
+    if (Updates.isAvailable) {
+      const { isRollback } = await Updates.fetchUpdateAsync();
+      if (isRollback) {
+        console.log('Rolled back to previous version');
+      } else {
+        await Updates.reloadAsync();
+      }
+    }
+  } catch (error) {
+    console.error('Error checking for updates:', error);
+  }
+}
+
+// Custom update channel strategy
+async function checkForChannelUpdate(channel) {
+  try {
+    const update = await Updates.checkForUpdateAsync();
+    if (update) {
+      console.log(`Update available for channel: ${channel}`);
+      await Updates.fetchUpdateAsync();
+      await Updates.reloadAsync();
+    }
+  } catch (error) {
+    console.error('Update check failed:', error);
+  }
+}
+
+// Rollback handling
+Updates.addListener((event) => {
+  if (event.type === Updates.UpdateEventType.ROLLBACK_RESTARTED) {
+    console.log('Update rolled back, restarting app');
+    // Log rollback for monitoring
+    logRollbackEvent(event);
+  }
+});</code></pre>
+
+      <h2>Deployment Strategies</h2>
+      <pre><code>// Staged rollout strategy
+const DEPLOYMENT_CONFIG = {
+  canary: {
+    percentage: 5,
+    duration: '24h',
+    rollbackThreshold: 0.01,
+  },
+  beta: {
+    percentage: 25,
+    duration: '48h',
+    rollbackThreshold: 0.005,
+  },
+  production: {
+    percentage: 100,
+    duration: 'none',
+    rollbackThreshold: 0.001,
+  },
+};
+
+// Implement staged rollout
+async function deployUpdate(update, stage) {
+  const config = DEPLOYMENT_CONFIG[stage];
+  
+  // Monitor error rates
+  const errorRate = await monitorErrorRate(update.id);
+  
+  if (errorRate > config.rollbackThreshold) {
+    console.log(`Error rate ${errorRate} exceeds threshold, rolling back`);
+    await rollbackUpdate(update.id);
+    return false;
+  }
+  
+  // Deploy to percentage of users
+  await deployToPercentage(update.id, config.percentage);
+  
+  // Set up monitoring for next stage
+  if (stage !== 'production') {
+    scheduleStageProgression(update.id, stage);
+  }
+  
+  return true;
+}
+
+// Rollback mechanism
+async function rollbackUpdate(updateId) {
+  try {
+    // Immediately push previous stable version
+    await codePush.rollback();
+    console.log('Rollback completed successfully');
+    
+    // Notify monitoring systems
+    await notifyRollback(updateId);
+  } catch (error) {
+    console.error('Rollback failed:', error);
+    // Fallback: force app restart to previous bundle
+    await forceRestartPreviousVersion();
+  }
+}
+
+// Version management
+const versionManager = {
+  getCurrentVersion: () => {
+    return {
+      jsBundle: Updates.channel,
+      nativeVersion: appVersion,
+      codePushVersion: codePush.getUpdateMetadata(),
+    };
+  },
+  
+  getVersionHistory: async () => {
+    const history = await AsyncStorage.getItem('version_history');
+    return history ? JSON.parse(history) : [];
+  },
+  
+  trackUpdate: async (newVersion) => {
+    const history = await versionManager.getVersionHistory();
+    history.push({
+      ...newVersion,
+      timestamp: Date.now(),
+      user: getCurrentUser(),
+    });
+    await AsyncStorage.setItem('version_history', JSON.stringify(history));
+  },
+};</code></pre>
+
+      <h2>Best Practices</h2>
+      <ul>
+        <li>Always test updates in staging before production</li>
+        <li>Implement monitoring and alerting for update failures</li>
+        <li>Keep native dependencies minimal to maximize code push coverage</li>
+        <li>Use feature flags to control new feature rollouts</li>
+        <li>Maintain rollback capability for critical issues</li>
+        <li>Version your updates properly for tracking</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. What is the primary limitation of code push updates?</p>
+          <label><input type="radio" name="q1" value="a"> They only work on iOS</label>
+          <label><input type="radio" name="q1" value="b"> They can only update JavaScript code, not native modules</label>
+          <label><input type="radio" name="q1" value="c"> They require app store approval</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. What is the recommended approach for deploying updates to production?</p>
+          <label><input type="radio" name="q2" value="a"> Deploy to all users at once</label>
+          <label><input type="radio" name="q2" value="b"> Use staged rollout with monitoring</label>
+          <label><input type="radio" name="q2" value="c"> Only deploy on weekends</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. What should you do if an update causes high error rates?</p>
+          <label><input type="radio" name="q3" value="a"> Wait for users to update manually</label>
+          <label><input type="radio" name="q3" value="b"> Immediately rollback to previous stable version</label>
+          <label><input type="radio" name="q3" value="c"> Release a new update with fixes</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Set up EAS Update for Instant Fixes</h3>
+        <p>Configure EAS Update with a complete deployment pipeline:</p>
+        <pre><code>// 1. Configure eas.json
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "distribution": "internal"
+    },
+    "production": {}
+  },
+  "update": {
+    "branch": "production",
+    "sdkVersion": "49.0.0"
+  }
+}
+
+// 2. Create update service
+// services/updateService.js
+import * as Updates from 'expo-updates';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+class UpdateService {
+  static async checkForUpdate() {
+    try {
+      if (!Updates.isAvailable) return null;
+      
+      const update = await Updates.checkForUpdateAsync();
+      return update;
+    } catch (error) {
+      console.error('Update check failed:', error);
+      return null;
+    }
+  }
+
+  static async applyUpdate(onProgress) {
+    try {
+      const update = await Updates.fetchUpdateAsync();
+      
+      if (onProgress) {
+        onProgress({ status: 'downloading', progress: 100 });
+      }
+      
+      if (update.isRollback) {
+        await this.handleRollback();
+      } else {
+        await Updates.reloadAsync();
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Update failed:', error);
+      return false;
+    }
+  }
+
+  static async handleRollback() {
+    await AsyncStorage.setItem('lastRollback', Date.now().toString());
+    console.log('Update rolled back to previous version');
+  }
+
+  static async getVersionHistory() {
+    const history = await AsyncStorage.getItem('versionHistory');
+    return history ? JSON.parse(history) : [];
+  }
+}
+
+// 3. Create update hook
+// hooks/useUpdate.js
+import { useState, useEffect } from 'react';
+import UpdateService from '../services/updateService';
+
+export function useUpdate() {
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    checkForUpdates();
+  }, []);
+
+  const checkForUpdates = async () => {
+    const update = await UpdateService.checkForUpdate();
+    setUpdateAvailable(!!update);
+  };
+
+  const applyUpdate = async () => {
+    setIsUpdating(true);
+    setError(null);
+    
+    try {
+      await UpdateService.applyUpdate((progress) => {
+        console.log('Update progress:', progress);
+      });
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return {
+    updateAvailable,
+    isUpdating,
+    error,
+    checkForUpdates,
+    applyUpdate,
+  };
+}
+
+// 4. Usage in App component
+function App() {
+  const { updateAvailable, applyUpdate } = useUpdate();
+
+  useEffect(() => {
+    if (updateAvailable) {
+      showUpdateDialog();
+    }
+  }, [updateAvailable]);
+
+  return (
+    &lt;View style={{ flex: 1 }}&gt;
+      {/* Your app content */}
+      {updateAvailable && (
+        &lt;UpdateBanner onApply={applyUpdate} /&gt;
+      )}
+    &lt;/View&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Code push enables instant JavaScript updates without app store approval</li>
+        <li>EAS Update provides seamless integration for Expo-based React Native apps</li>
+        <li>Native module changes still require full app store releases</li>
+        <li>Implement staged rollouts with monitoring to catch issues early</li>
+        <li>Maintain rollback capability for critical failures</li>
+        <li>Version your updates and track deployment history</li>
+        <li>Test updates thoroughly in staging environments first</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>Expo Updates Documentation</strong> — Official guide to EAS Update configuration and best practices. <a href="https://docs.expo.dev/workflow/publishing/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

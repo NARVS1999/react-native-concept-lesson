@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 80: Accessibility in React Native</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 80: Accessibility in React Native</h1>
+      <p><em>Phase 10 — Expert/Strategic Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong>Learn to make React Native apps accessible using built-in props, screen reader testing, and WCAG guidelines to ensure usability for all users.</div>
+
+      <h2>Why Accessibility Matters</h2>
+      <p>Accessibility ensures your app can be used by everyone, including people with disabilities. In React Native, you have powerful built-in tools to make your app accessible.</p>
+
+      <div class="info"><strong>Key Principle</strong>Accessibility is not an afterthought—it should be integrated into your development process from the beginning.</div>
+
+      <h2>The accessible Prop</h2>
+      <pre><code>// Basic accessibility
+import { View, Text, TouchableOpacity, Image } from 'react-native';
+
+function AccessibleComponent() {
+  return (
+    &lt;View&gt;
+      {/* Make container accessible */}
+      &lt;View accessible={true}&gt;
+        &lt;Text&gt;This container is accessible&lt;/Text&gt;
+      &lt;/View&gt;
+      
+      {/* TouchableOpacity is accessible by default */}
+      &lt;TouchableOpacity onPress={() => console.log('Pressed')}&gt;
+        &lt;Text&gt;Press me&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+      
+      {/* Image needs alt text */}
+      &lt;Image
+        source={{ uri: 'https://example.com/photo.jpg' }}
+        accessibilityLabel="Photo of a sunset over the mountains"
+        accessibilityRole="image"
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Group related elements
+function Card({ title, description, onPress }) {
+  return (
+    &lt;TouchableOpacity
+      accessible={true}
+      accessibilityLabel={`${title}. ${description}`}
+      accessibilityHint="Double tap to view details"
+      onPress={onPress}
+      style={styles.card}
+    &gt;
+      &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+      &lt;Text style={styles.description}&gt;{description}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}</code></pre>
+
+      <h2>accessibilityLabel</h2>
+      <pre><code>// Descriptive labels for screen readers
+function ProductCard({ product }) {
+  return (
+    &lt;View style={styles.productCard}&gt;
+      &lt;Image
+        source={product.image}
+        accessibilityLabel={`${product.name} product image`}
+        style={styles.productImage}
+      /&gt;
+      
+      &lt;Text style={styles.productName}&gt;{product.name}&lt;/Text&gt;
+      
+      &lt;Text style={styles.productPrice}&gt;
+        {product.price}
+        &lt;Text accessibilityLabel={`Price: $${product.price} dollars`}&gt;
+          ${product.price}
+        &lt;/Text&gt;
+      &lt;/Text&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityLabel={`Add ${product.name} to cart`}
+        accessibilityHint="Double tap to add this item to your shopping cart"
+        onPress={() => addToCart(product)}
+      &gt;
+        &lt;Text&gt;Add to Cart&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Dynamic labels
+function NotificationBadge({ count, type }) {
+  const label = count > 0 
+    ? `${count} new ${type} notifications`
+    : `No new ${type} notifications`;
+  
+  return (
+    &lt;View
+      accessibilityLabel={label}
+      accessibilityRole="text"
+      style={styles.badge}
+    &gt;
+      &lt;Text style={styles.badgeText}&gt;{count}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Complex state announcements
+function FormField({ label, value, error, required }) {
+  const accessibilityLabel = `${label}${required ? ' (required)' : ''}: ${value || 'empty'}`;
+  const accessibilityHint = error ? `Error: ${error}` : undefined;
+  
+  return (
+    &lt;View&gt;
+      &lt;Text accessibilityLabel={accessibilityLabel}&gt;{label}&lt;/Text&gt;
+      &lt;TextInput
+        value={value}
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint}
+        accessibilityState={{
+          disabled: false,
+          selected: false,
+        }}
+      /&gt;
+      {error && (
+        &lt;Text
+          accessibilityRole="alert"
+          style={styles.errorText}
+        &gt;
+          {error}
+        &lt;/Text&gt;
+      )}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>accessibilityRole</h2>
+      <pre><code>// Semantic roles for UI elements
+import { View, Text, Switch, ProgressBarAndroid } from 'react-native';
+
+function AccessibleForm() {
+  const [isEnabled, setIsEnabled] = useState(false);
+  
+  return (
+    &lt;View&gt;
+      {/* Button role */}
+      &lt;TouchableOpacity
+        accessibilityRole="button"
+        onPress={() => console.log('Pressed')}
+      &gt;
+        &lt;Text&gt;Submit&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+      
+      {/* Header roles */}
+      &lt;Text accessibilityRole="header"&gt;Main Title&lt;/Text&gt;
+      &lt;Text accessibilityRole="header"&gt;Subtitle&lt;/Text&gt;
+      
+      {/* Link role */}
+      &lt;Text
+        accessibilityRole="link"
+        onPress={() => Linking.openURL('https://example.com')}
+      &gt;
+        Visit our website
+      &lt;/Text&gt;
+      
+      {/* Image role */}
+      &lt;Image
+        source={{ uri: 'logo.png' }}
+        accessibilityRole="image"
+        accessibilityLabel="Company logo"
+      /&gt;
+      
+      {/* Switch role */}
+      &lt;Switch
+        value={isEnabled}
+        onValueChange={setIsEnabled}
+        accessibilityLabel="Enable notifications"
+        accessibilityRole="switch"
+      /&gt;
+      
+      {/* Search role */}
+      &lt;TextInput
+        accessibilityRole="search"
+        placeholder="Search..."
+      /&gt;
+      
+      {/* Summary role */}
+      &lt;Text accessibilityRole="summary"&gt;
+        3 items in your cart totaling $45.99
+      &lt;/Text&gt;
+      
+      {/* Header and content grouping */}
+      &lt;View accessibilityRole="header"&gt;
+        &lt;Text accessibilityRole="header"&gt;Section Title&lt;/Text&gt;
+      &lt;/View&gt;
+      
+      {/* List role */}
+      &lt;View accessibilityRole="list"&gt;
+        &lt;View accessibilityRole="listitem"&gt;
+          &lt;Text&gt;Item 1&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View accessibilityRole="listitem"&gt;
+          &lt;Text&gt;Item 2&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Role combinations
+function AccessibleModal({ title, content, onClose }) {
+  return (
+    &lt;View
+      accessibilityRole="dialog"
+      accessibilityLabel={title}
+      accessibilityViewModal={true}
+    &gt;
+      &lt;View accessibilityRole="header"&gt;
+        &lt;Text accessibilityRole="header"&gt;{title}&lt;/Text&gt;
+      &lt;/View&gt;
+      
+      &lt;View accessibilityRole="text"&gt;
+        &lt;Text&gt;{content}&lt;/Text&gt;
+      &lt;/View&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Close dialog"
+        onPress={onClose}
+      &gt;
+        &lt;Text&gt;Close&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>accessibilityHint</h2>
+      <pre><code>// Provide additional context
+function ActionButton({ action, target }) {
+  return (
+    &lt;TouchableOpacity
+      accessibilityLabel={`${action} ${target}`}
+      accessibilityHint={`Double tap to ${action.toLowerCase()} the ${target.toLowerCase()}`}
+      onPress={() => performAction(action, target)}
+    &gt;
+      &lt;Text&gt;{action} {target}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+// Contextual hints
+function EditableField({ label, value, onEdit }) {
+  return (
+    &lt;View&gt;
+      &lt;Text accessibilityLabel={label}&gt;{label}&lt;/Text&gt;
+      &lt;TouchableOpacity
+        accessibilityLabel={`Edit ${label}`}
+        accessibilityHint={`Currently ${value}. Double tap to edit.`}
+        onPress={onEdit}
+      &gt;
+        &lt;Text&gt;{value}&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Navigation hints
+function NavigationItem({ screen, label }) {
+  return (
+    &lt;TouchableOpacity
+      accessibilityLabel={label}
+      accessibilityHint={`Navigates to ${screen} screen`}
+      onPress={() => navigation.navigate(screen)}
+    &gt;
+      &lt;Text&gt;{label}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}</code></pre>
+
+      <h2>accessibilityState</h2>
+      <pre><code>// Communicate component state
+function StatefulButton() {
+  const [isPressed, setIsPressed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSelected, setIsSelected] = useState(false);
+  
+  return (
+    &lt;TouchableOpacity
+      accessibilityLabel="Submit form"
+      accessibilityHint="Double tap to submit the form"
+      accessibilityState={{
+        disabled: isLoading,
+        selected: isSelected,
+        checked: undefined,
+        busy: isLoading,
+        expanded: undefined,
+      }}
+      onPress={handleSubmit}
+    &gt;
+      {isLoading ? (
+        &lt;ActivityIndicator accessibilityLabel="Loading" /&gt;
+      ) : (
+        &lt;Text&gt;Submit&lt;/Text&gt;
+      )}
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+// Checkbox state
+function Checkbox({ label, checked, onChange }) {
+  return (
+    &lt;TouchableOpacity
+      accessibilityRole="checkbox"
+      accessibilityLabel={label}
+      accessibilityState={{
+        checked: checked,
+      }}
+      onPress={() => onChange(!checked)}
+    &gt;
+      &lt;View style={styles.checkbox}&gt;
+        {checked && &lt;Text&gt;✓&lt;/Text&gt;}
+      &lt;/View&gt;
+      &lt;Text&gt;{label}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+// Expandable section
+function ExpandableSection({ title, content }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  return (
+    &lt;View&gt;
+      &lt;TouchableOpacity
+        accessibilityLabel={title}
+        accessibilityHint={isExpanded ? "Collapse section" : "Expand section"}
+        accessibilityState={{
+          expanded: isExpanded,
+        }}
+        onPress={() => setIsExpanded(!isExpanded)}
+      &gt;
+        &lt;Text&gt;{title}&lt;/Text&gt;
+        &lt;Text&gt;{isExpanded ? '▼' : '▶'}&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+      
+      {isExpanded && (
+        &lt;View accessibilityLabel={`${title} content`}&gt;
+          &lt;Text&gt;{content}&lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+    &lt;/View&gt;
+  );
+}
+
+// Slider state
+function VolumeSlider() {
+  const [value, setValue] = useState(50);
+  
+  return (
+    &lt;View&gt;
+      &lt;Text accessibilityLabel={`Volume: ${value} percent`}&gt;
+        Volume: {value}%
+      &lt;/Text&gt;
+      &lt;Slider
+        value={value}
+        onValueChange={setValue}
+        accessibilityLabel="Volume slider"
+        accessibilityHint="Slide left to decrease volume, right to increase"
+        minimumValue={0}
+        maximumValue={100}
+        accessibilityState={{
+          disabled: false,
+        }}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Screen Reader Testing</h2>
+      <pre><code>// Testing with screen readers
+// iOS: Enable VoiceOver in Settings > Accessibility
+// Android: Enable TalkBack in Settings > Accessibility
+
+// Example accessible component for testing
+function AccessibleLoginForm() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState({});
+  
+  return (
+    &lt;View accessibilityLabel="Login form"&gt;
+      &lt;Text accessibilityRole="header"&gt;Login&lt;/Text&gt;
+      
+      &lt;View&gt;
+        &lt;Text accessibilityLabel="Email address (required)"&gt;
+          Email
+        &lt;/Text&gt;
+        &lt;TextInput
+          value={email}
+          onChangeText={setEmail}
+          accessibilityLabel="Email address"
+          accessibilityHint="Enter your email address"
+          keyboardType="email-address"
+          autoCapitalize="none"
+          autoComplete="email"
+          accessibilityState={{
+            disabled: false,
+          }}
+        /&gt;
+        {errors.email && (
+          &lt;Text
+            accessibilityRole="alert"
+            accessibilityLabel={`Email error: ${errors.email}`}
+          &gt;
+            {errors.email}
+          &lt;/Text&gt;
+        )}
+      &lt;/View&gt;
+      
+      &lt;View&gt;
+        &lt;Text accessibilityLabel="Password (required)"&gt;
+          Password
+        &lt;/Text&gt;
+        &lt;TextInput
+          value={password}
+          onChangeText={setPassword}
+          accessibilityLabel="Password"
+          accessibilityHint="Enter your password"
+          secureTextEntry
+          accessibilityState={{
+            disabled: false,
+          }}
+        /&gt;
+        {errors.password && (
+          &lt;Text
+            accessibilityRole="alert"
+            accessibilityLabel={`Password error: ${errors.password}`}
+          &gt;
+            {errors.password}
+          &lt;/Text&gt;
+        )}
+      &lt;/View&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Sign in"
+        accessibilityHint="Double tap to sign in to your account"
+        onPress={handleLogin}
+      &gt;
+        &lt;Text&gt;Sign In&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityRole="link"
+        accessibilityLabel="Forgot password"
+        accessibilityHint="Navigates to password recovery"
+        onPress={() => navigation.navigate('ForgotPassword')}
+      &gt;
+        &lt;Text&gt;Forgot Password?&lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>WCAG Guidelines for Mobile</h2>
+      <ul>
+        <li><strong>Color Contrast:</strong> Ensure 4.5:1 contrast ratio for normal text</li>
+        <li><strong>Touch Targets:</strong> Minimum 44x44 points for interactive elements</li>
+        <li><strong>Text Scaling:</strong> Support dynamic type/text sizes</li>
+        <li><strong>Focus Management:</strong> Logical navigation order</li>
+        <li><strong>Error Identification:</strong> Clear error messages and recovery</li>
+        <li><strong>Consistent Navigation:</strong> Predictable interface behavior</li>
+      </ul>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <div class="quiz-question">
+          <p>1. What is the primary purpose of the accessibilityLabel prop?</p>
+          <label><input type="radio" name="q1" value="a"> Styling the component</label>
+          <label><input type="radio" name="q1" value="b"> Providing a text description for screen readers</label>
+          <label><input type="radio" name="q1" value="c"> Setting the component's ID</label>
+          <div id="feedback1" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>2. Which accessibilityRole should you use for a toggle switch?</p>
+          <label><input type="radio" name="q2" value="a"> button</label>
+          <label><input type="radio" name="q2" value="b"> switch</label>
+          <label><input type="radio" name="q2" value="c"> checkbox</label>
+          <div id="feedback2" class="quiz-feedback"></div>
+        </div>
+        <div class="quiz-question">
+          <p>3. What is the minimum touch target size recommended by WCAG for mobile?</p>
+          <label><input type="radio" name="q3" value="a"> 24x24 points</label>
+          <label><input type="radio" name="q3" value="b"> 44x44 points</label>
+          <label><input type="radio" name="q3" value="c"> 60x60 points</label>
+          <div id="feedback3" class="quiz-feedback"></div>
+        </div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Make a Form Fully Accessible</h3>
+        <p>Create a registration form with complete accessibility support:</p>
+        <pre><code>// 1. Create accessible form components
+// components/AccessibleTextInput.js
+import React from 'react';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
+
+export function AccessibleTextInput({
+  label,
+  value,
+  onChangeText,
+  error,
+  required,
+  secureTextEntry,
+  keyboardType,
+  autoCapitalize,
+  autoComplete,
+  accessibilityHint,
+}) {
+  const fieldId = label.toLowerCase().replace(/\s+/g, '_');
+  
+  return (
+    &lt;View style={styles.fieldContainer}&gt;
+      &lt;Text
+        accessibilityLabel={`${label}${required ? ' (required)' : ''}`}
+        style={styles.label}
+      &gt;
+        {label}
+        {required && &lt;Text style={styles.required}&gt; *&lt;/Text&gt;}
+      &lt;/Text&gt;
+      
+      &lt;TextInput
+        value={value}
+        onChangeText={onChangeText}
+        accessibilityLabel={`${label} input`}
+        accessibilityHint={accessibilityHint || `Enter your ${label.toLowerCase()}`}
+        accessibilityRequired={required}
+        secureTextEntry={secureTextEntry}
+        keyboardType={keyboardType}
+        autoCapitalize={autoCapitalize}
+        autoComplete={autoComplete}
+        accessibilityState={{
+          disabled: false,
+        }}
+        style={[
+          styles.input,
+          error && styles.inputError,
+        ]}
+      /&gt;
+      
+      {error && (
+        &lt;Text
+          accessibilityRole="alert"
+          accessibilityLabel={`${label} error: ${error}`}
+          style={styles.errorText}
+        &gt;
+          {error}
+        &lt;/Text&gt;
+      )}
+    &lt;/View&gt;
+  );
+}
+
+// 2. Create accessible checkbox
+// components/AccessibleCheckbox.js
+export function AccessibleCheckbox({ label, checked, onChange, required }) {
+  return (
+    &lt;TouchableOpacity
+      accessibilityRole="checkbox"
+      accessibilityLabel={`${label}${required ? ' (required)' : ''}`}
+      accessibilityHint={checked ? "Uncheck this option" : "Check this option"}
+      accessibilityState={{
+        checked: checked,
+      }}
+      onPress={() => onChange(!checked)}
+      style={styles.checkboxContainer}
+    &gt;
+      &lt;View style={[styles.checkbox, checked && styles.checkboxChecked]}&gt;
+        {checked && &lt;Text style={styles.checkmark}&gt;✓&lt;/Text&gt;}
+      &lt;/View&gt;
+      &lt;Text style={styles.checkboxLabel}&gt;{label}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+}
+
+// 3. Create accessible form
+// screens/RegistrationScreen.js
+export function RegistrationScreen() {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    acceptTerms: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length &lt; 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (!formData.acceptTerms) {
+      newErrors.acceptTerms = 'You must accept the terms and conditions';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      // Announce error summary for screen readers
+      const errorCount = Object.keys(errors).length;
+      Alert.alert(
+        'Form Errors',
+        `Please correct ${errorCount} error${errorCount > 1 ? 's' : ''} in the form.`
+      );
+      return;
+    }
+    
+    setIsSubmitting(true);
+    try {
+      await registerUser(formData);
+      Alert.alert('Success', 'Registration complete!');
+    } catch (error) {
+      setErrors({ general: error.message });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    &lt;ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    &gt;
+      &lt;Text accessibilityRole="header" style={styles.title}&gt;
+        Create Account
+      &lt;/Text&gt;
+      
+      {errors.general && (
+        &lt;View
+          accessibilityRole="alert"
+          style={styles.generalError}
+        &gt;
+          &lt;Text style={styles.generalErrorText}&gt;
+            {errors.general}
+          &lt;/Text&gt;
+        &lt;/View&gt;
+      )}
+      
+      &lt;AccessibleTextInput
+        label="Full Name"
+        value={formData.name}
+        onChangeText={(value) => setFormData({...formData, name: value})}
+        error={errors.name}
+        required
+        autoCapitalize="words"
+        autoComplete="name"
+        accessibilityHint="Enter your full name as it appears on your ID"
+      /&gt;
+      
+      &lt;AccessibleTextInput
+        label="Email Address"
+        value={formData.email}
+        onChangeText={(value) => setFormData({...formData, email: value})}
+        error={errors.email}
+        required
+        keyboardType="email-address"
+        autoCapitalize="none"
+        autoComplete="email"
+        accessibilityHint="Enter a valid email address for account verification"
+      /&gt;
+      
+      &lt;AccessibleTextInput
+        label="Password"
+        value={formData.password}
+        onChangeText={(value) => setFormData({...formData, password: value})}
+        error={errors.password}
+        required
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="password"
+        accessibilityHint="Enter a password with at least 8 characters"
+      /&gt;
+      
+      &lt;AccessibleTextInput
+        label="Confirm Password"
+        value={formData.confirmPassword}
+        onChangeText={(value) => setFormData({...formData, confirmPassword: value})}
+        error={errors.confirmPassword}
+        required
+        secureTextEntry
+        autoCapitalize="none"
+        autoComplete="password"
+        accessibilityHint="Re-enter your password to confirm"
+      /&gt;
+      
+      &lt;AccessibleCheckbox
+        label="I agree to the Terms of Service and Privacy Policy"
+        checked={formData.acceptTerms}
+        onChange={(value) => setFormData({...formData, acceptTerms: value})}
+        error={errors.acceptTerms}
+        required
+      /&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityRole="button"
+        accessibilityLabel="Create account"
+        accessibilityHint="Double tap to create your account"
+        accessibilityState={{
+          disabled: isSubmitting,
+          busy: isSubmitting,
+        }}
+        onPress={handleSubmit}
+        style={[styles.button, isSubmitting && styles.buttonDisabled]}
+        disabled={isSubmitting}
+      &gt;
+        {isSubmitting ? (
+          &lt;ActivityIndicator color="#fff" accessibilityLabel="Creating account" /&gt;
+        ) : (
+          &lt;Text style={styles.buttonText}&gt;Create Account&lt;/Text&gt;
+        )}
+      &lt;/TouchableOpacity&gt;
+      
+      &lt;TouchableOpacity
+        accessibilityRole="link"
+        accessibilityLabel="Already have an account? Sign in"
+        accessibilityHint="Navigates to login screen"
+        onPress={() => navigation.navigate('Login')}
+        style={styles.linkButton}
+      &gt;
+        &lt;Text style={styles.linkText}&gt;
+          Already have an account? Sign in
+        &lt;/Text&gt;
+      &lt;/TouchableOpacity&gt;
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  fieldContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  required: {
+    color: 'red',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  inputError: {
+    borderColor: 'red',
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  checkmark: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  checkboxLabel: {
+    flex: 1,
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: '#007AFF',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  buttonDisabled: {
+    backgroundColor: '#ccc',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  linkButton: {
+    alignItems: 'center',
+  },
+  linkText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
+  generalError: {
+    backgroundColor: '#ffebee',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  generalErrorText: {
+    color: 'red',
+    textAlign: 'center',
+  },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Use accessibilityLabel to provide descriptive text for screen readers</li>
+        <li>Apply appropriate accessibilityRole for semantic meaning</li>
+        <li>Use accessibilityHint to provide additional context for actions</li>
+        <li>Communicate component state with accessibilityState</li>
+        <li>Follow WCAG guidelines: 4.5:1 contrast ratio, 44x44pt touch targets</li>
+        <li>Test with VoiceOver (iOS) and TalkBack (Android)</li>
+        <li>Ensure logical focus order and keyboard navigation</li>
+        <li>Provide clear error identification and recovery instructions</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Accessibility Documentation</strong> — Official guide to accessibility features and best practices. <a href="https://reactnative.dev/docs/accessibility" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
