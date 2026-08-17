@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 52: SVG</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 52: SVG</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to use react-native-svg to render vector graphics, including Svg, Circle, Rect, Path, Ellipse, G group, fill/stroke, viewBox, and animated SVGs.
+      </div>
+
+      <h2>Why SVG in React Native?</h2>
+      <p>SVG (Scalable Vector Graphics) provides resolution-independent graphics that look crisp on any screen size. Unlike PNG or JPEG images, SVGs are defined as XML-based vector paths, making them infinitely scalable without quality loss.</p>
+      <p>In React Native, the <code>react-native-svg</code> library allows you to render SVG elements directly as native components.</p>
+
+      <h2>Installation</h2>
+      <pre><code>// Install the library
+// npm install react-native-svg
+
+// For Expo projects, no additional native linking is needed
+// For bare React Native projects:
+// cd ios && pod install</code></pre>
+
+      <h2>Basic SVG Components</h2>
+      <p>The <code>react-native-svg</code> library provides components that mirror SVG elements: <code>Svg</code>, <code>Circle</code>, <code>Rect</code>, <code>Path</code>, <code>Ellipse</code>, <code>Line</code>, <code>Polygon</code>, and more.</p>
+
+      <pre><code>import Svg, { Circle, Rect, Path, Ellipse, Line, Polygon } from 'react-native-svg';
+
+function BasicSVG() {
+  return (
+    &lt;Svg width="300" height="300" viewBox="0 0 300 300"&gt;
+      {/* Rectangle */}
+      &lt;Rect
+        x="10"
+        y="10"
+        width="100"
+        height="80"
+        fill="#3b82f6"
+        rx="8"
+      /&gt;
+
+      {/* Circle */}
+      &lt;Circle
+        cx="200"
+        cy="50"
+        r="40"
+        fill="#10b981"
+      /&gt;
+
+      {/* Ellipse */}
+      &lt;Ellipse
+        cx="150"
+        cy="180"
+        rx="80"
+        ry="40"
+        fill="#f59e0b"
+      /&gt;
+
+      {/* Line */}
+      &lt;Line
+        x1="10"
+        y1="250"
+        x2="290"
+        y2="250"
+        stroke="#ef4444"
+        strokeWidth="3"
+      /&gt;
+
+      {/* Triangle using Polygon */}
+      &lt;Polygon
+        points="150,100 100,200 200,200"
+        fill="#8b5cf6"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}</code></pre>
+
+      <h2>The Path Component</h2>
+      <p>The <code>Path</code> component is the most powerful SVG element. It uses a mini-language of commands to define complex shapes:</p>
+      <ul>
+        <li><strong>M x,y:</strong> Move to point</li>
+        <li><strong>L x,y:</strong> Draw line to point</li>
+        <li><strong>H x:</strong> Horizontal line</li>
+        <li><strong>V y:</strong> Vertical line</li>
+        <li><strong>A:</strong> Arc</li>
+        <li><strong>Q:</strong> Quadratic bezier curve</li>
+        <li><strong>C:</strong> Cubic bezier curve</li>
+        <li><strong>Z:</strong> Close path</li>
+      </ul>
+
+      <pre><code>import Svg, { Path } from 'react-native-svg';
+
+function HeartShape() {
+  return (
+    &lt;Svg width="200" height="200" viewBox="0 0 200 200"&gt;
+      &lt;Path
+        d="M100,180 C60,140 10,100 10,60 C10,20 50,0 100,40 C150,0 190,20 190,60 C190,100 140,140 100,180Z"
+        fill="#ef4444"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}
+
+function StarShape() {
+  return (
+    &lt;Svg width="200" height="200" viewBox="0 0 200 200"&gt;
+      &lt;Path
+        d="M100,10 L120,70 L190,70 L135,110 L155,180 L100,140 L45,180 L65,110 L10,70 L80,70Z"
+        fill="#f59e0b"
+        stroke="#d97706"
+        strokeWidth="2"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}
+
+function CustomIcon() {
+  return (
+    &lt;Svg width="24" height="24" viewBox="0 0 24 24" fill="none"&gt;
+      &lt;Path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"
+        fill="#10b981"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}</code></pre>
+
+      <h2>Fill, Stroke, and Styling</h2>
+      <p>SVG elements support fill (interior color), stroke (outline color), strokeWidth, opacity, and other styling properties.</p>
+
+      <pre><code>import Svg, { Circle, Rect } from 'react-native-svg';
+
+function StyledSVG() {
+  return (
+    &lt;Svg width="300" height="200" viewBox="0 0 300 200"&gt;
+      {/* Filled shape */}
+      &lt;Circle cx="80" cy="100" r="50" fill="#3b82f6" /&gt;
+
+      {/* Stroked shape (outline only) */}
+      &lt;Circle
+        cx="200"
+        cy="100"
+        r="50"
+        fill="none"
+        stroke="#ef4444"
+        strokeWidth="3"
+      /&gt;
+
+      {/* Semi-transparent fill */}
+      &lt;Rect
+        x="120"
+        y="50"
+        width="80"
+        height="80"
+        fill="#10b981"
+        fillOpacity="0.5"
+      /&gt;
+
+      {/* Dashed stroke */}
+      &lt;Circle
+        cx="80"
+        cy="100"
+        r="60"
+        fill="none"
+        stroke="#f59e0b"
+        strokeWidth="2"
+        strokeDasharray="5,5"
+      /&gt;
+
+      {/* Line caps and joins */}
+      &lt;Path
+        d="M150,30 Q200,100 150,170"
+        fill="none"
+        stroke="#8b5cf6"
+        strokeWidth="4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}</code></pre>
+
+      <h2>The G Group Component</h2>
+      <p>The <code>G</code> component groups multiple SVG elements together, allowing you to apply transformations to all children at once.</p>
+
+      <pre><code>import Svg, { G, Circle, Rect, Text } from 'react-native-svg';
+
+function GroupedElements() {
+  return (
+    &lt;Svg width="300" height="200" viewBox="0 0 300 200"&gt;
+      {/* Group with rotation */}
+      &lt;G transform="rotate(30, 150, 100)"&gt;
+        &lt;Rect x="100" y="50" width="100" height="100" fill="#3b82f6" rx="8" /&gt;
+        &lt;Circle cx="150" cy="100" r="20" fill="#fff" /&gt;
+      &lt;/G&gt;
+
+      {/* Group with scale */}
+      &lt;G transform="translate(50, 150) scale(0.5)"&gt;
+        &lt;Circle cx="100" cy="100" r="80" fill="#10b981" /&gt;
+        &lt;Text x="60" y="105" fill="#fff" fontSize="24" fontWeight="bold"&gt;
+          Hi
+        &lt;/Text&gt;
+      &lt;/G&gt;
+
+      {/* Nested groups inherit transforms */}
+      &lt;G transform="translate(200, 20)"&gt;
+        &lt;G transform="rotate(45, 40, 40)"&gt;
+          &lt;Rect x="0" y="0" width="80" height="80" fill="#f59e0b" rx="4" /&gt;
+        &lt;/G&gt;
+      &lt;/G&gt;
+    &lt;/Svg&gt;
+  );
+}</code></pre>
+
+      <h2>ViewBox</h2>
+      <p>The <code>viewBox</code> attribute defines the coordinate system for your SVG. It allows you to design at a fixed resolution and scale to any size.</p>
+
+      <pre><code>import Svg, { Circle, Rect } from 'react-native-svg';
+
+function ViewBoxExample() {
+  return (
+    &lt;View style={{ flex: 1 }}&gt;
+      {/* This SVG scales to fill its container while maintaining aspect ratio */}
+      &lt;Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="xMidYMid meet"
+      &gt;
+        {/* These coordinates are in the viewBox coordinate system (0-100) */}
+        &lt;Circle cx="50" cy="50" r="40" fill="#3b82f6" /&gt;
+        &lt;Rect x="20" y="20" width="60" height="60" fill="#10b981" fillOpacity="0.5" /&gt;
+      &lt;/Svg&gt;
+
+      {/* Same SVG, different sizes — looks identical */}
+      &lt;View style={{ flexDirection: 'row', gap: 16, padding: 16 }}&gt;
+        &lt;Svg width="50" height="50" viewBox="0 0 100 100"&gt;
+          &lt;Circle cx="50" cy="50" r="40" fill="#ef4444" /&gt;
+        &lt;/Svg&gt;
+        &lt;Svg width="100" height="100" viewBox="0 0 100 100"&gt;
+          &lt;Circle cx="50" cy="50" r="40" fill="#ef4444" /&gt;
+        &lt;/Svg&gt;
+        &lt;Svg width="200" height="200" viewBox="0 0 100 100"&gt;
+          &lt;Circle cx="50" cy="50" r="40" fill="#ef4444" /&gt;
+        &lt;/Svg&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Animated SVGs</h2>
+      <p>You can animate SVG properties using Reanimated's Animated components or the built-in Animated API.</p>
+
+      <pre><code>import { useEffect, useRef } from 'react';
+import { Animated, View } from 'react-native';
+import Svg, { Circle, Rect, Path } from 'react-native-svg';
+
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function AnimatedSVGExample() {
+  const radiusAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(radiusAnim, { toValue: 50, duration: 1000, useNativeDriver: false }),
+          Animated.timing(radiusAnim, { toValue: 20, duration: 1000, useNativeDriver: false }),
+        ]),
+        Animated.timing(opacityAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+        Animated.timing(rotateAnim, { toValue: 360, duration: 3000, useNativeDriver: false }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    &lt;View style={{ alignItems: 'center', padding: 20 }}&gt;
+      &lt;Svg width="200" height="200" viewBox="0 0 200 200"&gt;
+        &lt;AnimatedCircle
+          cx="100"
+          cy="100"
+          r={radiusAnim}
+          fill="#3b82f6"
+          opacity={opacityAnim}
+        /&gt;
+      &lt;/Svg&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Using Reanimated for SVG animations
+import Animated, {
+  useSharedValue,
+  useAnimatedProps,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+function ReanimatedSVG() {
+  const rotate = useSharedValue(0);
+
+  useEffect(() => {
+    rotate.value = withRepeat(
+      withTiming(360, { duration: 2000 }),
+      -1
+    );
+  }, []);
+
+  const animatedProps = useAnimatedProps(() => ({
+    transform: [{ rotate: `${rotate.value}deg` }],
+  }));
+
+  return (
+    &lt;Svg width="200" height="200" viewBox="0 0 200 200"&gt;
+      &lt;AnimatedPath
+        d="M100,10 L120,70 L190,70 L135,110 L155,180 L100,140 L45,180 L65,110 L10,70 L80,70Z"
+        fill="#f59e0b"
+        animatedProps={animatedProps}
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What is the main advantage of SVG over PNG images?</strong></p>
+        <label><input type="radio" name="q1" value="a"> SVGs load faster</label>
+        <label><input type="radio" name="q1" value="b"> SVGs are vector-based and scale infinitely without quality loss</label>
+        <label><input type="radio" name="q1" value="c"> SVGs have smaller file sizes</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. What does the viewBox attribute do?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Sets the background color</label>
+        <label><input type="radio" name="q2" value="b"> Defines the coordinate system and aspect ratio for the SVG content</label>
+        <label><input type="radio" name="q2" value="c"> Enables animation support</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. How do you group SVG elements and apply transforms to all of them?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Use View wrapper</label>
+        <label><input type="radio" name="q3" value="b"> Use the G component</label>
+        <label><input type="radio" name="q3" value="c"> Use React.Fragment</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Custom SVG Icon</h3>
+        <p>Create a reusable SVG icon component:</p>
+        <pre><code>// components/Icon.js
+import Svg, { Path, Circle, Rect, G } from 'react-native-svg';
+
+// Checkmark icon
+export function CheckIcon({ size = 24, color = '#10b981' }) {
+  return (
+    &lt;Svg width={size} height={size} viewBox="0 0 24 24" fill="none"&gt;
+      &lt;Path
+        d="M20 6L9 17l-5-5"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}
+
+// Heart icon
+export function HeartIcon({ size = 24, color = '#ef4444', filled = false }) {
+  return (
+    &lt;Svg width={size} height={size} viewBox="0 0 24 24"&gt;
+      &lt;Path
+        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}
+
+// Star icon
+export function StarIcon({ size = 24, color = '#f59e0b', filled = false }) {
+  return (
+    &lt;Svg width={size} height={size} viewBox="0 0 24 24"&gt;
+      &lt;Path
+        d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+        fill={filled ? color : 'none'}
+        stroke={color}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      /&gt;
+    &lt;/Svg&gt;
+  );
+}
+
+// Usage
+import { View, Pressable } from 'react-native';
+import { HeartIcon, StarIcon, CheckIcon } from './Icon';
+
+function IconDemo() {
+  return (
+    &lt;View style={{ flexDirection: 'row', gap: 16, padding: 16 }}&gt;
+      &lt;HeartIcon size={32} filled /&gt;
+      &lt;StarIcon size={32} filled /&gt;
+      &lt;CheckIcon size={32} /&gt;
+      &lt;Pressable onPress={() =&gt; {}}&gt;
+        &lt;HeartIcon size={48} color="#ff6b6b" /&gt;
+      &lt;/Pressable&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>react-native-svg provides vector graphics that scale perfectly on any screen</li>
+        <li>Use <code>Svg</code> as the container and child components like <code>Circle</code>, <code>Rect</code>, <code>Path</code></li>
+        <li>The <code>Path</code> component supports complex shapes via the SVG path mini-language</li>
+        <li><code>fill</code> and <code>stroke</code> control interior and outline colors</li>
+        <li>The <code>G</code> component groups elements for shared transforms</li>
+        <li><code>viewBox</code> defines the coordinate system for responsive scaling</li>
+        <li>SVGs can be animated using Animated or Reanimated libraries</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>react-native-svg</strong> — Official documentation for SVG in React Native. <a href="https://github.com/software-mansion/react-native-svg" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

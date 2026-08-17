@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 47: Responsive Design</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 47: Responsive Design</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to use useWindowDimensions, create percentage-based layouts, build adaptive components, implement responsive typography, and handle platform-specific layouts.
+      </div>
+
+      <h2>Why Responsive Design Matters</h2>
+      <p>React Native apps run on devices with vastly different screen sizes — from small phones (320px wide) to large tablets (1024px+). Responsive design ensures your UI looks great and functions well on all these screen sizes.</p>
+      <p>Unlike web development where you use media queries, React Native uses the <code>useWindowDimensions</code> hook and percentage-based layouts to achieve responsiveness.</p>
+
+      <h2>useWindowDimensions Hook</h2>
+      <p>The <code>useWindowDimensions</code> hook returns the current window width and height, and automatically updates when the device rotates or the window resizes (on web).</p>
+
+      <pre><code>import { useWindowDimensions, View, Text, StyleSheet } from 'react-native';
+
+function ResponsiveComponent() {
+  const { width, height } = useWindowDimensions();
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Window Size&lt;/Text&gt;
+      &lt;Text style={styles.dimension}&gt;Width: {width}px&lt;/Text&gt;
+      &lt;Text style={styles.dimension}&gt;Height: {height}px&lt;/Text&gt;
+      &lt;Text style={styles.dimension}&gt;
+        Aspect Ratio: {(width / height).toFixed(2)}
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16 },
+  dimension: { fontSize: 16, marginBottom: 8, color: '#666' },
+});</code></pre>
+
+      <h2>Percentage-Based Layouts</h2>
+      <p>React Native supports percentage values for width, height, padding, margin, and border radius. This is the foundation of responsive design.</p>
+
+      <pre><code>import { View, Text, StyleSheet } from 'react-native';
+
+function PercentageLayout() {
+  return (
+    &lt;View style={styles.container}&gt;
+      {/* Full width header */}
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.headerText}&gt;Full Width Header&lt;/Text&gt;
+      &lt;/View&gt;
+
+      {/* Two columns using percentages */}
+      &lt;View style={styles.row}&gt;
+        &lt;View style={styles.columnHalf}&gt;
+          &lt;Text style={styles.columnText}&gt;50% Width&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.columnHalf}&gt;
+          &lt;Text style={styles.columnText}&gt;50% Width&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+
+      {/* Three columns using flex */}
+      &lt;View style={styles.row}&gt;
+        &lt;View style={styles.columnThird}&gt;
+          &lt;Text style={styles.columnText}&gt;33%&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.columnThird}&gt;
+          &lt;Text style={styles.columnText}&gt;33%&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.columnThird}&gt;
+          &lt;Text style={styles.columnText}&gt;33%&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+
+      {/* Percentage-based padding */}
+      &lt;View style={styles.paddedBox}&gt;
+        &lt;Text&gt;5% padding on all sides&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  header: { width: '100%', padding: 16, backgroundColor: '#3b82f6' },
+  headerText: { color: '#fff', fontSize: 18, textAlign: 'center' },
+  row: { flexDirection: 'row', marginTop: 8 },
+  columnHalf: { width: '50%', padding: 8 },
+  columnThird: { flex: 1, padding: 8 },
+  columnText: { fontSize: 14, textAlign: 'center' },
+  paddedBox: { margin: '5%', padding: '5%', backgroundColor: '#f0f0f0', borderRadius: 8 },
+});</code></pre>
+
+      <h2>Building Adaptive Components</h2>
+      <p>Adaptive components change their layout or behavior based on screen size. A card might show a horizontal layout on wide screens but stack vertically on narrow ones.</p>
+
+      <pre><code>import { View, Text, Image, useWindowDimensions, StyleSheet } from 'react-native';
+
+function AdaptiveCard({ title, description, imageUrl }) {
+  const { width } = useWindowDimensions();
+  const isWide = width > 600;
+
+  return (
+    &lt;View style={[styles.card, isWide &amp;&amp; styles.cardWide]}&gt;
+      &lt;Image
+        source={{ uri: imageUrl }}
+        style={[styles.image, isWide &amp;&amp; styles.imageWide]}
+      /&gt;
+      &lt;View style={[styles.content, isWide &amp;&amp; styles.contentWide]}&gt;
+        &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+        &lt;Text style={styles.description}&gt;{description}&lt;/Text&gt;
+        &lt;View style={styles.actions}&gt;
+          &lt;View style={styles.button}&gt;
+            &lt;Text style={styles.buttonText}&gt;Learn More&lt;/Text&gt;
+          &lt;/View&gt;
+          &lt;View style={[styles.button, styles.buttonSecondary]}&gt;
+            &lt;Text style={[styles.buttonText, styles.buttonSecondaryText]}&gt;
+              Save
+            &lt;/Text&gt;
+          &lt;/View&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    margin: 16,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  cardWide: {
+    flexDirection: 'row',
+  },
+  image: {
+    width: '100%',
+    height: 200,
+  },
+  imageWide: {
+    width: '40%',
+    height: 'auto',
+    minHeight: 200,
+  },
+  content: {
+    padding: 16,
+  },
+  contentWide: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  description: { fontSize: 14, color: '#666', marginBottom: 16 },
+  actions: { flexDirection: 'row', gap: 8 },
+  button: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+  },
+  buttonText: { color: '#fff', fontWeight: '600' },
+  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3b82f6' },
+  buttonSecondaryText: { color: '#3b82f6' },
+});</code></pre>
+
+      <h2>Responsive Typography</h2>
+      <p>Font sizes should scale with the screen. A 24px title on a phone is fine, but it looks small on a tablet. Use the screen width to calculate proportional font sizes.</p>
+
+      <pre><code>import { useWindowDimensions } from 'react-native';
+
+const BASE_WIDTH = 375; // iPhone X width as reference
+
+function useResponsiveFontSize() {
+  const { width } = useWindowDimensions();
+  const scale = width / BASE_WIDTH;
+
+  const normalize = (size) => {
+    const newSize = size * scale;
+    // Clamp between min and max
+    return Math.round(newSize * 100) / 100;
+  };
+
+  return {
+    xs: normalize(12),
+    sm: normalize(14),
+    md: normalize(16),
+    lg: normalize(18),
+    xl: normalize(24),
+    xxl: normalize(32),
+    title: normalize(40),
+  };
+}
+
+// Usage
+function ResponsiveText() {
+  const fontSizes = useResponsiveFontSize();
+
+  return (
+    &lt;View style={{ padding: 16 }}&gt;
+      &lt;Text style={{ fontSize: fontSizes.title, fontWeight: 'bold' }}&gt;
+        Responsive Title
+      &lt;/Text&gt;
+      &lt;Text style={{ fontSize: fontSizes.md, marginTop: 8 }}&gt;
+        This text scales proportionally with screen width.
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// More advanced: min/max clamping
+function useClampedFontSize() {
+  const { width } = useWindowDimensions();
+  const scale = width / BASE_WIDTH;
+
+  const normalize = (size, min, max) => {
+    const newSize = size * scale;
+    return Math.min(Math.max(newSize, min), max);
+  };
+
+  return {
+    xs: normalize(12, 10, 14),
+    sm: normalize(14, 12, 16),
+    md: normalize(16, 14, 18),
+    lg: normalize(18, 16, 22),
+    xl: normalize(24, 20, 32),
+    xxl: normalize(32, 26, 42),
+  };
+}</code></pre>
+
+      <h2>Platform-Specific Layouts</h2>
+      <p>Sometimes you need different layouts for iOS and Android due to platform conventions. Use <code>Platform.OS</code> to conditionally apply styles.</p>
+
+      <pre><code>import { Platform, View, Text, StyleSheet, StatusBar } from 'react-native';
+
+function PlatformAwareComponent() {
+  return (
+    &lt;View style={styles.container}&gt;
+      {/* Add extra padding for iOS notch/status bar */}
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.headerText}&gt;Platform-Aware Header&lt;/Text&gt;
+      &lt;/View&gt;
+
+      {/* Different shadow styles per platform */}
+      &lt;View style={styles.card}&gt;
+        &lt;Text style={styles.cardText}&gt;Platform Card&lt;/Text&gt;
+      &lt;/View&gt;
+
+      {/* Platform-specific touch feedback */}
+      &lt;View style={[
+        styles.button,
+        Platform.OS === 'ios' &amp;&amp; styles.buttonIOS,
+        Platform.OS === 'android' &amp;&amp; styles.buttonAndroid,
+      ]}&gt;
+        &lt;Text style={styles.buttonText}&gt;Platform Button&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 44 : StatusBar.currentHeight || 0,
+  },
+  header: {
+    padding: 16,
+    backgroundColor: '#3b82f6',
+  },
+  headerText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  card: {
+    margin: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    // Platform-specific shadows
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  cardText: { fontSize: 16 },
+  button: {
+    margin: 16,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  buttonIOS: {
+    backgroundColor: '#007AFF',
+  },
+  buttonAndroid: {
+    backgroundColor: '#6200EE',
+    elevation: 4,
+  },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What hook provides real-time window dimensions in React Native?</strong></p>
+        <label><input type="radio" name="q1" value="a"> useDimensions</label>
+        <label><input type="radio" name="q1" value="b"> useWindowDimensions</label>
+        <label><input type="radio" name="q1" value="c"> useScreenSize</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. How do you create a layout that takes 50% of the screen width?</strong></p>
+        <label><input type="radio" name="q2" value="a"> style={{ width: '50%' }}</label>
+        <label><input type="radio" name="q2" value="b"> style={{ width: Dimensions.get('window').width / 2 }}</label>
+        <label><input type="radio" name="q2" value="c"> Both approaches work</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What is the benefit of responsive typography?</strong></p>
+        <label><input type="radio" name="q3" value="a"> It makes text bigger on all devices</label>
+        <label><input type="radio" name="q3" value="b"> It scales font sizes proportionally based on screen width for readability</label>
+        <label><input type="radio" name="q3" value="c"> It reduces the number of font styles needed</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Responsive Card Grid</h3>
+        <p>Create a responsive card grid that adapts from 1 column on phones to 3 columns on tablets:</p>
+        <pre><code>// components/ResponsiveCardGrid.js
+import { View, Text, useWindowDimensions, StyleSheet, ScrollView } from 'react-native';
+
+const DATA = [
+  { id: '1', title: 'Card One', color: '#3b82f6' },
+  { id: '2', title: 'Card Two', color: '#10b981' },
+  { id: '3', title: 'Card Three', color: '#f59e0b' },
+  { id: '4', title: 'Card Four', color: '#ef4444' },
+  { id: '5', title: 'Card Five', color: '#8b5cf6' },
+  { id: '6', title: 'Card Six', color: '#ec4899' },
+];
+
+function getColumns(width) {
+  if (width >= 900) return 3;
+  if (width >= 600) return 2;
+  return 1;
+}
+
+export default function ResponsiveCardGrid() {
+  const { width } = useWindowDimensions();
+  const columns = getColumns(width);
+  const cardWidth = (width - 32 - (columns - 1) * 12) / columns;
+
+  return (
+    &lt;ScrollView style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Responsive Grid&lt;/Text&gt;
+      &lt;Text style={styles.subtitle}&gt;{columns} column{columns > 1 ? 's' : ''} on this screen&lt;/Text&gt;
+      &lt;View style={styles.grid}&gt;
+        {DATA.map(item =&gt; (
+          &lt;View
+            key={item.id}
+            style={[styles.card, { width: cardWidth, backgroundColor: item.color }]}
+          &gt;
+            &lt;Text style={styles.cardTitle}&gt;{item.title}&lt;/Text&gt;
+          &lt;/View&gt;
+        ))}
+      &lt;/View&gt;
+    &lt;/ScrollView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 4 },
+  subtitle: { fontSize: 14, color: '#666', marginBottom: 16 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  card: {
+    height: 120,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardTitle: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useWindowDimensions</code> provides real-time width and height that update on rotation</li>
+        <li>Use percentage values ('50%') for flexible layouts that adapt to any screen size</li>
+        <li>Adaptive components change layout based on available screen width (e.g., horizontal vs vertical)</li>
+        <li>Responsive typography scales font sizes proportionally using screen width ratios</li>
+        <li><code>Platform.select</code> and <code>Platform.OS</code> enable platform-specific styling</li>
+        <li>Always test on multiple screen sizes to ensure your responsive design works correctly</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Responsive Design</strong> — A comprehensive guide to building responsive layouts. <a href="https://reactnative.dev/docs/usewindowdimensions" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

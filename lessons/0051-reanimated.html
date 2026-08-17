@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 51: Reanimated</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 51: Reanimated</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand useSharedValue, useAnimatedStyle, withSpring, withTiming, gesture-based animations, and layout animations using react-native-reanimated.
+      </div>
+
+      <h2>Why Reanimated?</h2>
+      <p><code>react-native-reanimated</code> is the modern animation library for React Native. It runs animations entirely on the UI thread, eliminating the bridge bottleneck that causes jank with the built-in Animated API. Reanimated uses worklets — small JavaScript functions that run on the UI thread.</p>
+
+      <h2>Setting Up Reanimated</h2>
+      <pre><code>// Install dependencies
+// npm install react-native-reanimated
+
+// babel.config.js — Add the reanimated plugin (must be last)
+module.exports = {
+  presets: ['module:metro-react-native-babel-preset'],
+  plugins: ['react-native-reanimated/plugin'],
+};
+
+// App.js — Wrap with GestureHandlerRootView
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+
+export default function App() {
+  return (
+    &lt;GestureHandlerRootView style={{ flex: 1 }}&gt;
+      {/* Your app content */}
+    &lt;/GestureHandlerRootView&gt;
+  );
+}</code></pre>
+
+      <h2>useSharedValue</h2>
+      <p><code>useSharedValue</code> creates a shared value that can be read and written on both the JS and UI threads. Unlike regular React state, updating a shared value doesn't trigger a re-render — it directly updates the UI thread.</p>
+
+      <pre><code>import { useSharedValue } from 'react-native-reanimated';
+
+function MyComponent() {
+  // Shared values work on the UI thread
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const scale = useSharedValue(1);
+
+  // Modifying shared values
+  const handlePress = () => {
+    'worklet'; // This function runs on the UI thread
+    translateX.value = 100;
+    opacity.value = 0.5;
+    scale.value = 2;
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;Shared values: {translateX.value}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>useAnimatedStyle</h2>
+      <p><code>useAnimatedStyle</code> creates animated styles that update automatically when shared values change. These styles run on the UI thread, making them extremely performant.</p>
+
+      <pre><code>import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+} from 'react-native-reanimated';
+
+function AnimatedBox() {
+  const translateX = useSharedValue(0);
+  const rotate = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    'worklet';
+    return {
+      transform: [
+        { translateX: translateX.value },
+        { rotate: `${rotate.value}deg` },
+        { scale: scale.value },
+      ],
+    };
+  });
+
+  const handleMoveRight = () => {
+    'worklet';
+    translateX.value = withTiming(200, { duration: 500 });
+  };
+
+  const handleRotate = () => {
+    'worklet';
+    rotate.value = withSpring(rotate.value + 90);
+  };
+
+  const handleScale = () => {
+    'worklet';
+    scale.value = withSpring(scale.value === 1 ? 2 : 1);
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View style={[styles.box, animatedStyle]} /&gt;
+      &lt;View style={styles.buttons}&gt;
+        &lt;Pressable onPress={handleMoveRight} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Move Right&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={handleRotate} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Rotate&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={handleScale} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Scale&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  box: { width: 100, height: 100, backgroundColor: '#3b82f6', borderRadius: 12 },
+  buttons: { flexDirection: 'row', gap: 12, marginTop: 32 },
+  button: { padding: 10, backgroundColor: '#10b981', borderRadius: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+
+      <h2>withSpring and withTiming</h2>
+      <p>Reanimated provides two main animation functions:</p>
+      <ul>
+        <li><strong>withTiming:</strong> Animates from current value to target over a duration with easing</li>
+        <li><strong>withSpring:</strong> Physics-based animation with overshoot and bounce</li>
+      </ul>
+
+      <pre><code>import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  withRepeat,
+  withSequence,
+  Easing,
+} from 'react-native-reanimated';
+
+function AnimationExamples() {
+  const translateX = useSharedValue(0);
+  const opacity = useSharedValue(1);
+  const scale = useSharedValue(1);
+
+  // Timing with custom easing
+  const moveWithTiming = () => {
+    'worklet';
+    translateX.value = withTiming(
+      translateX.value === 0 ? 200 : 0,
+      {
+        duration: 800,
+        easing: Easing.bezierFn(0.25, 0.1, 0.25, 1),
+      }
+    );
+  };
+
+  // Spring with custom config
+  const bounceWithSpring = () => {
+    'worklet';
+    scale.value = withSpring(1.5, {
+      damping: 10,
+      stiffness: 100,
+      mass: 1,
+      velocity: 0,
+    });
+  };
+
+  // Repeat animation
+  const pulseAnimation = () => {
+    'worklet';
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.3, { duration: 500 }),
+        withTiming(1, { duration: 500 })
+      ),
+      -1, // Infinite repeat
+      true // Reverse on each repeat
+    );
+  };
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: translateX.value }, { scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View style={[styles.box, animatedStyle]} /&gt;
+      &lt;View style={styles.buttons}&gt;
+        &lt;Pressable onPress={moveWithTiming} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Timing&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={bounceWithSpring} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Spring&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={pulseAnimation} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Pulse&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Gesture Animations</h2>
+      <p>Reanimated integrates with <code>react-native-gesture-handler</code> for performant gesture-driven animations. Gestures run entirely on the UI thread.</p>
+
+      <pre><code>import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
+
+function DraggableBox() {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      'worklet';
+      translateX.value = e.changeX;
+      translateY.value = e.changeY;
+    })
+    .onEnd(() => {
+      'worklet';
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+    ],
+  }));
+
+  return (
+    &lt;GestureDetector gesture={panGesture}&gt;
+      &lt;Animated.View style={[styles.draggable, animatedStyle]} /&gt;
+    &lt;/GestureDetector&gt;
+  );
+}
+
+// Pinch gesture for scaling
+function PinchableBox() {
+  const scale = useSharedValue(1);
+
+  const pinchGesture = Gesture.Pinch()
+    .onUpdate((e) => {
+      'worklet';
+      scale.value = e.scale;
+    })
+    .onEnd(() => {
+      'worklet';
+      scale.value = withSpring(1);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    &lt;GestureDetector gesture={pinchGesture}&gt;
+      &lt;Animated.View style={[styles.box, animatedStyle]} /&gt;
+    &lt;/GestureDetector&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  box: { width: 120, height: 120, backgroundColor: '#8b5cf6', borderRadius: 12 },
+  draggable: { width: 100, height: 100, backgroundColor: '#ef4444', borderRadius: 12 },
+  buttons: { flexDirection: 'row', gap: 12, marginTop: 32 },
+  button: { padding: 10, backgroundColor: '#3b82f6', borderRadius: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+
+      <h2>Layout Animations</h2>
+      <p>Reanimated provides layout animations that automatically animate elements when they enter, exit, or move within a layout.</p>
+
+      <pre><code>import Animated, {
+  FadeIn,
+  FadeOut,
+  SlideInRight,
+  Layout,
+  ZoomIn,
+} from 'react-native-reanimated';
+
+function AnimatedList({ items }) {
+  return (
+    &lt;View&gt;
+      {items.map((item, index) =&gt; (
+        &lt;Animated.View
+          key={item.id}
+          layout={Layout.springify()}  // Animate layout changes
+          entering={SlideInRight.delay(index * 100).springify()}  // Entry animation
+          exiting={FadeOut.duration(300)}  // Exit animation
+          style={styles.listItem}
+        &gt;
+          &lt;Text style={styles.listText}&gt;{item.text}&lt;/Text&gt;
+        &lt;/Animated.View&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}
+
+// Available entering/exiting animations:
+// FadeIn, FadeInDown, FadeInUp, FadeInLeft, FadeInRight
+// FadeOut, FadeOutDown, FadeOutUp, FadeOutLeft, FadeOutRight
+// SlideInDown, SlideInUp, SlideInLeft, SlideInRight
+// SlideOutDown, SlideOutUp, SlideOutLeft, SlideOutRight
+// ZoomIn, ZoomInRotate, ZoomOut, ZoomOutRotate
+// BounceIn, BounceOut
+
+const styles = StyleSheet.create({
+  listItem: { padding: 16, backgroundColor: '#fff', borderRadius: 8, marginBottom: 8 },
+  listText: { fontSize: 16 },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What is the main advantage of useSharedValue over React state?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It stores more data</label>
+        <label><input type="radio" name="q1" value="b"> Updates don't trigger re-renders and run on the UI thread</label>
+        <label><input type="radio" name="q1" value="c"> It's easier to use</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. What does the 'worklet' directive do?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Makes the function run on the JS thread</label>
+        <label><input type="radio" name="q2" value="b"> Marks the function to run on the UI thread</label>
+        <label><input type="radio" name="q2" value="c"> Enables TypeScript support</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What are layout animations in Reanimated?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Animations for scrolling content</label>
+        <label><input type="radio" name="q3" value="b"> Animations that run when elements enter, exit, or move in a layout</label>
+        <label><input type="radio" name="q3" value="c"> Animations for loading states</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build an Animated Box That Moves on Press</h3>
+        <p>Create a draggable box with spring-back animation:</p>
+        <pre><code>// components/AnimatedBox.js
+import { StyleSheet, View } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+
+export default function AnimatedBox() {
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+
+  const panGesture = Gesture.Pan()
+    .onBegin(() => {
+      'worklet';
+      scale.value = withTiming(1.1, { duration: 200 });
+    })
+    .onUpdate((e) => {
+      'worklet';
+      translateX.value = e.changeX;
+      translateY.value = e.changeY;
+    })
+    .onEnd(() => {
+      'worklet';
+      translateX.value = withSpring(0, { damping: 15 });
+      translateY.value = withSpring(0, { damping: 15 });
+      scale.value = withSpring(1);
+    });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;GestureDetector gesture={panGesture}&gt;
+        &lt;Animated.View style={[styles.box, animatedStyle]}&gt;
+          &lt;Animated.Text style={styles.text}&gt;Drag me!&lt;/Animated.Text&gt;
+        &lt;/Animated.View&gt;
+      &lt;/GestureDetector&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  box: {
+    width: 150,
+    height: 150,
+    backgroundColor: '#3b82f6',
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  text: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useSharedValue</code> creates values that update on the UI thread without re-renders</li>
+        <li><code>useAnimatedStyle</code> binds shared values to component styles</li>
+        <li><code>withTiming</code> provides easing-based animations with custom durations</li>
+        <li><code>withSpring</code> creates physics-based animations with natural bounce</li>
+        <li>Gestures from react-native-gesture-handler run entirely on the UI thread</li>
+        <li>Layout animations (FadeIn, SlideInRight, etc.) animate element entry/exit automatically</li>
+        <li>Always add the 'worklet' directive to functions that run on the UI thread</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Reanimated</strong> — Official documentation for advanced animations. <a href="https://docs.swmansion.com/react-native-reanimated/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

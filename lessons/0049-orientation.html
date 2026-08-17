@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 49: Orientation</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 49: Orientation</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to detect portrait/landscape mode, use the Dimensions API, apply useWindowDimensions for orientation changes, and handle layout adaptations when the device rotates.
+      </div>
+
+      <h2>Portrait vs Landscape Detection</h2>
+      <p>When a user rotates their device, the screen dimensions change — width and height swap. React Native provides several ways to detect and respond to these orientation changes.</p>
+      <p>The simplest approach is comparing width and height: if <code>width &lt; height</code>, the device is in portrait mode; if <code>width &gt; height</code>, it's in landscape.</p>
+
+      <pre><code>import { useWindowDimensions, View, Text, StyleSheet } from 'react-native';
+
+function OrientationDetector() {
+  const { width, height } = useWindowDimensions();
+  const isPortrait = height > width;
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;
+        {isPortrait ? '📱 Portrait' : '📲 Landscape'}
+      &lt;/Text&gt;
+      &lt;Text style={styles.dimension}&gt;
+        Width: {width} | Height: {height}
+      &lt;/Text&gt;
+      &lt;Text style={styles.dimension}&gt;
+        Orientation: {isPortrait ? 'Portrait' : 'Landscape'}
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 16 },
+  dimension: { fontSize: 16, color: '#666', marginBottom: 8 },
+});</code></pre>
+
+      <h2>The Dimensions API</h2>
+      <p>The <code>Dimensions</code> API provides the screen's width and height. However, it's static — it doesn't update when the device rotates. Use it for initial measurements or one-time calculations.</p>
+
+      <pre><code>import { Dimensions, Platform } from 'react-native';
+
+// Get initial dimensions
+const { width, height } = Dimensions.get('window');
+const screenWidth = Dimensions.get('screen').width;
+const screenHeight = Dimensions.get('screen').height;
+
+console.log('Window:', width, height);
+console.log('Screen:', screenWidth, screenHeight);
+console.log('Platform:', Platform.OS);
+
+// Listen for dimension changes (deprecated but still works)
+const dimensionsHandler = ({ window }) => {
+  console.log('New dimensions:', window.width, window.height);
+};
+
+Dimensions.addEventListener('change', dimensionsHandler);
+
+// Better approach: use useWindowDimensions hook instead
+function BetterDimensionHandler() {
+  const { width, height } = useWindowDimensions(); // Automatically updates
+  return null;
+}</code></pre>
+
+      <h2>Using useWindowDimensions for Orientation</h2>
+      <p>The <code>useWindowDimensions</code> hook is the recommended way to handle orientation changes. It automatically re-renders when the device rotates.</p>
+
+      <pre><code>import { useState, useEffect } from 'react';
+import { useWindowDimensions, View, Text, StyleSheet } from 'react-native';
+
+function useOrientation() {
+  const { width, height } = useWindowDimensions();
+  const [orientation, setOrientation] = useState(
+    width > height ? 'landscape' : 'portrait'
+  );
+
+  useEffect(() => {
+    setOrientation(width > height ? 'landscape' : 'portrait');
+  }, [width, height]);
+
+  return {
+    orientation,
+    isPortrait: orientation === 'portrait',
+    isLandscape: orientation === 'landscape',
+    width,
+    height,
+  };
+}
+
+// Usage
+function ResponsiveComponent() {
+  const { isPortrait, isLandscape, width, height } = useOrientation();
+
+  return (
+    &lt;View style={[styles.container, isLandscape &amp;&amp; styles.landscape]}&gt;
+      &lt;View style={[styles.box, isPortrait ? styles.boxVertical : styles.boxHorizontal]}&gt;
+        &lt;Text style={styles.text}&gt;
+          {isPortrait ? 'Vertical Layout' : 'Horizontal Layout'}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+      &lt;View style={[styles.sidebar, isPortrait &amp;&amp; styles.sidebarHidden]}&gt;
+        &lt;Text style={styles.text}&gt;Sidebar&lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, flexDirection: 'column' },
+  landscape: { flexDirection: 'row' },
+  box: { padding: 20, backgroundColor: '#3b82f6' },
+  boxVertical: { width: '100%' },
+  boxHorizontal: { flex: 1 },
+  sidebar: { width: 200, backgroundColor: '#1f2937', padding: 16 },
+  sidebarHidden: { display: 'none' },
+  text: { color: '#fff', fontSize: 16 },
+});</code></pre>
+
+      <h2>Handling Orientation Changes</h2>
+      <p>When the device rotates, you may need to adjust not just layout but also navigation behavior, keyboard handling, and scroll positions.</p>
+
+      <pre><code>import { useEffect, useState } from 'react';
+import { useWindowDimensions, Keyboard, Platform, StyleSheet } from 'react-native';
+
+function useKeyboardAwareOrientation() {
+  const { width, height } = useWindowDimensions();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const isLandscape = width > height;
+
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      const showSub = Keyboard.addListener('keyboardWillShow', (e) => {
+        setKeyboardHeight(e.endCoordinates.height);
+      });
+      const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+        setKeyboardHeight(0);
+      });
+      return () => {
+        showSub.remove();
+        hideSub.remove();
+      };
+    }
+  }, []);
+
+  return {
+    isLandscape,
+    isPortrait: !isLandscape,
+    width,
+    height,
+    keyboardHeight,
+    availableHeight: height - keyboardHeight,
+  };
+}
+
+// Usage
+function ChatScreen() {
+  const { isLandscape, availableHeight } = useKeyboardAwareOrientation();
+
+  return (
+    &lt;View style={[styles.container, { height: availableHeight }]}&gt;
+      {/* In landscape, show messages and input side by side */}
+      &lt;View style={[styles.messageArea, isLandscape &amp;&amp; styles.messageAreaWide]}&gt;
+        {/* Messages list */}
+      &lt;/View&gt;
+      &lt;View style={[styles.inputArea, isLandscape &amp;&amp; styles.inputAreaSide]}&gt;
+        {/* Input field */}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Locking Orientation</h2>
+      <p>Sometimes you want to lock the app to a specific orientation. This is configured in the app's native configuration, not in JavaScript.</p>
+
+      <pre><code>// For Expo: app.json
+{
+  "expo": {
+    "orientation": "portrait", // or "landscape" or "default"
+    "ios": {
+      "supportsTablet": true
+    }
+  }
+}
+
+// For React Native CLI (iOS): Info.plist
+// Add UILaunchStoryboardName and set supported orientations
+
+// Android: AndroidManifest.xml
+// Add android:screenOrientation="portrait" to your activity
+
+// Programmatic lock with expo-screen-orientation (Expo)
+import * as ScreenOrientation from 'expo-screen-orientation';
+
+async function lockToPortrait() {
+  await ScreenOrientation.lockAsync(
+    ScreenOrientation.OrientationLock.PORTRAIT_UP
+  );
+}
+
+async function lockToLandscape() {
+  await ScreenOrientation.lockAsync(
+    ScreenOrientation.OrientationLock.LANDSCAPE_LEFT
+  );
+}
+
+async function unlockOrientation() {
+  await ScreenOrientation.unlockAsync();
+}</code></pre>
+
+      <h2>Building an Orientation-Adaptive Component</h2>
+      <p>Combine everything into a component that provides different experiences for portrait and landscape:</p>
+
+      <pre><code>import { View, Text, Image, StyleSheet } from 'react-native';
+import { useOrientation } from '../hooks/useOrientation';
+
+function MediaCard({ title, description, imageUrl }) {
+  const { isPortrait, isLandscape, width, height } = useOrientation();
+
+  // Calculate image dimensions based on orientation
+  const imageSize = isPortrait
+    ? { width: width - 32, height: 200 }
+    : { width: width * 0.4, height: height * 0.6 };
+
+  return (
+    &lt;View style={[styles.card, isLandscape &amp;&amp; styles.cardLandscape]}&gt;
+      &lt;Image source={{ uri: imageUrl }} style={[styles.image, imageSize]} /&gt;
+      &lt;View style={[styles.content, isLandscape &amp;&amp; styles.contentLandscape]}&gt;
+        &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+        &lt;Text style={styles.description}&gt;{description}&lt;/Text&gt;
+        {isLandscape &amp;&amp; (
+          &lt;View style={styles.additionalInfo}&gt;
+            &lt;Text style={styles.meta}&gt;Additional info in landscape&lt;/Text&gt;
+          &lt;/View&gt;
+        )}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { margin: 16 },
+  cardLandscape: { flexDirection: 'row', gap: 16 },
+  image: { borderRadius: 12 },
+  content: { marginTop: 12 },
+  contentLandscape: { flex: 1, justifyContent: 'center' },
+  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  description: { fontSize: 14, color: '#666' },
+  additionalInfo: { marginTop: 12, padding: 12, backgroundColor: '#f3f4f6', borderRadius: 8 },
+  meta: { fontSize: 12, color: '#999' },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. How do you detect if the device is in portrait mode?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Use Platform.OS === 'portrait'</label>
+        <label><input type="radio" name="q1" value="b"> Check if height is greater than width using useWindowDimensions</label>
+        <label><input type="radio" name="q1" value="c"> Use the Orientation.isPortrait() method</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. Why is useWindowDimensions preferred over the Dimensions API?</strong></p>
+        <label><input type="radio" name="q2" value="a"> It's faster</label>
+        <label><input type="radio" name="q2" value="b"> It automatically updates when the device rotates</label>
+        <label><input type="radio" name="q2" value="c"> It provides more decimal precision</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. How can you lock orientation in an Expo app?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Set the orientation field in app.json</label>
+        <label><input type="radio" name="q3" value="b"> Use the Dimensions.lock() method</label>
+        <label><input type="radio" name="q3" value="c"> Orientation locking is not possible in Expo</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Component That Adapts to Orientation</h3>
+        <p>Create a component that changes its layout based on device orientation:</p>
+        <pre><code>// hooks/useOrientation.js
+import { useWindowDimensions } from 'react-native';
+
+export default function useOrientation() {
+  const { width, height } = useWindowDimensions();
+  const isPortrait = height > width;
+
+  return {
+    isPortrait,
+    isLandscape: !isPortrait,
+    width,
+    height,
+  };
+}
+
+// components/OrientationCard.js
+import { View, Text, Image, StyleSheet } from 'react-native';
+import useOrientation from '../hooks/useOrientation';
+
+export default function OrientationCard({ title, image }) {
+  const { isPortrait } = useOrientation();
+
+  return (
+    &lt;View style={[styles.card, isPortrait ? styles.vertical : styles.horizontal]}&gt;
+      &lt;Image source={{ uri: image }} style={isPortrait ? styles.imageV : styles.imageH} /&gt;
+      &lt;View style={styles.content}&gt;
+        &lt;Text style={styles.title}&gt;{title}&lt;/Text&gt;
+        &lt;Text style={styles.desc}&gt;
+          {isPortrait
+            ? 'This card adapts to portrait mode with a vertical layout.'
+            : 'This card adapts to landscape mode with a horizontal layout.'}
+        &lt;/Text&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { margin: 16, backgroundColor: '#fff', borderRadius: 12, overflow: 'hidden' },
+  vertical: { alignItems: 'stretch' },
+  horizontal: { flexDirection: 'row' },
+  imageV: { width: '100%', height: 180 },
+  imageH: { width: 140, height: 140 },
+  content: { padding: 16 },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 8 },
+  desc: { fontSize: 14, color: '#666' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Detect orientation by comparing width and height from useWindowDimensions</li>
+        <li>The Dimensions API is static and doesn't update on rotation — use useWindowDimensions instead</li>
+        <li>useWindowDimensions automatically re-renders components when the device rotates</li>
+        <li>Create a custom useOrientation hook for cleaner code throughout your app</li>
+        <li>Adjust layouts for portrait vs landscape (e.g., show sidebar only in landscape)</li>
+        <li>Lock orientation using native configuration or expo-screen-orientation library</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Orientation Handling</strong> — Complete guide to handling device orientation. <a href="https://docs.expo.dev/versions/latest/sdk/screen-orientation/" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

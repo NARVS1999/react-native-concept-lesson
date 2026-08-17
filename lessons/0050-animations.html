@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 50: Animations</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 50: Animations</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand the Animated API basics, Animated.Value, timing/spring/decay animations, Animated.View, and composition methods like parallel, sequence, and stagger.
+      </div>
+
+      <h2>Why Animations Matter</h2>
+      <p>Animations make your app feel responsive and polished. They provide visual feedback, guide user attention, and create delightful interactions. React Native's Animated API allows you to create smooth 60fps animations that run on the native thread.</p>
+
+      <h2>Animated API Basics</h2>
+      <p>The Animated API works by declaring animated values and binding them to component styles. When the values change, React Native efficiently updates only the specific styles that changed, without re-rendering the component tree.</p>
+
+      <pre><code>import React, { useRef } from 'react';
+import { Animated, View, Text, Pressable, StyleSheet } from 'react-native';
+
+function BasicAnimation() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View style={[styles.box, { opacity: fadeAnim }]}&gt;
+        &lt;Text style={styles.boxText}&gt;Fade In&lt;/Text&gt;
+      &lt;/Animated.View&gt;
+      &lt;Pressable onPress={fadeIn} style={styles.button}&gt;
+        &lt;Text style={styles.buttonText}&gt;Start Animation&lt;/Text&gt;
+      &lt;/Pressable&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  box: { width: 150, height: 150, backgroundColor: '#3b82f6', borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  boxText: { color: '#fff', fontWeight: 'bold' },
+  button: { marginTop: 20, padding: 12, backgroundColor: '#10b981', borderRadius: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+
+      <h2>Animated.Value</h2>
+      <p><code>Animated.Value</code> is a wrapper around a number that can track its changes over time. You create it with <code>useRef</code> to persist it across re-renders.</p>
+
+      <pre><code>import React, { useRef } from 'react';
+import { Animated, View, StyleSheet } from 'react-native';
+
+function AnimatedValueDemo() {
+  // Create animated values
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const rotateValue = useRef(new Animated.Value(0)).current;
+  const translateValue = useRef(new Animated.Value(0)).current;
+
+  // Interpolate values for complex animations
+  const rotate = rotateValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  const backgroundColor = translateValue.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['#3b82f6', '#ef4444'],
+  });
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View
+        style={[
+          styles.box,
+          {
+            transform: [
+              { scale: scaleValue },
+              { translateX: translateValue },
+              { rotate },
+            ],
+            backgroundColor,
+          },
+        ]}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Timing Animations</h2>
+      <p><code>Animated.timing</code> animates a value from its current state to a target value over a specified duration with an easing function.</p>
+
+      <pre><code>import React, { useRef } from 'react';
+import { Animated, View, Pressable, Text, StyleSheet } from 'react-native';
+
+function TimingAnimation() {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(50)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
+
+  const animateIn = () => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(translateY, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scale, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateOut = () => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: -50, duration: 400, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.5, duration: 400, useNativeDriver: true }),
+    ]).start();
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View
+        style={[
+          styles.card,
+          { opacity, transform: [{ translateY }, { scale }] },
+        ]}
+      &gt;
+        &lt;Text style={styles.cardTitle}&gt;Animated Card&lt;/Text&gt;
+        &lt;Text style={styles.cardText}&gt;This card animates in and out&lt;/Text&gt;
+      &lt;/Animated.View&gt;
+      &lt;View style={styles.buttons}&gt;
+        &lt;Pressable onPress={animateIn} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Show&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={animateOut} style={[styles.button, styles.buttonSecondary]}&gt;
+          &lt;Text style={[styles.buttonText, styles.buttonSecondaryText]}&gt;Hide&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  card: { width: 280, padding: 24, backgroundColor: '#fff', borderRadius: 16, elevation: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8 },
+  cardTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 8 },
+  cardText: { fontSize: 14, color: '#666' },
+  buttons: { flexDirection: 'row', gap: 12, marginTop: 24 },
+  button: { paddingVertical: 10, paddingHorizontal: 20, backgroundColor: '#3b82f6', borderRadius: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+  buttonSecondary: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#3b82f6' },
+  buttonSecondaryText: { color: '#3b82f6' },
+});</code></pre>
+
+      <h2>Spring Animations</h2>
+      <p><code>Animated.spring</code> creates a spring-based animation that simulates real physics. The animation overshoots slightly before settling, giving a natural feel.</p>
+
+      <pre><code>import React, { useRef } from 'react';
+import { Animated, View, Pressable, Text, StyleSheet } from 'react-native';
+
+function SpringAnimation() {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const bounce = () => {
+    // Reset and animate with spring
+    scale.setValue(0.8);
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 3,       // Lower = more bounce
+      tension: 40,       // Higher = faster
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const wobble = () => {
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.2, friction: 2, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 2, useNativeDriver: true }),
+    ]).start();
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View style={[styles.ball, { transform: [{ scale }] }]} /&gt;
+      &lt;View style={styles.buttons}&gt;
+        &lt;Pressable onPress={bounce} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Bounce&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={wobble} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Wobble&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  ball: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#8b5cf6' },
+  buttons: { flexDirection: 'row', gap: 16, marginTop: 32 },
+  button: { padding: 12, backgroundColor: '#3b82f6', borderRadius: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+});</code></pre>
+
+      <h2>Decay Animations</h2>
+      <p><code>Animated.decay</code> slows down a value from an initial velocity to rest. It's useful for scroll-based animations or gesture-driven interactions.</p>
+
+      <pre><code>import React, { useRef } from 'react';
+import { Animated, View, PanResponder, StyleSheet } from 'react-native';
+
+function DecayAnimation() {
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  const panResponder = PanResponder.create({
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: () => {
+      translateX.setOffset(translateX._value);
+      translateY.setOffset(translateY._value);
+    },
+    onPanResponderMove: Animated.event(
+      [null, { dx: translateX, dy: translateY }],
+      { useNativeDriver: false }
+    ),
+    onPanResponderRelease: (e, { vx, vy }) => {
+      translateX.flattenOffset();
+      translateY.flattenOffset();
+
+      // Animate to rest with decay based on velocity
+      Animated.decay(translateX, {
+        velocity: vx,
+        deceleration: 0.997,
+        useNativeDriver: false,
+      }).start();
+
+      Animated.decay(translateY, {
+        velocity: vy,
+        deceleration: 0.997,
+        useNativeDriver: false,
+      }).start();
+    },
+  });
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Animated.View
+        style={[styles.circle, { transform: [{ translateX }, { translateY }] }]}
+        {...panResponder.panHandlers}
+      /&gt;
+      &lt;Text style={styles.hint}&gt;Drag and release the circle&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  circle: { width: 80, height: 80, borderRadius: 40, backgroundColor: '#ef4444' },
+  hint: { marginTop: 24, color: '#666' },
+});</code></pre>
+
+      <h2>Animated.View</h2>
+      <p><code>Animated.View</code> is a drop-in replacement for <code>View</code> that supports animated styles. Use it whenever you need to animate layout properties like opacity, transform, or backgroundColor.</p>
+
+      <pre><code>import React, { useRef, useEffect } from 'react';
+import { Animated, View, Text, StyleSheet } from 'react-native';
+
+function AnimatedViewExample() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, { toValue: 1, duration: 800, useNativeDriver: true }),
+      Animated.timing(slideAnim, { toValue: 0, duration: 800, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    &lt;Animated.View
+      style={[
+        styles.slideIn,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    &gt;
+      &lt;Text style={styles.text}&gt;This content slides and fades in!&lt;/Text&gt;
+    &lt;/Animated.View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  slideIn: { padding: 24, backgroundColor: '#3b82f6', borderRadius: 12, margin: 16 },
+  text: { color: '#fff', fontSize: 18, fontWeight: '600', textAlign: 'center' },
+});</code></pre>
+
+      <h2>Parallel, Sequence, and Stagger</h2>
+      <p>Compose multiple animations using parallel (simultaneous), sequence (one after another), and stagger (delayed starts).</p>
+
+      <pre><code>import React, { useRef, useEffect } from 'react';
+import { Animated, View, StyleSheet } from 'react-native';
+
+// Parallel: Run animations simultaneously
+function ParallelExample() {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    &lt;Animated.View style={[styles.box, { opacity, transform: [{ scale }] }]} /&gt;
+  );
+}
+
+// Sequence: Run animations one after another
+function SequenceExample() {
+  const color1 = useRef(new Animated.Value(0)).current;
+  const color2 = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.timing(color1, { toValue: 1, duration: 500, useNativeDriver: false }),
+      Animated.timing(color2, { toValue: 1, duration: 500, useNativeDriver: false }),
+    ]).start();
+  }, []);
+
+  const bg = color1.interpolate({ inputRange: [0, 1], outputRange: ['#3b82f6', '#10b981'] });
+
+  return &lt;Animated.View style={[styles.box, { backgroundColor: bg }]} /&gt;;
+}
+
+// Stagger: Delay each animation by a time interval
+function StaggerExample() {
+  const items = [useRef(new Animated.Value(0)).current,
+                 useRef(new Animated.Value(0)).current,
+                 useRef(new Animated.Value(0)).current,
+                 useRef(new Animated.Value(0)).current];
+
+  useEffect(() => {
+    Animated.stagger(150,
+      items.map(item =>
+        Animated.timing(item, { toValue: 1, duration: 400, useNativeDriver: true })
+      )
+    ).start();
+  }, []);
+
+  return (
+    &lt;View&gt;
+      {items.map((item, i) =&gt; (
+        &lt;Animated.View key={i} style={[styles.listItem, { opacity: item, transform: [{ translateY: item.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}&gt;
+          &lt;Text style={styles.listText}&gt;Item {i + 1}&lt;/Text&gt;
+        &lt;/Animated.View&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What does useNativeDriver: true do?</strong></p>
+        <label><input type="radio" name="q1" value="a"> Makes animations run on the JavaScript thread</label>
+        <label><input type="radio" name="q1" value="b"> Offloads animation calculations to the native UI thread for 60fps performance</label>
+        <label><input type="radio" name="q1" value="c"> Enables gesture-based animations</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. Which animation type simulates real physics with overshoot?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Animated.timing</label>
+        <label><input type="radio" name="q2" value="b"> Animated.spring</label>
+        <label><input type="radio" name="q2" value="c"> Animated.decay</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What does Animated.stagger do?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Runs all animations at the same time</label>
+        <label><input type="radio" name="q3" value="b"> Runs animations one after another in order</label>
+        <label><input type="radio" name="q3" value="c"> Runs animations with a delay between each one's start</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Fade-In Animation</h3>
+        <p>Create a component that fades in with a slide-up effect:</p>
+        <pre><code>// components/FadeInView.js
+import { useEffect, useRef } from 'react';
+import { Animated, StyleSheet } from 'react-native';
+
+export default function FadeInView({ children, duration = 600, delay = 0 }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(opacity, {
+        toValue: 1,
+        duration,
+        delay,
+        useNativeDriver: true,
+      }),
+      Animated.spring(translateY, {
+        toValue: 0,
+        delay,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  return (
+    &lt;Animated.View
+      style={[styles.container, { opacity, transform: [{ translateY }] }]}
+    &gt;
+      {children}
+    &lt;/Animated.View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { overflow: 'hidden' },
+});
+
+// Usage
+import { View, Text, StyleSheet } from 'react-native';
+import FadeInView from './FadeInView';
+
+export default function AnimatedList() {
+  const items = ['First Item', 'Second Item', 'Third Item'];
+
+  return (
+    &lt;View style={{ padding: 16 }}&gt;
+      {items.map((item, index) =&gt; (
+        &lt;FadeInView key={index} delay={index * 150}&gt;
+          &lt;View style={styles.card}&gt;
+            &lt;Text style={styles.cardText}&gt;{item}&lt;/Text&gt;
+          &lt;/View&gt;
+        &lt;/FadeInView&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  card: { padding: 20, backgroundColor: '#3b82f6', borderRadius: 12, marginBottom: 12 },
+  cardText: { color: '#fff', fontSize: 16, fontWeight: '600' },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>Animated.Value</code> wraps a number that can be animated over time</li>
+        <li><code>Animated.timing</code> animates from current to target value with easing</li>
+        <li><code>Animated.spring</code> creates physics-based animations with overshoot</li>
+        <li><code>Animated.decay</code> slows a value from an initial velocity to rest</li>
+        <li><code>Animated.View</code> is a drop-in replacement for View with animated style support</li>
+        <li>Use <code>parallel</code>, <code>sequence</code>, and <code>stagger</code> to compose multiple animations</li>
+        <li>Always set <code>useNativeDriver: true</code> for smooth 60fps animations when possible</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Animated API</strong> — Official documentation for the Animated API. <a href="https://reactnative.dev/docs/animated" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

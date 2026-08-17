@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 46: Dark Mode</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 46: Dark Mode</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to detect the user's system color scheme preference, implement dark/light theme switching, and persist the user's theme choice using AsyncStorage.
+      </div>
+
+      <h2>Understanding useColorScheme</h2>
+      <p>React Native provides a built-in <code>useColorScheme</code> hook that returns the current color scheme of the user's device. It returns either <code>'light'</code>, <code>'dark'</code>, or <code>null</code> (if the preference cannot be determined).</p>
+      <p>This hook automatically listens for system-level changes — when the user toggles dark mode in their device settings, your app receives the updated value without any additional configuration.</p>
+
+      <pre><code>import { useColorScheme } from 'react-native';
+
+function MyComponent() {
+  const colorScheme = useColorScheme(); // 'light' | 'dark' | null
+
+  return (
+    &lt;View style={{
+      backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}&gt;
+      &lt;Text style={{
+        color: colorScheme === 'dark' ? '#fff' : '#000',
+        fontSize: 18,
+      }}&gt;
+        Current scheme: {colorScheme}
+      &lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>System Preference Detection</h2>
+      <p>When your app first loads, it inherits the device's current color scheme. On iOS, this is controlled by Settings → Display & Brightness → Appearance. On Android, it's Settings → Display → Dark theme.</p>
+      <p>The <code>useColorScheme</code> hook reacts to these changes in real-time. If the user switches their device from light to dark mode while your app is open, the hook will re-render your components with the new value.</p>
+
+      <pre><code>import { useEffect, useState } from 'react';
+import { useColorScheme, Appearance } from 'react-native';
+
+function SystemThemeDetector() {
+  const colorScheme = useColorScheme();
+  const [events, setEvents] = useState([]);
+
+  useEffect(() => {
+    // Listen for appearance changes
+    const subscription = Appearance.addChangeListener(({ colorScheme }) => {
+      setEvents(prev => [
+        `Switched to ${colorScheme} at ${new Date().toLocaleTimeString()}`,
+        ...prev.slice(0, 4), // Keep last 5 events
+      ]);
+    });
+
+    return () => subscription?.remove();
+  }, []);
+
+  return (
+    &lt;View style={{ padding: 20 }}&gt;
+      &lt;Text style={{ fontSize: 20, fontWeight: 'bold' }}&gt;
+        System: {colorScheme}
+      &lt;/Text&gt;
+      {events.map((event, i) =&gt; (
+        &lt;Text key={i} style={{ marginTop: 8 }}&gt;{event}&lt;/Text&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Dark/Light Theme Switching</h2>
+      <p>A proper dark mode implementation gives users three options: follow the system, always light, or always dark. This requires managing the theme mode separately from the system preference.</p>
+
+      <pre><code>import React, { createContext, useState, useEffect, useContext } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const ThemeContext = createContext();
+
+const themes = {
+  light: {
+    dark: false,
+    background: '#ffffff',
+    surface: '#f5f5f5',
+    text: '#1a1a1a',
+    textSecondary: '#666666',
+    primary: '#3b82f6',
+    border: '#e0e0e0',
+  },
+  dark: {
+    dark: true,
+    background: '#121212',
+    surface: '#1e1e1e',
+    text: '#ffffff',
+    textSecondary: '#aaaaaa',
+    primary: '#60a5fa',
+    border: '#333333',
+  },
+};
+
+export function ThemeProvider({ children }) {
+  const systemScheme = useColorScheme();
+  const [mode, setMode] = useState('system');
+
+  useEffect(() => {
+    AsyncStorage.getItem('themeMode').then(stored => {
+      if (stored) setMode(stored);
+    });
+  }, []);
+
+  useEffect(() => {
+    AsyncStorage.setItem('themeMode', mode);
+  }, [mode]);
+
+  const isDark = mode === 'system'
+    ? systemScheme === 'dark'
+    : mode === 'dark';
+
+  const theme = {
+    ...themes[isDark ? 'dark' : 'light'],
+    mode,
+    isDark,
+    setMode,
+    toggleTheme: () => setMode(isDark ? 'light' : 'dark'),
+  };
+
+  return (
+    &lt;ThemeContext.Provider value={theme}&gt;
+      {children}
+    &lt;/ThemeContext.Provider&gt;
+  );
+}
+
+export const useTheme = () => useContext(ThemeContext);</code></pre>
+
+      <h2>Building a Dark Mode Toggle</h2>
+      <p>Here is a complete dark mode toggle component that lets users switch between system, light, and dark modes with persistence:</p>
+
+      <pre><code>import React from 'react';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useTheme } from '../context/ThemeContext';
+
+const modes = ['system', 'light', 'dark'];
+
+export default function DarkModeToggle() {
+  const { mode, setMode, colors } = useTheme();
+
+  return (
+    &lt;View style={[styles.container, { backgroundColor: colors.background }]}&gt;
+      &lt;Text style={[styles.label, { color: colors.text }]}&gt;
+        Theme Mode
+      &lt;/Text&gt;
+      &lt;View style={styles.options}&gt;
+        {modes.map(m =&gt; (
+          &lt;Pressable
+            key={m}
+            onPress={() =&gt; setMode(m)}
+            style={[
+              styles.option,
+              {
+                backgroundColor: mode === m ? colors.primary : colors.surface,
+                borderColor: mode === m ? colors.primary : colors.border,
+              },
+            ]}
+          &gt;
+            &lt;Text style={[
+              styles.optionText,
+              { color: mode === m ? '#fff' : colors.text },
+            ]}&gt;
+              {m.charAt(0).toUpperCase() + m.slice(1)}
+            &lt;/Text&gt;
+          &lt;/Pressable&gt;
+        ))}
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 16, borderRadius: 12, margin: 16 },
+  label: { fontSize: 16, fontWeight: '600', marginBottom: 12 },
+  options: { flexDirection: 'row', gap: 8 },
+  option: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  optionText: { fontWeight: '500', fontSize: 14 },
+});</code></pre>
+
+      <h2>Persisting Theme Preference with AsyncStorage</h2>
+      <p>Persistence ensures the user's theme choice survives app restarts. AsyncStorage provides a simple key-value store for React Native.</p>
+
+      <pre><code>// Complete dark mode hook with persistence
+import { useState, useEffect, useCallback } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const THEME_KEY = '@app_theme_mode';
+
+export function useDarkMode() {
+  const systemScheme = useColorScheme();
+  const [mode, setModeState] = useState('system');
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  // Load persisted mode on mount
+  useEffect(() => {
+    AsyncStorage.getItem(THEME_KEY).then(stored => {
+      if (stored &amp;&amp; ['system', 'light', 'dark'].includes(stored)) {
+        setModeState(stored);
+      }
+      setIsLoaded(true);
+    });
+  }, []);
+
+  // Persist mode changes
+  const setMode = useCallback(async (newMode) => {
+    setModeState(newMode);
+    await AsyncStorage.setItem(THEME_KEY, newMode);
+  }, []);
+
+  // Compute resolved theme
+  const isDark = mode === 'system'
+    ? systemScheme === 'dark'
+    : mode === 'dark';
+
+  const toggleTheme = useCallback(() => {
+    setMode(isDark ? 'light' : 'dark');
+  }, [isDark, setMode]);
+
+  return {
+    mode,
+    setMode,
+    isDark,
+    isLoaded,
+    toggleTheme,
+    systemScheme,
+  };
+}
+
+// Usage in a component
+function ThemeSettings() {
+  const { mode, setMode, isDark, systemScheme, isLoaded } = useDarkMode();
+
+  if (!isLoaded) return &lt;ActivityIndicator /&gt;;
+
+  return (
+    &lt;View style={{ padding: 16 }}&gt;
+      &lt;Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 16 }}&gt;
+        Appearance
+      &lt;/Text&gt;
+      &lt;RadioButton
+        label="System Default"
+        sublabel={`Currently: ${systemScheme}`}
+        selected={mode === 'system'}
+        onPress={() =&gt; setMode('system')}
+      /&gt;
+      &lt;RadioButton
+        label="Light"
+        selected={mode === 'light'}
+        onPress={() =&gt; setMode('light')}
+      /&gt;
+      &lt;RadioButton
+        label="Dark"
+        selected={mode === 'dark'}
+        onPress={() =&gt; setMode('dark')}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What does the useColorScheme hook return?</strong></p>
+        <label><input type="radio" name="q1" value="a"> A boolean indicating if dark mode is enabled</label>
+        <label><input type="radio" name="q1" value="b"> The string 'light', 'dark', or null representing the current color scheme</label>
+        <label><input type="radio" name="q1" value="c"> An object with dark and light color palettes</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. How does useColorScheme respond to system changes?</strong></p>
+        <label><input type="radio" name="q2" value="a"> It only detects the scheme on app launch</label>
+        <label><input type="radio" name="q2" value="b"> It automatically re-renders components when the device's color scheme changes</label>
+        <label><input type="radio" name="q2" value="c"> You must manually poll for changes</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. Which storage solution persists theme preference in React Native?</strong></p>
+        <label><input type="radio" name="q3" value="a"> localStorage</label>
+        <label><input type="radio" name="q3" value="b"> AsyncStorage</label>
+        <label><input type="radio" name="q3" value="c"> Cookie storage</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Build a Dark Mode Toggle That Persists</h3>
+        <p>Create a complete dark mode system with persistence:</p>
+        <pre><code>// hooks/useDarkMode.js
+import { useState, useEffect, useCallback } from 'react';
+import { useColorScheme } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const STORAGE_KEY = '@theme_mode';
+
+export default function useDarkMode() {
+  const systemScheme = useColorScheme();
+  const [mode, setModeState] = useState('system');
+
+  useEffect(() => {
+    AsyncStorage.getItem(STORAGE_KEY).then(stored => {
+      if (stored) setModeState(stored);
+    });
+  }, []);
+
+  const setMode = useCallback(async (newMode) => {
+    setModeState(newMode);
+    await AsyncStorage.setItem(STORAGE_KEY, newMode);
+  }, []);
+
+  const isDark = mode === 'system' ? systemScheme === 'dark' : mode === 'dark';
+
+  return { mode, setMode, isDark, systemScheme };
+}
+
+// screens/SettingsScreen.js
+import { View, Text, Pressable, StyleSheet } from 'react-native';
+import useDarkMode from '../hooks/useDarkMode';
+
+export default function SettingsScreen() {
+  const { mode, setMode, isDark } = useDarkMode();
+
+  const options = [
+    { key: 'system', label: 'System' },
+    { key: 'light', label: 'Light' },
+    { key: 'dark', label: 'Dark' },
+  ];
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.title}&gt;Theme&lt;/Text&gt;
+      {options.map(opt =&gt; (
+        &lt;Pressable
+          key={opt.key}
+          onPress={() =&gt; setMode(opt.key)}
+          style={[styles.option, mode === opt.key &amp;&amp; styles.selected]}
+        &gt;
+          &lt;Text style={styles.optionText}&gt;{opt.label}&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useColorScheme</code> returns 'light', 'dark', or null based on the device setting</li>
+        <li>The hook automatically listens for system appearance changes</li>
+        <li>Provide three options: system, light, and dark for maximum user control</li>
+        <li>Persist the user's choice with AsyncStorage so it survives app restarts</li>
+        <li>Use the Appearance API's addChangeListener for advanced event handling</li>
+        <li>Always respect the user's system preference as the default behavior</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native Appearance API</strong> — Official documentation for color scheme detection. <a href="https://reactnative.dev/docs/appearance" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

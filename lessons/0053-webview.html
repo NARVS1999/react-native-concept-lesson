@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 53: WebView</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 53: WebView</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        By the end of this lesson, you will understand how to use react-native-webview to embed web content, configure the WebView component, handle messages between native and web, and inject JavaScript into web pages.
+      </div>
+
+      <h2>What is WebView?</h2>
+      <p>A WebView allows you to display web content (HTML, CSS, JavaScript) directly within your React Native app. Use cases include displaying web pages, running HTML5 games, embedding third-party content, or migrating web content to a mobile app without rewriting it.</p>
+
+      <h2>Installation</h2>
+      <pre><code>// Install the library
+// npm install react-native-webview
+
+// For Expo projects:
+// expo install react-native-webview
+
+// For bare React Native projects:
+// cd ios && pod install</code></pre>
+
+      <h2>Basic WebView Usage</h2>
+      <p>The <code>WebView</code> component renders web content using the platform's native web rendering engine (WKWebView on iOS, WebView on Android).</p>
+
+      <pre><code>import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+function BasicWebView() {
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;WebView
+        source={{ uri: 'https://reactnative.dev' }}
+        style={styles.webview}
+        startInLoadingState={true}
+        renderLoading={() =&gt; (
+          &lt;ActivityIndicator size="large" style={styles.loading} /&gt;
+        )}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  webview: { flex: 1 },
+  loading: { position: 'absolute', top: '50%', left: '50%' },
+});</code></pre>
+
+      <h2>The Source Prop</h2>
+      <p>The <code>source</code> prop accepts either a URI (for remote URLs) or HTML content (for inline web content).</p>
+
+      <pre><code>import { WebView } from 'react-native-webview';
+import { View, StyleSheet } from 'react-native';
+
+function SourceExamples() {
+  // Load a remote URL
+  const remoteSource = { uri: 'https://example.com' };
+
+  // Load inline HTML
+  const htmlSource = {
+    html: `
+      &lt;!DOCTYPE html&gt;
+      &lt;html&gt;
+      &lt;head&gt;
+        &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+        &lt;style&gt;
+          body { font-family: -apple-system, sans-serif; padding: 20px; background: #f5f5f5; }
+          h1 { color: #3b82f6; }
+          .card { background: #fff; padding: 16px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        &lt;/style&gt;
+      &lt;/head&gt;
+      &lt;body&gt;
+        &lt;h1&gt;Hello from WebView!&lt;/h1&gt;
+        &lt;div class="card"&gt;
+          &lt;p&gt;This is inline HTML rendered in a WebView.&lt;/p&gt;
+        &lt;/div&gt;
+      &lt;/body&gt;
+      &lt;/html&gt;
+    `,
+  };
+
+  // HTML with a base URL for resolving relative paths
+  const htmlWithBaseUrl = {
+    html: '&lt;img src="logo.png" /&gt;',
+    baseUrl: 'https://example.com/assets/',
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;WebView source={htmlSource} style={styles.webview} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  webview: { flex: 1 },
+});</code></pre>
+
+      <h2>javaScriptEnabled</h2>
+      <p>By default, JavaScript is enabled in WebView. You can disable it for security when displaying untrusted content.</p>
+
+      <pre><code>import { WebView } from 'react-native-webview';
+import { View, Switch, Text, StyleSheet, useState } from 'react-native';
+
+function SecureWebView() {
+  const [jsEnabled, setJsEnabled] = useState(true);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.controls}&gt;
+        &lt;Text style={styles.label}&gt;JavaScript: {jsEnabled ? 'ON' : 'OFF'}&lt;/Text&gt;
+        &lt;Switch value={jsEnabled} onValueChange={setJsEnabled} /&gt;
+      &lt;/View&gt;
+
+      &lt;WebView
+        source={{ uri: 'https://example.com' }}
+        style={styles.webview}
+        javaScriptEnabled={jsEnabled}
+        // Additional security props
+        domStorageEnabled={true}
+        allowFileAccess={false}
+        allowUniversalAccessFromFileURLs={false}
+        mixedContentMode="never"
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  controls: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, backgroundColor: '#f3f4f6' },
+  label: { fontSize: 16, fontWeight: '500' },
+  webview: { flex: 1 },
+});</code></pre>
+
+      <h2>onMessage — Communication Between Native and Web</h2>
+      <p>The <code>onMessage</code> prop allows JavaScript running inside the WebView to send messages back to React Native.</p>
+
+      <pre><code>import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+function WebViewCommunication() {
+  const [messages, setMessages] = useState([]);
+  const webViewRef = useRef(null);
+
+  // HTML with JavaScript that sends messages
+  const htmlContent = `
+    &lt;!DOCTYPE html&gt;
+    &lt;html&gt;
+    &lt;head&gt;
+      &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+      &lt;style&gt;
+        body { padding: 20px; font-family: sans-serif; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        .blue { background: #3b82f6; color: white; }
+        .green { background: #10b981; color: white; }
+      &lt;/style&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h2&gt;WebView Content&lt;/h2&gt;
+      &lt;button class="blue" onclick="sendToNative('Button 1 clicked!')"&gt;Send Message 1&lt;/button&gt;
+      &lt;button class="green" onclick="sendToNative('Button 2 clicked!')"&gt;Send Message 2&lt;/button&gt;
+      &lt;p id="response"&gt;&lt;/p&gt;
+
+      &lt;script&gt;
+        function sendToNative(message) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({
+            type: 'BUTTON_CLICK',
+            message: message,
+            timestamp: Date.now()
+          }));
+        }
+
+        // Function to receive messages from React Native
+        function receiveFromNative(data) {
+          document.getElementById('response').textContent = 'Response: ' + data;
+        }
+      &lt;/script&gt;
+    &lt;/body&gt;
+    &lt;/html&gt;
+  `;
+
+  // Handle messages from WebView
+  const handleMessage = (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      setMessages(prev => [data, ...prev.slice(0, 9)]); // Keep last 10
+    } catch (e) {
+      console.log('Invalid message:', event.nativeEvent.data);
+    }
+  };
+
+  // Send message TO the WebView
+  const sendToWebView = () => {
+    if (webViewRef.current) {
+      webViewRef.current.injectJavaScript(`
+        receiveFromNative('Hello from React Native!');
+        true; // Required to avoid injection warning
+      `);
+    }
+  };
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;WebView
+        ref={webViewRef}
+        source={{ html: htmlContent }}
+        style={styles.webview}
+        onMessage={handleMessage}
+        javaScriptEnabled={true}
+      /&gt;
+      &lt;View style={styles.footer}&gt;
+        &lt;Pressable onPress={sendToWebView} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;Send to WebView&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;View style={styles.messageLog}&gt;
+          {messages.map((msg, i) =&gt; (
+            &lt;Text key={i} style={styles.message}&gt;
+              [{new Date(msg.timestamp).toLocaleTimeString()}] {msg.message}
+            &lt;/Text&gt;
+          ))}
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  webview: { flex: 1 },
+  footer: { padding: 12, backgroundColor: '#f3f4f6', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  button: { backgroundColor: '#3b82f6', padding: 12, borderRadius: 8, alignItems: 'center', marginBottom: 8 },
+  buttonText: { color: '#fff', fontWeight: '600' },
+  messageLog: { maxHeight: 80 },
+  message: { fontSize: 12, color: '#666', marginBottom: 2 },
+});</code></pre>
+
+      <h2>injectedJavaScript</h2>
+      <p>The <code>injectedJavaScript</code> prop runs JavaScript code as soon as the page loads. Use it to customize the web content or set up listeners.</p>
+
+      <pre><code>import { WebView } from 'react-native-webview';
+
+function InjectedJSExample() {
+  const injectedJS = `
+    // This runs when the page loads
+    console.log('WebView loaded!');
+
+    // Override alert to prevent popups
+    window.alert = function(message) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'ALERT', message }));
+    };
+
+    // Listen for clicks on links
+    document.addEventListener('click', function(e) {
+      if (e.target.tagName === 'A') {
+        e.preventDefault();
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'LINK_CLICK',
+          href: e.target.href,
+        }));
+      }
+    });
+  `;
+
+  return (
+    &lt;WebView
+      source={{ uri: 'https://example.com' }}
+      injectedJavaScript={injectedJS}
+      onMessage={(event) =&gt; {
+        const data = JSON.parse(event.nativeEvent.data);
+        console.log('From WebView:', data);
+      }}
+    /&gt;
+  );
+}
+
+// More advanced: Inject CSS
+function StyledWebView() {
+  const injectedCSS = `
+    (function() {
+      var style = document.createElement('style');
+      style.textContent = \`
+        body { background: #1a1a2e !important; color: #eee !important; }
+        a { color: #3b82f6 !important; }
+        img { max-width: 100% !important; height: auto !important; }
+      \`;
+      document.head.appendChild(style);
+    })();
+  `;
+
+  return (
+    &lt;WebView
+      source={{ uri: 'https://example.com' }}
+      injectedJavaScript={injectedCSS}
+    /&gt;
+  );
+}</code></pre>
+
+      <h2>WebView Events and Control</h2>
+      <p>WebView provides several event props for monitoring loading state and navigation.</p>
+
+      <pre><code>import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+function ControlledWebView() {
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState('');
+  const webViewRef = useRef(null);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      {/* Progress bar */}
+      {loading &amp;&amp; (
+        &lt;View style={styles.progressBar}&gt;
+          &lt;View style={[styles.progressFill, { width: `${progress * 100}%` }]} /&gt;
+        &lt;/View&gt;
+      )}
+
+      &lt;WebView
+        ref={webViewRef}
+        source={{ uri: 'https://reactnative.dev' }}
+        style={styles.webview}
+        onLoadStart={() =&gt; setLoading(true)}
+        onLoadProgress={(e) =&gt; setProgress(e.nativeEvent.progress)}
+        onLoadEnd={() =&gt; setLoading(false)}
+        onNavigationStateChange={(navState) =&gt; setCurrentUrl(navState.url)}
+        onError={(e) =&gt; console.log('WebView error:', e.nativeEvent)}
+      /&gt;
+
+      {/* Navigation controls */}
+      &lt;View style={styles.controls}&gt;
+        &lt;Text style={styles.url} numberOfLines={1}&gt;{currentUrl}&lt;/Text&gt;
+        &lt;View style={styles.buttons}&gt;
+          &lt;Pressable
+            onPress={() =&gt; webViewRef.current?.goBack()}
+            style={styles.button}
+          &gt;
+            &lt;Text style={styles.buttonText}&gt;Back&lt;/Text&gt;
+          &lt;/Pressable&gt;
+          &lt;Pressable
+            onPress={() =&gt; webViewRef.current?.goForward()}
+            style={styles.button}
+          &gt;
+            &lt;Text style={styles.buttonText}&gt;Forward&lt;/Text&gt;
+          &lt;/Pressable&gt;
+          &lt;Pressable
+            onPress={() =&gt; webViewRef.current?.reload()}
+            style={styles.button}
+          &gt;
+            &lt;Text style={styles.buttonText}&gt;Reload&lt;/Text&gt;
+          &lt;/Pressable&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  webview: { flex: 1 },
+  progressBar: { height: 3, backgroundColor: '#e5e7eb' },
+  progressFill: { height: '100%', backgroundColor: '#3b82f6' },
+  controls: { padding: 12, backgroundColor: '#f3f4f6', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  url: { fontSize: 12, color: '#666', marginBottom: 8 },
+  buttons: { flexDirection: 'row', gap: 8 },
+  button: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#3b82f6', borderRadius: 6 },
+  buttonText: { color: '#fff', fontWeight: '500' },
+});</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz">
+        <p><strong>1. What are the two ways to set the source of a WebView?</strong></p>
+        <label><input type="radio" name="q1" value="a"> URL string or HTML string</label>
+        <label><input type="radio" name="q1" value="b"> URI object (with uri key) or inline HTML object (with html key)</label>
+        <label><input type="radio" name="q1" value="c"> File path or base64 data</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+
+        <p><strong>2. How does JavaScript in the WebView send data to React Native?</strong></p>
+        <label><input type="radio" name="q2" value="a"> Using window.postMessage()</label>
+        <label><input type="radio" name="q2" value="b"> Using window.ReactNativeWebView.postMessage()</label>
+        <label><input type="radio" name="q2" value="c"> Using alert()</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+
+        <p><strong>3. What prop allows you to run JavaScript when the WebView loads?</strong></p>
+        <label><input type="radio" name="q3" value="a"> onLoad</label>
+        <label><input type="radio" name="q3" value="b"> injectedJavaScript</label>
+        <label><input type="radio" name="q3" value="c"> onMessage</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Embed a Webpage in Your App</h3>
+        <p>Create a WebView screen that loads a webpage with bidirectional communication:</p>
+        <pre><code>// screens/WebViewScreen.js
+import { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Pressable, SafeAreaView } from 'react-native';
+import { WebView } from 'react-native-webview';
+
+export default function WebViewScreen({ url = 'https://reactnative.dev' }) {
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+  const [title, setTitle] = useState('');
+  const webViewRef = useRef(null);
+
+  const html = `
+    &lt;!DOCTYPE html&gt;
+    &lt;html&gt;
+    &lt;head&gt;
+      &lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;
+      &lt;style&gt;
+        body { padding: 20px; font-family: sans-serif; text-align: center; }
+        h1 { color: #3b82f6; }
+        .btn { padding: 12px 24px; margin: 8px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+        .primary { background: #3b82f6; color: white; }
+        .secondary { background: #10b981; color: white; }
+        #output { margin-top: 20px; padding: 16px; background: #f3f4f6; border-radius: 8px; text-align: left; }
+      &lt;/style&gt;
+    &lt;/head&gt;
+    &lt;body&gt;
+      &lt;h1&gt;WebView Demo&lt;/h1&gt;
+      &lt;p&gt;This page communicates with React Native!&lt;/p&gt;
+      &lt;button class="btn primary" onclick="send('Hello from WebView!')"&gt;Send Message&lt;/button&gt;
+      &lt;button class="btn secondary" onclick="send(JSON.stringify({action: 'getData'}))"&gt;Request Data&lt;/button&gt;
+      &lt;div id="output"&gt;Messages will appear here...&lt;/div&gt;
+
+      &lt;script&gt;
+        function send(msg) {
+          window.ReactNativeWebView.postMessage(msg);
+          document.getElementById('output').innerHTML += '&lt;p&gt;Sent: ' + msg + '&lt;/p&gt;';
+        }
+        function receive(msg) {
+          document.getElementById('output').innerHTML += '&lt;p&gt;Received: ' + msg + '&lt;/p&gt;';
+        }
+      &lt;/script&gt;
+    &lt;/body&gt;
+    &lt;/html&gt;
+  `;
+
+  const handleMessage = (event) => {
+    console.log('Message from WebView:', event.nativeEvent.data);
+    // Send response back
+    webViewRef.current?.injectJavaScript(
+      `receive('Native received: ${event.nativeEvent.data}'); true;`
+    );
+  };
+
+  return (
+    &lt;SafeAreaView style={styles.container}&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.title} numberOfLines={1}&gt;{title || 'Loading...'}&lt;/Text&gt;
+      &lt;/View&gt;
+
+      &lt;WebView
+        ref={webViewRef}
+        source={{ html }}
+        style={styles.webview}
+        onMessage={handleMessage}
+        onLoadStart={() =&gt; setTitle('Loading...')}
+        onLoadEnd={(e) =&gt; {
+          setCanGoBack(e.nativeEvent.canGoBack);
+          setCanGoForward(e.nativeEvent.canGoForward);
+        }}
+        onNavigationStateChange={(navState) =&gt; {
+          setTitle(navState.title);
+          setCanGoBack(navState.canGoBack);
+          setCanGoForward(navState.canGoForward);
+        }}
+      /&gt;
+
+      &lt;View style={styles.footer}&gt;
+        &lt;Pressable
+          onPress={() =&gt; webViewRef.current?.goBack()}
+          disabled={!canGoBack}
+          style={[styles.button, !canGoBack &amp;&amp; styles.disabled]}
+        &gt;
+          &lt;Text style={styles.buttonText}&gt;← Back&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable onPress={() =&gt; webViewRef.current?.reload()} style={styles.button}&gt;
+          &lt;Text style={styles.buttonText}&gt;↻ Reload&lt;/Text&gt;
+        &lt;/Pressable&gt;
+        &lt;Pressable
+          onPress={() =&gt; webViewRef.current?.goForward()}
+          disabled={!canGoForward}
+          style={[styles.button, !canGoForward &amp;&amp; styles.disabled]}
+        &gt;
+          &lt;Text style={styles.buttonText}&gt;Forward →&lt;/Text&gt;
+        &lt;/Pressable&gt;
+      &lt;/View&gt;
+    &lt;/SafeAreaView&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#fff' },
+  header: { padding: 12, backgroundColor: '#f3f4f6', borderBottomWidth: 1, borderBottomColor: '#e5e7eb' },
+  title: { fontSize: 14, fontWeight: '500', textAlign: 'center' },
+  webview: { flex: 1 },
+  footer: { flexDirection: 'row', justifyContent: 'space-around', padding: 12, backgroundColor: '#f3f4f6', borderTopWidth: 1, borderTopColor: '#e5e7eb' },
+  button: { paddingVertical: 8, paddingHorizontal: 16, backgroundColor: '#3b82f6', borderRadius: 6 },
+  buttonText: { color: '#fff', fontWeight: '500' },
+  disabled: { opacity: 0.5 },
+});</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>react-native-webview</code> renders web content using the platform's native browser engine</li>
+        <li>The <code>source</code> prop accepts <code>{ uri: '...' }</code> for URLs or <code>{ html: '...' }</code> for inline HTML</li>
+        <li><code>javaScriptEnabled</code> controls whether JavaScript runs in the WebView</li>
+        <li><code>onMessage</code> receives data sent from JavaScript via <code>window.ReactNativeWebView.postMessage()</code></li>
+        <li><code>injectedJavaScript</code> runs custom JavaScript when the page loads</li>
+        <li>Use <code>ref.injectJavaScript()</code> to send data from React Native to the WebView</li>
+        <li>Monitor navigation with <code>onNavigationStateChange</code> and control with <code>goBack()</code>, <code>goForward()</code>, <code>reload()</code></li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong> Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>react-native-webview</strong> — Official documentation for WebView in React Native. <a href="https://github.com/react-native-webview/react-native-webview" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
