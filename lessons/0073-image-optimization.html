@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 73: Image Optimization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 73: Image Optimization</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn image compression, WebP format usage, lazy loading images, server-side resizing, progressive loading, and FastImage optimization for React Native apps.</div>
+
+      <h2>Why Image Optimization Matters</h2>
+      <p>Images are typically the largest assets in a mobile app. Unoptimized images waste memory, slow down rendering, consume mobile data, and cause frame drops when scrolling through lists. A single full-resolution photo can be 5-10MB — an image gallery could exhaust device memory quickly.</p>
+
+      <h3>Image Compression</h3>
+      <p>Compress images to reduce file size without visible quality loss. Always compress before displaying or uploading.</p>
+      <pre><code>import ImageResizer from 'react-native-image-resizer';
+
+// Compress a local image
+const compressImage = async (uri, maxWidth = 800, quality = 80) => {
+  try {
+    const result = await ImageResizer.createResizedImage(
+      uri,
+      maxWidth,       // max width in pixels
+      maxWidth * 0.75, // proportional height
+      'JPEG',          // output format
+      quality,         // quality 0-100
+      0,               // rotation
+      undefined,       // output path (undefined = temp)
+      false,           // keep metadata
+      { mode: 'contain' } // resize mode
+    );
+    console.log(`Compressed: ${result.size} bytes at ${result.uri}`);
+    return result.uri;
+  } catch (error) {
+    console.error('Compression failed:', error);
+    return uri; // fallback to original
+  }
+};
+
+// Use in a component
+const ProfilePhotoUpload = () => {
+  const handleUpload = async () => {
+    const image = await launchImageLibrary({ mediaType: 'photo' });
+    if (image.assets?.[0]) {
+      const compressedUri = await compressImage(
+        image.assets[0].uri,
+        600, // thumbnails should be smaller
+        75
+      );
+      await uploadPhoto(compressedUri);
+    }
+  };
+
+  return &lt;Button title="Upload Photo" onPress={handleUpload} /&gt;;
+};</code></pre>
+
+      <h3>WebP Format</h3>
+      <p>WebP provides 25-35% smaller file sizes than JPEG at equivalent quality, and supports transparency like PNG. Use it whenever possible.</p>
+      <pre><code>// Serving WebP from a CDN (recommended approach)
+// Configure your CDN to serve WebP when the client supports it
+const getImageUrl = (imageId, width = 400) => {
+  return `https://cdn.example.com/images/${imageId}?w=${width}&amp;fmt=webp`;
+};
+
+// In React Native, the Image component supports WebP on both platforms
+import { Image } from 'react-native';
+
+function ProductImage({ productId }) {
+  return (
+    &lt;Image
+      source={{ uri: `https://cdn.example.com/products/${productId}?w=400&fmt=webp` }}
+      style={{ width: 200, height: 200 }}
+      resizeMode="cover"
+    /&gt;
+  );
+}
+
+// Convert images to WebP during upload
+import ImageResizer from 'react-native-image-resizer';
+
+const convertToWebP = async (uri) => {
+  const result = await ImageResizer.createResizedImage(
+    uri,
+    800,
+    600,
+    'WebP', // output as WebP
+    85      // quality
+  );
+  return result.uri;
+};</code></pre>
+
+      <h3>Lazy Loading Images</h3>
+      <p>Only load images when they're about to enter the viewport. This is critical for long lists and galleries.</p>
+      <pre><code>import React, { useState, useCallback } from 'react';
+import { View, FlatList, Image, Dimensions } from 'react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+function ImageGallery({ images }) {
+  const [visibleImages, setVisibleImages] = useState(new Set());
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    const visible = new Set(viewableItems.map(item => item.index));
+    setVisibleImages(visible);
+  }, []);
+
+  const viewabilityConfig = { itemVisiblePercentThreshold: 20 };
+
+  const renderItem = useCallback(({ item, index }) => {
+    const isVisible = visibleImages.has(index);
+
+    return (
+      &lt;View style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH }}&gt;
+        {isVisible ? (
+          &lt;Image
+            source={{ uri: item.url }}
+            style={{ width: '100%', height: '100%' }}
+            resizeMode="cover"
+          /&gt;
+        ) : (
+          &lt;View style={{ flex: 1, backgroundColor: '#f0f0f0' }} /&gt; // placeholder
+        )}
+      &lt;/View&gt;
+    );
+  }, [visibleImages]);
+
+  return (
+    &lt;FlatList
+      data={images}
+      renderItem={renderItem}
+      keyExtractor={item => item.id}
+      onViewableItemsChanged={onViewableItemsChanged}
+      viewabilityConfig={viewabilityConfig}
+      getItemLayout={(_, index) => ({
+        length: SCREEN_WIDTH,
+        offset: SCREEN_WIDTH * index,
+        index,
+      })}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>Server-Side Resizing</h3>
+      <p>Never download a 4000x3000 image to display at 200x200. Request the exact size you need from the server.</p>
+      <pre><code>// Use query parameters to request the right size
+const getImageUrl = (imageId, width, height) => {
+  const params = new URLSearchParams();
+  params.set('w', width);
+  if (height) params.set('h', height);
+  params.set('fit', 'crop');     // crop to fit dimensions
+  params.set('fmt', 'webp');     // serve as WebP
+  params.set('q', '80');         // quality 80%
+  return `https://cdn.example.com/images/${imageId}?${params}`;
+};
+
+// Usage — request different sizes for different contexts
+const Thumbnail = ({ imageId }) => (
+  &lt;Image
+    source={{ uri: getImageUrl(imageId, 100, 100) }}
+    style={{ width: 50, height: 50, borderRadius: 25 }}
+  /&gt;
+);
+
+const DetailImage = ({ imageId }) => (
+  &lt;Image
+    source={{ uri: getImageUrl(imageId, 800) }}
+    style={{ width: '100%', height: 300 }}
+    resizeMode="cover"
+  /&gt;
+);
+
+const FullScreenImage = ({ imageId }) => (
+  &lt;Image
+    source={{ uri: getImageUrl(imageId, 1200) }}
+    style={{ width: '100%', height: '100%' }}
+    resizeMode="contain"
+  /&gt;
+);</code></pre>
+
+      <h3>Progressive Loading</h3>
+      <p>Show a low-quality placeholder while the full image loads. This makes the app feel faster and reduces perceived wait time.</p>
+      <pre><code>import { useState } from 'react';
+import { View, Image, StyleSheet } from 'react-native';
+
+function ProgressiveImage({ thumbnailUri, fullUri, style }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    &lt;View style={[styles.container, style]}&gt;
+      {/* Low-quality placeholder — loads fast */}
+      &lt;Image
+        source={{ uri: thumbnailUri }}
+        style={[StyleSheet.absoluteFill, styles.placeholder]}
+        blurRadius={2}
+      /&gt;
+      {/* Full quality image — loads over network */}
+      &lt;Image
+        source={{ uri: fullUri }}
+        style={[StyleSheet.absoluteFill, styles.fullImage]}
+        onLoad={() => setLoaded(true)}
+        resizeMode="cover"
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { overflow: 'hidden' },
+  placeholder: { opacity: 0.6 },
+  fullImage: { opacity: 1 },
+});
+
+// Usage
+&lt;ProgressiveImage
+  thumbnailUri="https://cdn.example.com/img/123?w=20&q=10"
+  fullUri="https://cdn.example.com/img/123?w=800&q=80"
+  style={{ width: 300, height: 200 }}
+/&gt;</code></pre>
+
+      <h3>FastImage Optimization</h3>
+      <p><code>react-native-fast-image</code> is a high-performance image component with built-in caching, prioritization, and preloading.</p>
+      <pre><code>import FastImage from 'react-native-fast-image';
+
+// Basic usage with caching
+&lt;FastImage
+  style={{ width: 200, height: 200 }}
+  source={{
+    uri: 'https://cdn.example.com/image.jpg',
+    priority: FastImage.priority.normal,
+    cache: FastImage.cacheControl.immutable, // cache forever
+  }}
+  resizeMode={FastImage.resizeMode.cover}
+/&gt;
+
+// Preload images before they're displayed
+FastImage.preload([
+  { uri: 'https://cdn.example.com/image1.jpg' },
+  { uri: 'https://cdn.example.com/image2.jpg' },
+  { uri: 'https://cdn.example.com/image3.jpg' },
+]);
+
+// Priority loading — important images load first
+&lt;FastImage
+  source={{
+    uri: imageUrl,
+    priority: FastImage.priority.high, // load this image first
+  }}
+  style={{ width: 100, height: 100 }}
+/&gt;
+
+// Handle load events for progressive loading
+function OptimizedImage({ uri }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    &lt;View&gt;
+      {!loaded && &lt;ActivityIndicator style={StyleSheet.absoluteFill} /&gt;}
+      &lt;FastImage
+        source={{ uri, cache: FastImage.cacheControl.immutable }}
+        style={{ width: '100%', height: 200 }}
+        resizeMode={FastImage.resizeMode.cover}
+        onLoad={() => setLoaded(true)}
+      /&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. Why should you request images at the size you need rather than full resolution?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It makes the images load faster on the server side</label>
+        <label><input type="radio" name="q1" value="b"> It reduces bandwidth usage and memory consumption on the device</label>
+        <label><input type="radio" name="q1" value="c"> It prevents the image from being cached by the browser</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. What advantage does WebP have over JPEG?</strong></p>
+        <label><input type="radio" name="q2" value="a"> WebP images load faster because they use a different HTTP protocol</label>
+        <label><input type="radio" name="q2" value="b"> WebP provides 25-35% smaller file sizes at equivalent quality and supports transparency</label>
+        <label><input type="radio" name="q2" value="c"> WebP is universally supported across all devices and browsers</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. What is progressive image loading?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Loading images from low to high resolution as the user scrolls</label>
+        <label><input type="radio" name="q3" value="b"> Showing a low-quality placeholder while the full image loads over the network</label>
+        <label><input type="radio" name="q3" value="c"> Loading all images at once before the screen renders</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Optimize Images in Your App</h3>
+      <p>Implement image optimization with compression, lazy loading, and FastImage caching.</p>
+      <pre><code>import React, { useState, useCallback } from 'react';
+import { View, FlatList, Dimensions, StyleSheet } from 'react-native';
+import FastImage from 'react-native-fast-image';
+import ImageResizer from 'react-native-image-resizer';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const IMAGE_SIZE = (SCREEN_WIDTH - 30) / 3; // 3-column grid
+
+// Optimized image component with caching and lazy loading
+function OptimizedImage({ uri, size = IMAGE_SIZE }) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    &lt;View style={[styles.imageContainer, { width: size, height: size }]}&gt;
+      &lt;FastImage
+        source={{
+          uri: `${uri}?w=${Math.round(size * 2)}&fmt=webp&q=75`,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        }}
+        style={[styles.image, { opacity: loaded ? 1 : 0 }]}
+        resizeMode={FastImage.resizeMode.cover}
+        onLoad={() => setLoaded(true)}
+      /&gt;
+      {!loaded && &lt;View style={[styles.placeholder, { width: size, height: size }]} /&gt;}
+    &lt;/View&gt;
+  );
+}
+
+// Image compression utility
+const compressForUpload = async (uri) => {
+  const result = await ImageResizer.createResizedImage(
+    uri, 1200, 1200, 'WebP', 80, 0
+  );
+  return result.uri;
+};
+
+// Gallery with lazy loading
+export default function ImageGallery({ images }) {
+  const renderItem = useCallback(({ item }) => (
+    &lt;OptimizedImage uri={item.url} /&gt;
+  ), []);
+
+  const keyExtractor = useCallback((item) => item.id, []);
+
+  return (
+    &lt;FlatList
+      data={images}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      numColumns={3}
+      style={styles.list}
+    /&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  list: { padding: 5 },
+  imageContainer: { margin: 2, overflow: 'hidden', borderRadius: 4 },
+  image: { width: '100%', height: '100%' },
+  placeholder: { backgroundColor: '#e0e0e0', position: 'absolute' },
+});</code></pre>
+      <p>Test with a list of 100+ images. Use React DevTools Profiler to verify that images outside the viewport don't trigger unnecessary re-renders.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Images are the largest assets in mobile apps — optimize them aggressively</li>
+        <li>Compress images with ImageResizer before displaying or uploading</li>
+        <li>WebP format provides 25-35% smaller files than JPEG with equivalent quality</li>
+        <li>Only load images that are visible on screen — use FlatList's onViewableItemsChanged for lazy loading</li>
+        <li>Request images at the exact size you need from the server, not full resolution</li>
+        <li>Progressive loading shows a placeholder while the full image loads, improving perceived performance</li>
+        <li>FastImage provides built-in caching, priority loading, and preloading for high-performance image display</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>react-native-fast-image</strong> — High-performance image component with caching and preloading. <a href="https://github.com/DylanVann/react-native-fast-image" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

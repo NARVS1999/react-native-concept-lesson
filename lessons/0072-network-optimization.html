@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 72: Network Optimization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 72: Network Optimization</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn request batching, caching strategies with React Query, image compression for network transfers, prefetching data, and debouncing API calls to reduce network overhead.</div>
+
+      <h2>Why Network Optimization Matters</h2>
+      <p>Network requests are expensive — they consume battery, data, and time. Poorly optimized networking leads to slow screens, high API costs, and poor user experience on slow connections. Optimizing how and when you fetch data is critical.</p>
+
+      <h3>Request Batching</h3>
+      <p>Instead of making many small API calls, combine them into a single request. This reduces the overhead of HTTP headers, TLS handshakes, and server round trips.</p>
+      <pre><code>// BAD — 5 separate API calls on screen load
+const UserProfile = () => {
+  useEffect(() => {
+    fetchUser(id);           // Request 1
+    fetchUserPosts(id);      // Request 2
+    fetchUserFriends(id);    // Request 3
+    fetchNotifications(id);  // Request 4
+    fetchSettings(id);       // Request 5
+  }, [id]);
+};
+
+// GOOD — single batched request
+// Backend endpoint: GET /api/user-dashboard?id=123
+const UserProfile = () => {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    fetch(`/api/user-dashboard?id=${id}`)
+      .then(res => res.json())
+      .then(setData);
+    // Single request returns: user, posts, friends, notifications, settings
+  }, [id]);
+
+  if (!data) return &lt;LoadingSpinner /&gt;;
+
+  return (
+    &lt;View&gt;
+      &lt;UserHeader user={data.user} /&gt;
+      &lt;PostsList posts={data.posts} /&gt;
+      &lt;FriendsList friends={data.friends} /&gt;
+    &lt;/View&gt;
+  );
+};
+
+// If you can't change the backend, batch on the client with Promise.all
+const fetchAllUserData = async (userId) => {
+  const [user, posts, friends, notifications] = await Promise.all([
+    fetchUser(userId),
+    fetchUserPosts(userId),
+    fetchUserFriends(userId),
+    fetchNotifications(userId),
+  ]);
+  return { user, posts, friends, notifications };
+};</code></pre>
+
+      <h3>Caching Strategies with React Query</h3>
+      <p>React Query (TanStack Query) provides powerful caching out of the box. The <code>staleTime</code> option controls how long data is considered fresh before refetching.</p>
+      <pre><code>import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,    // 5 minutes — data is fresh for 5 min
+      cacheTime: 30 * 60 * 1000,   // 30 minutes — unused data stays in cache
+      refetchOnWindowFocus: false,  // don't refetch when app regains focus
+      retry: 2,                     // retry failed requests twice
+    },
+  },
+});
+
+function UserList() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['users'],
+    queryFn: fetchUsers,
+    staleTime: 10 * 60 * 1000, // override: 10 minutes for this query
+  });
+
+  if (isLoading) return &lt;ActivityIndicator /&gt;;
+  if (error) return &lt;Text&gt;Error loading users&lt;/Text&gt;;
+
+  return (
+    &lt;FlatList
+      data={data}
+      keyExtractor={item => item.id}
+      renderItem={({ item }) => &lt;UserCard user={item} /&gt;}
+    /&gt;
+  );
+}
+
+// Prefetch data before the user navigates to a screen
+const prefetchUser = async (userId) => {
+  await queryClient.prefetchQuery({
+    queryKey: ['user', userId],
+    queryFn: () => fetchUser(userId),
+    staleTime: 5 * 60 * 1000,
+  });
+};
+
+// Usage: prefetch when user hovers or focuses on a list item
+&lt;TouchableOpacity
+  onPress={() => prefetchUser(item.id)}
+  onPress={() => navigation.navigate('UserProfile', { id: item.id })}
+&gt;
+  &lt;UserCard user={item} /&gt;
+&lt;/TouchableOpacity&gt;</code></pre>
+
+      <h3>Image Compression for Network</h3>
+      <p>Images often account for 60-80% of network data. Compress and resize them before sending or loading.</p>
+      <pre><code>import ImageResizer from 'react-native-image-resizer';
+
+const compressImage = async (uri) => {
+  const result = await ImageResizer.createResizedImage(
+    uri,
+    800,    // width
+    600,    // height
+    'JPEG', // format
+    80,     // quality (0-100)
+    0,      // rotation
+  );
+  return result.uri;
+};
+
+// Use compressed images in uploads
+const uploadProfilePhoto = async (imageUri) => {
+  const compressedUri = await compressImage(imageUri);
+
+  const formData = new FormData();
+  formData.append('photo', {
+    uri: compressedUri,
+    type: 'image/jpeg',
+    name: 'profile.jpg',
+  });
+
+  await fetch('/api/upload-photo', {
+    method: 'POST',
+    body: formData,
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};</code></pre>
+
+      <h3>Prefetching Data</h3>
+      <p>Predict what the user will need next and fetch it before they ask. This makes navigation feel instant.</p>
+      <pre><code>import { useQueryClient } from '@tanstack/react-query';
+
+function ProductList({ products }) {
+  const queryClient = useQueryClient();
+
+  // Prefetch product details when user scrolls near them
+  const handleViewableItemsChanged = useCallback(({ viewableItems }) => {
+    viewableItems.forEach(({ item }) => {
+      queryClient.prefetchQuery({
+        queryKey: ['product', item.id],
+        queryFn: () => fetchProduct(item.id),
+        staleTime: 60 * 1000,
+      });
+    });
+  }, [queryClient]);
+
+  return (
+    &lt;FlatList
+      data={products}
+      renderItem={({ item }) => (
+        &lt;TouchableOpacity onPress={() => navigate('ProductDetail', { id: item.id })}&gt;
+          &lt;ProductCard product={item} /&gt;
+        &lt;/TouchableOpacity&gt;
+      )}
+      onViewableItemsChanged={handleViewableItemsChanged}
+      viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+    /&gt;
+  );
+}
+
+// Prefetch the next page of a paginated list
+const useInfiniteProducts = () => {
+  return useInfiniteQuery({
+    queryKey: ['products'],
+    queryFn: ({ pageParam = 1 }) => fetchProducts(pageParam),
+    getNextPageParam: (lastPage) => lastPage.nextPage,
+  });
+};
+
+// Trigger prefetch of next page when nearing the end
+const prefetchNextPage = (.hasNextPage, fetchNextPage) => {
+  if (hasNextPage) {
+    fetchNextPage();
+  }
+};</code></pre>
+
+      <h3>Debouncing API Calls</h3>
+      <p>Debouncing prevents rapid-fire API calls when users type in a search box or adjust sliders. It waits until the user stops interacting before sending the request.</p>
+      <pre><code>import { useState, useEffect, useCallback } from 'react';
+import debounce from 'lodash/debounce';
+
+function SearchScreen() {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+
+  // Debounced search — waits 500ms after user stops typing
+  const debouncedSearch = useCallback(
+    debounce(async (searchTerm) => {
+      if (searchTerm.length &lt; 2) {
+        setResults([]);
+        return;
+      }
+      const response = await fetch(`/api/search?q=${encodeURIComponent(searchTerm)}`);
+      const data = await response.json();
+      setResults(data.results);
+    }, 500),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSearch(query);
+    // Cleanup: cancel pending debounce on unmount
+    return () => debouncedSearch.cancel();
+  }, [query, debouncedSearch]);
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput
+        value={query}
+        onChangeText={setQuery}
+        placeholder="Search..."
+      /&gt;
+      &lt;FlatList
+        data={results}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => &lt;Text&gt;{item.name}&lt;/Text&gt;}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Simple debounce utility without lodash
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debouncedValue;
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. What does batching multiple API calls into one reduce?</strong></p>
+        <label><input type="radio" name="q1" value="a"> The amount of data transferred</label>
+        <label><input type="radio" name="q1" value="b"> HTTP header overhead, TLS handshakes, and server round trips</label>
+        <label><input type="radio" name="q1" value="c"> The server's processing time</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. In React Query, what does staleTime control?</strong></p>
+        <label><input type="radio" name="q2" value="a"> How long cached data stays in memory before being garbage collected</label>
+        <label><input type="radio" name="q2" value="b"> How long data is considered fresh before React Query refetches it</label>
+        <label><input type="radio" name="q2" value="c"> The maximum number of retries for failed requests</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. What is the purpose of debouncing API calls?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To compress API request payloads</label>
+        <label><input type="radio" name="q3" value="b"> To delay API calls until the user stops interacting, preventing rapid-fire requests</label>
+        <label><input type="radio" name="q3" value="c"> To cache API responses locally on the device</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Implement Request Batching</h3>
+      <p>Refactor a screen that makes multiple API calls to use batched requests and prefetching.</p>
+      <pre><code>// BEFORE: Multiple separate API calls
+const DashboardScreen = () => {
+  const [user, setUser] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetch('/api/user/profile').then(r => r.json()),
+      fetch('/api/user/orders').then(r => r.json()),
+      fetch('/api/user/notifications').then(r => r.json()),
+    ]).then(([userData, ordersData, notifData]) => {
+      setUser(userData);
+      setOrders(ordersData);
+      setNotifications(notifData);
+      setLoading(false);
+    });
+  }, []);
+
+  // ... render
+};
+
+// AFTER: Single batched endpoint + React Query caching
+import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { staleTime: 5 * 60 * 1000 },
+  },
+});
+
+function useDashboard(userId) {
+  return useQuery({
+    queryKey: ['dashboard', userId],
+    queryFn: async () => {
+      const response = await fetch(`/api/dashboard?userId=${userId}`);
+      return response.json();
+    },
+    staleTime: 2 * 60 * 1000, // fresh for 2 minutes
+  });
+}
+
+function DashboardScreen({ userId }) {
+  const { data, isLoading, error } = useDashboard(userId);
+
+  if (isLoading) return &lt;LoadingSpinner /&gt;;
+  if (error) return &lt;ErrorMessage error={error} /&gt;;
+
+  return (
+    &lt;View&gt;
+      &lt;UserHeader user={data.user} /&gt;
+      &lt;OrdersList orders={data.orders} /&gt;
+      &lt;NotificationsList notifications={data.notifications} /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// Add prefetching on the HomeScreen
+function HomeScreen({ navigation }) {
+  const queryClient = useQueryClient();
+
+  const navigateToDashboard = (userId) => {
+    // Prefetch dashboard data before navigating
+    queryClient.prefetchQuery({
+      queryKey: ['dashboard', userId],
+      queryFn: () => fetch(`/api/dashboard?userId=${userId}`).then(r => r.json()),
+      staleTime: 2 * 60 * 1000,
+    });
+    navigation.navigate('Dashboard', { userId });
+  };
+
+  // ... render
+}</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Request batching reduces HTTP overhead by combining multiple API calls into one</li>
+        <li>React Query's staleTime controls how long data is considered fresh before refetching</li>
+        <li>Image compression reduces network payload size — compress before uploading or displaying</li>
+        <li>Prefetching loads data before the user navigates to a screen, making transitions feel instant</li>
+        <li>Debouncing delays API calls until the user stops interacting, preventing rapid-fire requests</li>
+        <li>Use Promise.all for parallel independent requests instead of sequential awaits</li>
+        <li>Cache data aggressively and invalidate only when necessary to minimize redundant network calls</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>TanStack Query (React Query)</strong> — Official documentation for powerful data fetching, caching, and synchronization. <a href="https://tanstack.com/query/latest" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

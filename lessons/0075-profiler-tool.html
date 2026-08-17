@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 75: Profiler Tool</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 75: Profiler Tool</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Master the React DevTools Profiler, learn to record profiling sessions, read flame graphs, understand commit phases, identify slow renders, and use why-did-you-render to debug unnecessary re-renders.</div>
+
+      <h2>React DevTools Profiler</h2>
+      <p>The Profiler is the most important tool for understanding your app's rendering performance. It records every React render and shows exactly how long each component took and why it rendered.</p>
+
+      <h3>Recording a Profiling Session</h3>
+      <pre><code>// Step 1: Open React DevTools
+// Shake your device → "Show Dev Menu" → "Show DevTools"
+// Or press Cmd+D (iOS) / Cmd+M (Android) in the simulator
+
+// Step 2: Go to the "Profiler" tab
+
+// Step 3: Click the record button (circle icon) to start recording
+
+// Step 4: Interact with your app — scroll, tap buttons, navigate
+
+// Step 5: Stop recording — the Profiler shows a summary of all commits
+
+// Step 6: Click on individual commits to see the flame graph
+
+// You can also profile specific components using the &lt;Profiler&gt; API:
+import { Profiler } from 'react';
+
+const onRenderCallback = (
+  id,           // the "id" of the Profiler tree
+  phase,        // "mount" (first render) or "update" (re-render)
+  actualDuration, // time spent rendering the committed update
+  baseDuration,   // estimated time to render entire subtree without memoization
+  startTime,      // when React began rendering this update
+  commitTime      // when React committed this update
+) => {
+  console.log(`[${id}] ${phase}: ${actualDuration.toFixed(1)}ms`);
+};
+
+function App() {
+  return (
+    &lt;Profiler id="App" onRender={onRenderCallback}&gt;
+      &lt;Header /&gt;
+      &lt;Profiler id="MainContent" onRender={onRenderCallback}&gt;
+        &lt;ContentList /&gt;
+      &lt;/Profiler&gt;
+      &lt;Footer /&gt;
+    &lt;/Profiler&gt;
+  );
+}</code></pre>
+
+      <h3>Reading Flame Graphs</h3>
+      <p>A flame graph shows the component tree horizontally. Wider bars mean more time spent rendering. The color indicates whether a component updated (blue), re-rendered (yellow), or mounted (green).</p>
+      <pre><code>// Flame graph anatomy:
+//
+// ┌─────────────────────────────────────────────┐
+// │                App (200ms)                   │  ← top bar = root
+// │  ┌──────────┐ ┌──────────────────────────┐  │
+// │  │ Header   │ │     MainContent (180ms)  │  │  ← wide bar = slow
+// │  │  (20ms)  │ │  ┌────────┐ ┌─────────┐  │  │
+// │  └──────────┘  │  │Search  │ │List(150)│  │  │  ← List is the bottleneck
+// │                │  │ (10ms) │ │ ██████  │  │  │
+// │                │  └────────┘ │Item(15) │  │  │  ← each item takes 15ms
+// │                │             │Item(15) │  │  │
+// │                │             │Item(15) │  │  │
+// │                │             └─────────┘  │  │
+// │                └──────────────────────────┘  │
+// └─────────────────────────────────────────────┘
+//
+// Reading tips:
+// - Wider = slower (takes more time)
+// - Yellow bars = re-renders (not new mounts)
+// - Click on a bar to see why that component rendered
+
+// Understanding commit phases:
+// "mount" — component rendered for the first time
+// "update" — component re-rendered due to state/prop change
+//
+// What to look for:
+// 1. Components that re-render (yellow) when they shouldn't
+// 2. Components with unexpectedly wide bars
+// 3. Components high in the tree that re-render frequently</code></pre>
+
+      <h3>Identifying Slow Renders</h3>
+      <p>The Profiler highlights which components are slow. Click on a component in the flame graph to see why it rendered and what changed.</p>
+      <pre><code>// The Profiler tells you WHY a component rendered:
+// "Props changed: a, b" — one or more props changed
+// "State changed: count" — setState was called
+// "Hooks changed: useMemo" — a hook dependency changed
+// "Parent rendered" — the parent re-rendered (most common!)
+
+// Strategy: work from top to bottom
+// 1. Find the widest bar in the flame graph
+// 2. Check if it should have re-rendered
+// 3. If not, add React.memo, useMemo, or useCallback
+// 4. Re-record and verify the improvement
+
+// Example: Slow list re-rendering
+// Before optimization — every item re-renders when one item changes
+function TodoList({ todos, onToggle }) {
+  return (
+    &lt;FlatList
+      data={todos}
+      renderItem={({ item }) => (
+        &lt;TodoItem todo={item} onToggle={onToggle} /&gt; // all re-render
+      )}
+    /&gt;
+  );
+}
+
+// After optimization — only changed item re-renders
+function TodoList({ todos, onToggle }) {
+  const handleToggle = useCallback((id) => onToggle(id), [onToggle]);
+
+  return (
+    &lt;FlatList
+      data={todos}
+      renderItem={({ item }) => (
+        &lt;TodoItem todo={item} onToggle={handleToggle} /&gt;
+      )}
+    /&gt;
+  );
+}
+
+const TodoItem = React.memo(function TodoItem({ todo, onToggle }) {
+  return (
+    &lt;TouchableOpacity onPress={() => onToggle(todo.id)}&gt;
+      &lt;Text&gt;{todo.text}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+});</code></pre>
+
+      <h3>Why-Did-You-Render</h3>
+      <p>The <code>why-did-you-render</code> library patches React to log every unnecessary re-render with details about what changed. It's the fastest way to find re-render causes.</p>
+      <pre><code>// Install: npm install @welldone-software/why-did-you-render
+
+// Setup in your entry file (index.js)
+import React from 'react';
+import { AppRegistry } from 'react-native';
+import App from './App';
+
+// Enable WDR in development only
+if (__DEV__) {
+  const whyDidYouRender = require('@welldone-software/why-did-you-render');
+  whyDidYouRender(React, {
+    trackAllPureComponents: true, // track all pure components
+    logOnDifferentValues: true,   // log when props change
+  });
+}
+
+AppRegistry.registerComponent('MyApp', () => App);
+
+// Add .whyDidYouRender to any component to track it
+function ExpensiveComponent({ data, config }) {
+  // This component will now log why it re-rendered
+  return (
+    &lt;View&gt;
+      {data.map(item => &lt;Text key={item.id}&gt;{item.name}&lt;/Text&gt;)}
+    &lt;/View&gt;
+  );
+}
+ExpensiveComponent.whyDidYouRender = true;
+
+// Output example:
+// [why-did-you-render] ExpensiveComponent re-rendered:
+//   Props changed: data (new vs old object reference)
+//   This indicates data was recreated on every render.
+//   Use useMemo to stabilize the reference.</code></pre>
+
+      <h3>Practical Profiling Workflow</h3>
+      <pre><code>// Step-by-step profiling workflow:
+
+// 1. Identify the problem area
+//    - Use the Performance Monitor (Dev Menu → Show Perf Monitor)
+//    - Watch FPS — drops below 30 indicate performance issues
+//    - Watch JS Heap — continuous growth indicates memory leaks
+
+// 2. Record a profiling session
+//    - Open React DevTools → Profiler tab → Start recording
+//    - Perform the slow action 2-3 times for consistent data
+//    - Stop recording
+
+// 3. Analyze the flame graph
+//    - Find the longest bar — that's your bottleneck
+//    - Check if it's mounting (first time) or updating (re-render)
+//    - If updating, ask: did the data actually change?
+
+// 4. Apply targeted fixes
+//    - Wrap slow children with React.memo
+//    - Stabilize function props with useCallback
+//    - Stabilize object/array props with useMemo
+//    - Move expensive computations out of render
+
+// 5. Verify improvement
+//    - Re-record the same action
+//    - Compare actualDuration before and after
+//    - The bar should be shorter or disappear entirely
+
+// 6. Repeat until all bottlenecks are resolved
+//    - Focus on the widest bars first — biggest impact</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. In a flame graph, what does a wider bar indicate?</strong></p>
+        <label><input type="radio" name="q1" value="a"> The component has more children</label>
+        <label><input type="radio" name="q1" value="b"> The component took more time to render</label>
+        <label><input type="radio" name="q1" value="c"> The component has more state variables</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. What does a yellow bar in the Profiler flame graph represent?</strong></p>
+        <label><input type="radio" name="q2" value="a"> The component mounted for the first time</label>
+        <label><input type="radio" name="q2" value="b"> The component re-rendered (update phase)</label>
+        <label><input type="radio" name="q2" value="c"> The component was unmounted</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. What is the primary purpose of why-did-you-render?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To automatically optimize components that re-render too often</label>
+        <label><input type="radio" name="q3" value="b"> To log detailed information about why a component re-rendered and what changed</label>
+        <label><input type="radio" name="q3" value="c"> To measure the memory usage of React components</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Use Profiler to Find Slow Components</h3>
+      <p>Add Profiler instrumentation to your app and optimize the slowest component you find.</p>
+      <pre><code>import React, { Profiler, useState, useCallback, useMemo } from 'react';
+import { View, Text, FlatList, Button, StyleSheet } from 'react-native';
+
+// Profiler callback — logs render times
+const onRender = (id, phase, actualDuration) => {
+  if (actualDuration > 16) { // longer than one frame (16ms)
+    console.warn(`[SLOW] ${id} ${phase}: ${actualDuration.toFixed(1)}ms`);
+  } else {
+    console.log(`[OK] ${id} ${phase}: ${actualDuration.toFixed(1)}ms`);
+  }
+};
+
+const ITEM_COUNT = 500;
+
+const Item = React.memo(function Item({ title, index }) {
+  return (
+    &lt;View style={styles.item}&gt;
+      &lt;Text&gt;{index + 1}. {title}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+});
+
+export default function ProfilerDemoScreen() {
+  const [count, setCount] = useState(0);
+  const [filter, setFilter] = useState('');
+
+  const data = useMemo(() => {
+    return Array.from({ length: ITEM_COUNT }, (_, i) => ({
+      id: String(i),
+      title: `Item ${i + 1} — ${Math.random().toString(36).slice(2, 6)}`,
+    }));
+  }, []);
+
+  const filteredData = useMemo(() => {
+    if (!filter) return data;
+    return data.filter(item =>
+      item.title.toLowerCase().includes(filter.toLowerCase())
+    );
+  }, [data, filter]);
+
+  const increment = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Profiler id="AppRoot" onRender={onRender}&gt;
+        &lt;Text style={styles.title}&gt;Profiler Demo&lt;/Text&gt;
+        &lt;Text&gt;Count: {count}&lt;/Text&gt;
+        &lt;Button title="Increment (should not re-render list)" onPress={increment} /&gt;
+
+        &lt;Profiler id="ItemList" onRender={onRender}&gt;
+          &lt;FlatList
+            data={filteredData}
+            keyExtractor={item => item.id}
+            renderItem={({ item, index }) => (
+              &lt;Item title={item.title} index={index} /&gt;
+            )}
+            style={styles.list}
+          /&gt;
+        &lt;/Profiler&gt;
+      &lt;/Profiler&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  title: { fontSize: 20, fontWeight: 'bold', marginBottom: 12 },
+  list: { marginTop: 16 },
+  item: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+});</code></pre>
+      <p>Open the React DevTools Profiler, record while tapping Increment, and verify that the ItemList does NOT appear in the flame graph (since React.memo prevents re-renders). Then intentionally remove React.memo and observe the difference.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>The React DevTools Profiler records every render and shows timing information per component</li>
+        <li>Flame graphs show component render time horizontally — wider bars = slower renders</li>
+        <li>Yellow bars = re-renders (updates), green bars = first mounts — focus on unnecessary yellow bars</li>
+        <li>The Profiler tells you WHY a component rendered (props changed, state changed, parent rendered)</li>
+        <li>Work top-down: find the widest bar, check if it should have re-rendered, apply memoization</li>
+        <li>The &lt;Profiler&gt; component lets you instrument specific parts of your component tree</li>
+        <li>why-did-you-render logs every unnecessary re-render with detailed change information</li>
+        <li>Always profile before and after optimization to verify actual improvements</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React DevTools Profiler docs</strong> — Official guide on using the Profiler to measure rendering performance. <a href="https://react.dev/reference/react/Profiler" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

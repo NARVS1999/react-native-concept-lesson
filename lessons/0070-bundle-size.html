@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 70: Bundle Size Optimization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 70: Bundle Size Optimization</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn to analyze your app's bundle size, apply tree shaking, use selective imports, replace heavy libraries, and implement lazy loading to reduce the final bundle.</div>
+
+      <h2>Why Bundle Size Matters</h2>
+      <p>Bundle size directly impacts download time, startup performance, and memory usage. Every unused kilobyte in your bundle takes up space on users' devices and slows down loading — especially on slower networks and lower-end devices.</p>
+
+      <h3>Bundle Analysis Tools</h3>
+      <p>First, measure what you have. Metro bundler provides a visualizer for React Native bundles.</p>
+      <pre><code># Install the metro visualization plugin
+npm install --save-dev metro-react-native-babel-preset
+
+# Generate a bundle and analyze it
+npx react-native bundle --platform ios --dev false --entry-file index.js --bundle-output /tmp/main.jsbundle
+
+# Use a tool like react-native-bundle-visualizer
+npx react-native-bundle-visualizer</code></pre>
+      <p>The visualizer shows a treemap of your bundle — the largest rectangles represent the biggest modules. This helps you identify which libraries consume the most space.</p>
+
+      <h3>Tree Shaking</h3>
+      <p>Tree shaking is the bundler's ability to eliminate unused code. Metro (used by React Native) supports tree shaking for ES modules. The key rule: use named imports instead of importing entire libraries.</p>
+      <pre><code>// BAD — imports the entire lodash library (~70KB)
+import _ from 'lodash';
+const result = _.debounce(fn, 300);
+
+// GOOD — imports only the function you need (~2KB)
+import debounce from 'lodash/debounce';
+const result = debounce(fn, 300);
+
+// BAD — imports everything from react-native-elements
+import { Button, Icon, Input, Card } from 'react-native-elements';
+
+// GOOD — import only what you use
+import Button from 'react-native-elements/dist/Button';
+import Icon from 'react-native-elements/dist/Icon';</code></pre>
+
+      <h3>Selective Imports</h3>
+      <p>Many popular libraries support selective imports. Always check the documentation for the recommended import path.</p>
+      <pre><code>// moment.js is huge (~300KB with locales)
+// Use date-fns instead (~5KB per function)
+import { format, addDays, differenceInDays } from 'date-fns';
+
+// If you must use moment, import only needed locales
+import moment from 'moment';
+import 'moment/locale/en-gb'; // only load the locale you need
+
+// For icons, use react-native-vector-icons selectively
+import Icon from 'react-native-vector-icons/FontAwesome'; // one icon set
+// NOT import Icon from 'react-native-vector-icons'; // all icon sets</code></pre>
+
+      <h3>Replacing Heavy Libraries</h3>
+      <p>Common heavy libraries and their lighter alternatives:</p>
+      <pre><code>// Instead of moment.js (~300KB), use date-fns (~2KB per function)
+import { format } from 'date-fns';
+
+// Instead of lodash (~70KB), use lodash-es with tree shaking
+import { debounce, throttle } from 'lodash-es';
+
+// Instead of axios (~14KB), use fetch (built-in) or ky (~3KB)
+// React Native has fetch built in — no extra library needed
+
+// Instead of react-native-maps when you only need a static map,
+// consider using an image API or react-native-webview</code></pre>
+
+      <h3>Lazy Loading for Size Reduction</h3>
+      <p>Split your app so heavy screens load only when navigated to. React Navigation supports lazy loading screens by default.</p>
+      <pre><code>import React, { Suspense, lazy } from 'react';
+import { ActivityIndicator } from 'react-native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+const HomeScreen = lazy(() => import('./screens/HomeScreen'));
+const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
+
+const Stack = createNativeStackNavigator();
+
+function AppNavigator() {
+  return (
+    &lt;Suspense fallback={&lt;ActivityIndicator /&gt;}&gt;
+      &lt;Stack.Navigator&gt;
+        &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+        &lt;Stack.Screen name="Profile" component={ProfileScreen} /&gt;
+        &lt;Stack.Screen name="Settings" component={SettingsScreen} /&gt;
+      &lt;/Stack.Navigator&gt;
+    &lt;/Suspense&gt;
+  );
+}
+
+// Each screen is loaded as a separate chunk
+// Only HomeScreen is in the initial bundle
+// ProfileScreen and SettingsScreen load on demand</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. What is tree shaking?</strong></p>
+        <label><input type="radio" name="q1" value="a"> A technique to compress JavaScript files</label>
+        <label><input type="radio" name="q1" value="b"> The bundler's ability to eliminate unused code from the final bundle</label>
+        <label><input type="radio" name="q1" value="c"> A way to split code into multiple files at runtime</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. Which import is most tree-shakeable?</strong></p>
+        <label><input type="radio" name="q2" value="a"> import _ from 'lodash';</label>
+        <label><input type="radio" name="q2" value="b"> import debounce from 'lodash/debounce';</label>
+        <label><input type="radio" name="q2" value="c"> const lodash = require('lodash');</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. What is the primary benefit of lazy loading screens?</strong></p>
+        <label><input type="radio" name="q3" value="a"> It makes screens load faster by preloading them</label>
+        <label><input type="radio" name="q3" value="b"> It reduces the initial bundle size by deferring non-critical screen code</label>
+        <label><input type="radio" name="q3" value="c"> It prevents memory leaks during navigation</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Analyze and Reduce Your Bundle Size</h3>
+      <p>Use the bundle visualizer to identify the largest dependencies, then replace or tree-shake them.</p>
+      <pre><code>// Step 1: Install the visualizer
+// npm install --save-dev react-native-bundle-visualizer
+
+// Step 2: Run the visualizer
+// npx react-native-bundle-visualizer --platform ios
+
+// Step 3: Replace heavy libraries identified in the report
+
+// BEFORE: Using moment (heavy)
+import moment from 'moment';
+const formatted = moment().format('MMMM Do YYYY');
+
+// AFTER: Using date-fns (lightweight, tree-shakeable)
+import { format } from 'date-fns';
+const formatted = format(new Date(), 'MMMM do yyyy');
+
+// BEFORE: Using lodash (heavy)
+import _ from 'lodash';
+const filtered = _.filter(items, { active: true });
+const sorted = _.sortBy(items, 'name');
+
+// AFTER: Using lodash-es (tree-shakeable)
+import filter from 'lodash/filter';
+import sortBy from 'lodash/sortBy';
+const filtered = filter(items, { active: true });
+const sorted = sortBy(items, 'name');
+
+// Step 4: Verify the improvement
+// Run the visualizer again and compare the bundle sizes</code></pre>
+      <p>After making changes, regenerate the bundle and compare the size before and after.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Bundle size impacts download time, startup speed, and memory usage</li>
+        <li>Use react-native-bundle-visualizer to analyze what takes up space in your bundle</li>
+        <li>Tree shaking eliminates unused code — use named imports and avoid default imports of entire libraries</li>
+        <li>Selective imports let you load only specific parts of a library (e.g., lodash/debounce)</li>
+        <li>Replace heavy libraries with lighter alternatives (date-fns over moment, fetch over axios)</li>
+        <li>Lazy loading screens defers non-critical code to reduce initial bundle size</li>
+        <li>Always measure before and after changes to confirm improvements</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Native Performance: Bundle Size</strong> — Official guide on analyzing and optimizing bundle size in React Native apps. <a href="https://reactnative.dev/docs/optimizing-bundle-size" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 74: Memory Profiling</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 74: Memory Profiling</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn to use memory profiling tools, detect memory leaks, take heap snapshots, understand common memory issues in React Native, and monitor memory usage in production.</div>
+
+      <h2>Why Memory Profiling Matters</h2>
+      <p>Memory leaks cause apps to slow down, consume excessive battery, and eventually crash. In React Native, memory issues are especially dangerous because they accumulate over long sessions — a user who keeps your app open for hours may experience crashes that never appear in short testing sessions.</p>
+
+      <h3>Memory Profiling Tools</h3>
+      <p>Several tools help you understand your app's memory behavior:</p>
+      <pre><code>// iOS: Xcode Instruments > Memory Graph Debugger
+// 1. Open Xcode → Product → Profile (Cmd+I)
+// 2. Select "Leaks" or "Allocations" instrument
+// 3. Record your app's memory usage over time
+
+// Android: Android Studio Profiler
+// 1. Open Android Studio → View → Tool Windows → Profiler
+// 2. Select your app process
+// 3. Click on Memory to see heap allocation over time
+
+// React Native: Performance Monitor (Dev Menu)
+// Shake device → Show Perf Monitor
+// Watch the "Used JS Heap" value — if it keeps growing, you have a leak
+
+// Programmatic memory monitoring
+import { NativeModules } from 'react-native';
+
+const logMemory = () => {
+  if (global.HermesInternal) {
+    const heapStats = global.HermesInternal.getInstrumentedStats();
+    console.log('JS Heap:', {
+      used: heapStats.js_heapSizeUsed,
+      allocated: heapStats.js_heapSizeAllocated,
+    });
+  }
+};
+
+// Log memory every 5 seconds in development
+setInterval(logMemory, 5000);</code></pre>
+
+      <h3>Detecting Memory Leaks</h3>
+      <p>A memory leak occurs when objects are no longer needed but remain in memory because something still references them. Common signs: memory keeps growing over time, never stabilizes.</p>
+      <pre><code>// Common leak: forgetting to clean up event listeners
+// BAD
+useEffect(() => {
+  const subscription = DeviceEventEmitter.addListener('event', handler);
+  // No cleanup — listener persists after component unmounts
+}, []);
+
+// GOOD
+useEffect(() => {
+  const subscription = DeviceEventEmitter.addListener('event', handler);
+  return () => subscription.remove(); // cleanup on unmount
+}, []);
+
+// Common leak: timer not cleared
+// BAD
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchData();
+  }, 5000);
+  // No cleanup — interval runs forever
+}, []);
+
+// GOOD
+useEffect(() => {
+  const interval = setInterval(() => {
+    fetchData();
+  }, 5000);
+  return () => clearInterval(interval); // cleanup on unmount
+}, []);
+
+// Common leak: large arrays accumulated in state
+// BAD
+const ChatScreen = () => {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onNewMessage((msg) => {
+      setMessages(prev => [...prev, msg]); // grows forever
+    });
+    return unsubscribe;
+  }, []);
+};
+
+// GOOD — limit the number of messages kept in memory
+const ChatScreen = () => {
+  const MAX_MESSAGES = 100;
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    const unsubscribe = onNewMessage((msg) => {
+      setMessages(prev => {
+        const updated = [...prev, msg];
+        return updated.length > MAX_MESSAGES
+          ? updated.slice(-MAX_MESSAGES) // keep only last 100
+          : updated;
+      });
+    });
+    return unsubscribe;
+  }, []);
+};</code></pre>
+
+      <h3>Heap Snapshots</h3>
+      <p>Heap snapshots capture the state of memory at a specific moment. Compare two snapshots to find what grew between them.</p>
+      <pre><code>// iOS: Use Xcode Allocations instrument
+// 1. Start recording
+// 2. Perform an action (e.g., navigate to a screen and back)
+// 3. Take a heap snapshot
+// 4. Perform the action again
+// 5. Take another heap snapshot
+// 6. Compare the two snapshots — objects that grew are potential leaks
+
+// Android: Use Android Studio Memory Profiler
+// 1. Click "Capture heap dump"
+// 2. Perform an action
+// 3. Capture another heap dump
+// 4. Compare — look for objects that increased in count
+
+// React Native: Use react-native-flipper for heap snapshots
+// Install: npm install flipper-plugin-react-query-inspector
+
+// Programmatic: Force garbage collection and measure
+const measureMemoryLeak = async (action) => {
+  // Take baseline measurement
+  const before = global.HermesInternal?.getInstrumentedStats();
+
+  // Perform the action multiple times
+  for (let i = 0; i < 10; i++) {
+    await action();
+  }
+
+  // Force garbage collection if available
+  if (global.gc) global.gc();
+
+  // Take measurement after
+  const after = global.HermesInternal?.getInstrumentedStats();
+
+  console.log('Memory before:', before?.js_heapSizeUsed);
+  console.log('Memory after:', after?.js_heapSizeUsed);
+  console.log('Growth:', after?.js_heapSizeUsed - before?.js_heapSizeUsed);
+};</code></pre>
+
+      <h3>Common Memory Issues in React Native</h3>
+      <pre><code>// 1. Image caching — images stay in memory after navigating away
+// Solution: Use FastImage with cacheControl or clear cache on unmount
+import FastImage from 'react-native-fast-image';
+
+useEffect(() => {
+  return () => {
+    FastImage.clearMemoryCache(); // clear when screen unmounts
+  };
+}, []);
+
+// 2. Navigation memory — old screens remain mounted
+// Solution: Use detachInactiveScreens in React Navigation
+&lt;Stack.Navigator
+  screenOptions={{
+    detachInactiveScreens: true, // unmount inactive screens
+  }}
+&gt;
+  ...
+&lt;/Stack.Navigator&gt;
+
+// 3. Large list data — FlatList keeps items in memory
+// Solution: Use removeClippedSubviews and limit windowSize
+&lt;FlatList
+  data={largeDataset}
+  removeClippedSubviews={true}  // remove offscreen views from native tree
+  windowSize={5}                 // render only 5 screens worth of items
+  maxToRenderPerBatch={10}       // render 10 items per batch
+  initialNumToRender={10}        // render 10 items initially
+/&gt;
+
+// 4. Event listener accumulation — multiple subscriptions
+// Solution: Always return cleanup functions
+useEffect(() => {
+  const sub1 = emitter.addListener('event1', handler1);
+  const sub2 = emitter.addListener('event2', handler2);
+  return () => {
+    sub1.remove();
+    sub2.remove();
+  };
+}, []);
+
+// 5. WebSocket connections not closed
+// Solution: Close connections on unmount
+useEffect(() => {
+  const ws = new WebSocket('wss://api.example.com');
+  ws.onmessage = handleMessage;
+
+  return () => ws.close(); // close on unmount
+}, []);</code></pre>
+
+      <h3>Monitoring Memory in Production</h3>
+      <pre><code>// Send memory metrics to your analytics service
+import { Platform } from 'react-native';
+
+const reportMemoryUsage = async (screenName) => {
+  if (global.HermesInternal) {
+    const stats = global.HermesInternal.getInstrumentedStats();
+    await fetch('/api/analytics/memory', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        screen: screenName,
+        heapUsed: stats.js_heapSizeUsed,
+        heapAllocated: stats.js_heapSizeAllocated,
+        platform: Platform.OS,
+        timestamp: Date.now(),
+      }),
+    });
+  }
+};
+
+// Use in navigation state change listener
+const reportOnNavigation = (state) => {
+  const currentRoute = state?.routes?.[state.index]?.name;
+  if (currentRoute) {
+    reportMemoryUsage(currentRoute);
+  }
+};</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. What is a memory leak?</strong></p>
+        <label><input type="radio" name="q1" value="a"> When an app uses more memory than the device has available</label>
+        <label><input type="radio" name="q1" value="b"> When objects remain in memory because something still references them after they're no longer needed</label>
+        <label><input type="radio" name="q1" value="c"> When the JavaScript engine fails to garbage collect deleted variables</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. What is the purpose of comparing two heap snapshots?</strong></p>
+        <label><input type="radio" name="q2" value="a"> To see the total memory usage of the app</label>
+        <label><input type="radio" name="q2" value="b"> To identify objects that grew between snapshots, indicating potential leaks</label>
+        <label><input type="radio" name="q2" value="c"> To measure how fast the garbage collector runs</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. Why should you always return a cleanup function from useEffect?</strong></p>
+        <label><input type="radio" name="q3" value="a"> To prevent the component from re-rendering</label>
+        <label><input type="radio" name="q3" value="b"> To remove event listeners, timers, and subscriptions that would otherwise leak memory</label>
+        <label><input type="radio" name="q3" value="c"> To make the component render faster on subsequent visits</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Profile Memory Usage in Your App</h3>
+      <p>Build a memory monitoring hook and identify leaks by navigating through your app.</p>
+      <pre><code>import { useEffect, useRef, useCallback } from 'react';
+import { DeviceEventEmitter, Platform } from 'react-native';
+
+// Hook to monitor memory usage in a component
+function useMemoryMonitor(componentName) {
+  const renderCount = useRef(0);
+
+  useEffect(() => {
+    renderCount.current += 1;
+    console.log(`[${componentName}] Mounted (render #${renderCount.current})`);
+
+    // Log memory on mount
+    if (global.HermesInternal) {
+      const stats = global.HermesInternal.getInstrumentedStats();
+      console.log(`[${componentName}] Memory:`, {
+        heapUsed: `${(stats.js_heapSizeUsed / 1024 / 1024).toFixed(2)} MB`,
+        heapAllocated: `${(stats.js_heapSizeAllocated / 1024 / 1024).toFixed(2)} MB`,
+      });
+    }
+
+    return () => {
+      console.log(`[${componentName}] Unmounted`);
+    };
+  }, [componentName]);
+}
+
+// Hook to detect memory leaks by tracking active subscriptions
+function useLeakDetector() {
+  const activeRefs = useRef(new Set());
+
+  const track = useCallback((name) => {
+    activeRefs.current.add(name);
+    console.log(`[LeakDetector] Active: ${name}`);
+    return () => {
+      activeRefs.current.delete(name);
+      console.log(`[LeakDetector] Cleaned: ${name}`);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (activeRefs.current.size > 0) {
+        console.warn('[LeakDetector] Potential leaks on unmount:',
+          Array.from(activeRefs.current));
+      }
+    };
+  }, []);
+
+  return track;
+}
+
+// Usage in a component
+function ChatScreen() {
+  useMemoryMonitor('ChatScreen');
+  const track = useLeakDetector();
+
+  useEffect(() => {
+    const cleanup1 = track('chatListener');
+    const ws = new WebSocket('wss://chat.example.com');
+
+    const cleanup2 = track('websocket');
+    const interval = setInterval(pingServer, 30000);
+    const cleanup3 = track('heartbeat');
+
+    return () => {
+      cleanup1();
+      cleanup2();
+      cleanup3();
+      ws.close();
+      clearInterval(interval);
+    };
+  }, [track]);
+
+  return (
+    // ... chat UI
+  );
+}
+
+// Test for leaks: navigate to screen and back 10 times
+const testForLeaks = async (navigation) => {
+  const before = global.HermesInternal?.getInstrumentedStats();
+
+  for (let i = 0; i &lt; 10; i++) {
+    navigation.navigate('ChatScreen');
+    await new Promise(r => setTimeout(r, 1000));
+    navigation.goBack();
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  if (global.gc) global.gc();
+  const after = global.HermesInternal?.getInstrumentedStats();
+
+  const growth = after.js_heapSizeUsed - before.js_heapSizeUsed;
+  console.log(`Memory after 10 navigations: ${(growth / 1024 / 1024).toFixed(2)} MB growth`);
+
+  if (growth > 5 * 1024 * 1024) { // 5MB threshold
+    console.warn('Possible memory leak detected!');
+  }
+};</code></pre>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Memory leaks cause apps to slow down, consume excessive battery, and crash over long sessions</li>
+        <li>Use Xcode Instruments (iOS), Android Studio Profiler, or Hermes heap stats to profile memory</li>
+        <li>Compare heap snapshots before and after actions to identify what's growing in memory</li>
+        <li>Common leaks: uncleared timers, missing event listener cleanup, unbounded data accumulation, unclosed connections</li>
+        <li>Always return cleanup functions from useEffect to remove listeners, timers, and subscriptions</li>
+        <li>Use removeClippedSubviews and windowSize on FlatList to limit memory for large lists</li>
+        <li>Monitor memory in production by sending heap stats to your analytics service</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Native Performance: Memory</strong> — Official guide on understanding and debugging memory usage in React Native. <a href="https://reactnative.dev/docs/debugging#performance-profiling" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

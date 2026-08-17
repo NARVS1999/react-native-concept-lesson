@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 69: Re-render Optimization</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 69: Re-render Optimization</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Learn to identify unnecessary re-renders, use React DevTools Profiler to measure them, and apply React.memo, useMemo, and useCallback to optimize component performance.</div>
+
+      <h2>Why Re-renders Matter</h2>
+      <p>Every time a component's state or props change, React re-renders that component and all its children. In React Native, unnecessary re-renders cause visible lag, dropped frames, and wasted CPU cycles — especially in lists and complex screens.</p>
+
+      <h3>Identifying Unnecessary Re-renders</h3>
+      <p>The fastest way to spot unnecessary re-renders is using the React DevTools Profiler. Enable "Highlight updates when components render" in React DevTools settings. Components that flash on screen during an unrelated state change are re-rendering unnecessarily.</p>
+
+      <h3>React.memo — Shallow Comparison</h3>
+      <p><code>React.memo</code> wraps a component so it only re-renders when its props change (shallow comparison). This is the simplest optimization.</p>
+      <pre><code>// Without React.memo — re-renders on every parent render
+function UserCard({ name, email }) {
+  console.log('UserCard rendered');
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{name}&lt;/Text&gt;
+      &lt;Text&gt;{email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+}
+
+// With React.memo — only re-renders when props change
+const UserCard = React.memo(function UserCard({ name, email }) {
+  console.log('UserCard rendered');
+  return (
+    &lt;View&gt;
+      &lt;Text&gt;{name}&lt;/Text&gt;
+      &lt;Text&gt;{email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+});
+
+// Usage
+function ParentScreen() {
+  const [count, setCount] = useState(0);
+
+  return (
+    &lt;View&gt;
+      &lt;UserCard name="John" email="john@example.com" /&gt;
+      &lt;Button title={`Count: ${count}`} onPress={() => setCount(c => c + 1)} /&gt;
+    &lt;/View&gt;
+  );
+}
+// UserCard will NOT re-render when count changes</code></pre>
+
+      <h3>useMemo — Memoizing Expensive Values</h3>
+      <p><code>useMemo</code> caches the result of a computation so it only recalculates when dependencies change. Useful for expensive filtering, sorting, or derived data.</p>
+      <pre><code>import { useMemo } from 'react';
+
+function FilteredList({ items, searchTerm }) {
+  // Without useMemo — recalculates on every render
+  // const filtered = items.filter(i => i.name.includes(searchTerm));
+
+  // With useMemo — only recalculates when items or searchTerm change
+  const filtered = useMemo(() => {
+    console.log('Filtering...');
+    return items.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [items, searchTerm]);
+
+  return (
+    &lt;FlatList
+      data={filtered}
+      keyExtractor={item => item.id}
+      renderItem={({ item }) => &lt;Text&gt;{item.name}&lt;/Text&gt;}
+    /&gt;
+  );
+}</code></pre>
+
+      <h3>useCallback — Memoizing Functions</h3>
+      <p>Every render creates a new function reference. <code>useCallback</code> preserves the same function between renders unless dependencies change. This prevents child components from re-rendering due to new function props.</p>
+      <pre><code>import { useCallback, useState } from 'react';
+
+function TodoList() {
+  const [todos, setTodos] = useState([]);
+  const [input, setInput] = useState('');
+
+  // Without useCallback — new function every render, child re-renders
+  // const addTodo = () => { setTodos([...todos, input]); setInput(''); };
+
+  // With useCallback — stable reference
+  const addTodo = useCallback(() => {
+    setTodos(prev => [...prev, input]);
+    setInput('');
+  }, [input]);
+
+  const removeTodo = useCallback((id) => {
+    setTodos(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  return (
+    &lt;View&gt;
+      &lt;TextInput value={input} onChangeText={setInput} /&gt;
+      &lt;Button title="Add" onPress={addTodo} /&gt;
+      {todos.map(todo => (
+        &lt;TodoItem key={todo.id} todo={todo} onRemove={removeTodo} /&gt;
+      ))}
+    &lt;/View&gt;
+  );
+}
+
+const TodoItem = React.memo(function TodoItem({ todo, onRemove }) {
+  console.log('TodoItem rendered', todo.id);
+  return (
+    &lt;TouchableOpacity onPress={() => onRemove(todo.id)}&gt;
+      &lt;Text&gt;{todo.text}&lt;/Text&gt;
+    &lt;/TouchableOpacity&gt;
+  );
+});</code></pre>
+
+      <h3>Avoiding Inline Objects and Arrays</h3>
+      <p>Inline objects and arrays create new references every render, breaking <code>React.memo</code> and <code>useMemo</code>. Always define styles and objects outside the render function or use <code>useMemo</code>.</p>
+      <pre><code>// BAD — new object every render
+function Card() {
+  return &lt;View style={{ padding: 10, margin: 5 }}&gt;...&lt;/View&gt;;
+}
+
+// GOOD — constant reference
+const styles = StyleSheet.create({
+  card: { padding: 10, margin: 5 },
+});
+
+function Card() {
+  return &lt;View style={styles.card}&gt;...&lt;/View&gt;;
+}
+
+// BAD — new function passed to memoized child
+function Parent() {
+  const config = { theme: 'dark' }; // new object every render
+  return &lt;Child config={config} /&gt;;
+}
+
+// GOOD — memoize the object
+function Parent() {
+  const config = useMemo(() => ({ theme: 'dark' }), []);
+  return &lt;Child config={config} /&gt;;
+}</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. What does React.memo do?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It memoizes the component's state</label>
+        <label><input type="radio" name="q1" value="b"> It skips re-rendering a component when its props haven't changed (shallow comparison)</label>
+        <label><input type="radio" name="q1" value="c"> It prevents the component from ever re-rendering</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. When should you use useCallback over useMemo?</strong></p>
+        <label><input type="radio" name="q2" value="a"> When you need to memoize a computed value</label>
+        <label><input type="radio" name="q2" value="b"> When you need to memoize a function to pass as a prop</label>
+        <label><input type="radio" name="q2" value="c"> When you need to memoize a JSX element</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. Why do inline objects break React.memo optimization?</strong></p>
+        <label><input type="radio" name="q3" value="a"> They cause memory leaks</label>
+        <label><input type="radio" name="q3" value="b"> They create a new reference every render, so shallow comparison always detects a change</label>
+        <label><input type="radio" name="q3" value="c"> They are slower to render than constant objects</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Profile and Optimize a Component</h3>
+      <p>Create a screen with a list of users and a counter button. The user list should NOT re-render when the counter changes.</p>
+      <pre><code>import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, Button, FlatList, StyleSheet } from 'react-native';
+
+const USERS = Array.from({ length: 50 }, (_, i) => ({
+  id: String(i),
+  name: `User ${i + 1}`,
+  email: `user${i + 1}@example.com`,
+}));
+
+const UserItem = React.memo(function UserItem({ user }) {
+  console.log(`Rendering UserItem: ${user.id}`);
+  return (
+    &lt;View style={styles.userItem}&gt;
+      &lt;Text style={styles.name}&gt;{user.name}&lt;/Text&gt;
+      &lt;Text style={styles.email}&gt;{user.email}&lt;/Text&gt;
+    &lt;/View&gt;
+  );
+});
+
+export default function OptimizationScreen() {
+  const [count, setCount] = useState(0);
+  const [filter, setFilter] = useState('');
+
+  const increment = useCallback(() => {
+    setCount(prev => prev + 1);
+  }, []);
+
+  const filteredUsers = useMemo(() => {
+    if (!filter) return USERS;
+    return USERS.filter(u => u.name.toLowerCase().includes(filter.toLowerCase()));
+  }, [filter]);
+
+  return (
+    &lt;View style={styles.container}&gt;
+      &lt;Text style={styles.count}&gt;Count: {count}&lt;/Text&gt;
+      &lt;Button title="Increment" onPress={increment} /&gt;
+      &lt;FlatList
+        data={filteredUsers}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => &lt;UserItem user={item} /&gt;}
+        style={styles.list}
+      /&gt;
+    &lt;/View&gt;
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 16 },
+  count: { fontSize: 24, marginBottom: 12 },
+  list: { marginTop: 16 },
+  userItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  name: { fontSize: 16, fontWeight: 'bold' },
+  email: { fontSize: 14, color: '#666' },
+});</code></pre>
+      <p>Open React DevTools Profiler, record while tapping Increment, and verify UserItem components do not appear in the commit flamegraph.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Unnecessary re-renders waste CPU and cause frame drops in React Native</li>
+        <li>React.memo wraps components to skip re-renders when props haven't changed (shallow comparison)</li>
+        <li>useMemo caches expensive computations and recalculates only when dependencies change</li>
+        <li>useCallback memoizes functions to maintain stable references for child components</li>
+        <li>Inline objects and arrays create new references every render — define them as constants or memoize them</li>
+        <li>Use React DevTools Profiler with "Highlight updates" to visually identify unnecessary re-renders</li>
+        <li>Profile first, optimize second — not every component needs memoization</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React docs: useMemo and useCallback</strong> — Official guide on memoization hooks and when to use them. <a href="https://react.dev/reference/react/useMemo" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>

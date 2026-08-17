@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 71: Startup Performance</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+      <h1>Lesson 71: Startup Performance</h1>
+      <p><em>Phase 9 — Optimization Concepts</em></p>
+      <div class="info"><strong>Lesson Goal</strong> Understand Hermes bytecode compilation, implement lazy screen loading, optimize splash screens, use inline requires, and measure your app's cold start time.</div>
+
+      <h2>Why Startup Time Matters</h2>
+      <p>Cold start time is the time from when a user taps your app icon to when the first screen appears. Users expect apps to load in under 2 seconds. Every additional second of startup time increases abandonment rates by up to 30%.</p>
+
+      <h3>Hermes Bytecode Compilation</h3>
+      <p>Hermes is React Native's default JavaScript engine. It pre-compiles JavaScript to bytecode at build time, which means the app doesn't need to parse raw JS at startup — it loads pre-compiled bytecode directly.</p>
+      <pre><code>// Hermes is enabled by default in new React Native projects
+// Check android/app/build.gradle:
+project.ext.react = [
+    enableHermes: true,  // <-- ensure this is true
+]
+
+// To verify Hermes is running in your app:
+if (global.HermesInternal) {
+  console.log('Using Hermes engine');
+} else {
+  console.log('Not using Hermes — consider enabling it');
+}
+
+// Hermes bytecode is generated during the build process
+// android/app/build/intermediates/merged_js/ for Android
+// ios/build/ for iOS</code></pre>
+
+      <h3>Lazy Loading Screens</h3>
+      <p>Don't load all screens at startup. Load them only when the user navigates to them for the first time.</p>
+      <pre><code>import React, { Suspense, lazy } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+
+// Only HomeScreen is loaded immediately
+const HomeScreen = lazy(() => import('./screens/HomeScreen'));
+
+// These load on-demand when navigated to
+const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
+const SettingsScreen = lazy(() => import('./screens/SettingsScreen'));
+const ChatScreen = lazy(() => import('./screens/ChatScreen'));
+
+const Stack = createNativeStackNavigator();
+
+function LoadingFallback() {
+  return (
+    &lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+      &lt;ActivityIndicator size="large" /&gt;
+    &lt;/View&gt;
+  );
+}
+
+export default function App() {
+  return (
+    &lt;NavigationContainer&gt;
+      &lt;Suspense fallback={&lt;LoadingFallback /&gt;}&gt;
+        &lt;Stack.Navigator initialRouteName="Home"&gt;
+          &lt;Stack.Screen name="Home" component={HomeScreen} /&gt;
+          &lt;Stack.Screen name="Profile" component={ProfileScreen} /&gt;
+          &lt;Stack.Screen name="Settings" component={SettingsScreen} /&gt;
+          &lt;Stack.Screen name="Chat" component={ChatScreen} /&gt;
+        &lt;/Stack.Navigator&gt;
+      &lt;/Suspense&gt;
+    &lt;/NavigationContainer&gt;
+  );
+}</code></pre>
+
+      <h3>Splash Screen Optimization</h3>
+      <p>The splash screen is the first thing users see. It should display instantly and while your app loads. Use react-native-splash-screen to keep it visible until your app is ready.</p>
+      <pre><code>// Install: npm install react-native-splash-screen
+
+// In your root component (App.js)
+import React, { useEffect } from 'react';
+import SplashScreen from 'react-native-splash-screen';
+
+export default function App() {
+  useEffect(() => {
+    // Hide splash after your app is fully loaded
+    // e.g., after fetching initial data
+    initializeApp().then(() => {
+      SplashScreen.hide();
+    });
+  }, []);
+
+  return (
+    // Your app content
+  );
+}
+
+// Android: In MainActivity.java
+// import android.os.Bundle;
+// import org.devio.rn.splashscreen.SplashScreen;
+//
+// public class MainActivity extends ReactActivity {
+//   @Override
+//   protected void onCreate(Bundle savedInstanceState) {
+//     SplashScreen.show(this);
+//     super.onCreate(savedInstanceState);
+//   }
+// }
+
+// iOS: In AppDelegate.m
+// #import "RNSplashScreen.h"
+//
+// - (BOOL)application:(UIApplication *)application
+//     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+//   [RNSplashScreen show];
+//   return YES;
+// }</code></pre>
+
+      <h3>Inline Requires</h3>
+      <p>Inline requires defer the loading of a module until it's actually used. Instead of importing everything at the top of your file, require modules where they're first used.</p>
+      <pre><code>// BEFORE: All imports loaded at startup
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import HeavyComponent from './HeavyComponent';
+import Analytics from './Analytics';
+
+function HomeScreen() {
+  const handlePress = () => {
+    Analytics.track('button_pressed');
+  };
+
+  return (
+    &lt;View&gt;
+      &lt;HeavyComponent /&gt;
+      &lt;Button onPress={handlePress} title="Press" /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// AFTER: Inline requires — modules load only when first used
+import React from 'react';
+import { View, Text, StyleSheet, Button } from 'react-native';
+
+function HomeScreen() {
+  const handlePress = () => {
+    // Analytics module loads only when button is pressed
+    const Analytics = require('./Analytics');
+    Analytics.track('button_pressed');
+  };
+
+  const renderHeavy = () => {
+    // HeavyComponent loads only when this function is called
+    const HeavyComponent = require('./HeavyComponent');
+    return &lt;HeavyComponent /&gt;;
+  };
+
+  return (
+    &lt;View&gt;
+      {renderHeavy()}
+      &lt;Button onPress={handlePress} title="Press" /&gt;
+    &lt;/View&gt;
+  );
+}
+
+// For React Navigation screens, use lazy() which is an inline require
+const ChatScreen = lazy(() => require('./screens/ChatScreen'));</code></pre>
+
+      <h3>Measuring Cold Start Time</h3>
+      <p>Use Xcode Instruments (iOS) or Android Studio Profiler to measure cold start time precisely. You can also measure it programmatically.</p>
+      <pre><code>// Measure time from app start to first render
+import { PerformanceObserver } from 'react-native-performance';
+
+// Log startup time
+const startTime = Date.now();
+
+// In your root component's useEffect
+useEffect(() => {
+  const startupTime = Date.now() - startTime;
+  console.log(`Cold start time: ${startupTime}ms`);
+
+  // Send to analytics
+  Analytics.track('startup_time', { duration: startupTime });
+}, []);
+
+// Android: Check logcat for startup timing
+// adb logcat | grep "ReactNativeJS"
+
+// iOS: Use Xcode Instruments > Time Profiler
+// Profile your app launch to see exactly where time is spent</code></pre>
+
+      <h2>Quick Quiz</h2>
+      <div class="quiz-question">
+        <p><strong>1. What is the primary benefit of Hermes bytecode compilation?</strong></p>
+        <label><input type="radio" name="q1" value="a"> It makes JavaScript code run faster at runtime</label>
+        <label><input type="radio" name="q1" value="b"> It pre-compiles JS to bytecode at build time, eliminating parsing overhead at startup</label>
+        <label><input type="radio" name="q1" value="c"> It reduces the memory footprint of JavaScript objects</label>
+        <div id="feedback1" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>2. What does an inline require do?</strong></p>
+        <label><input type="radio" name="q2" value="a"> It imports a module at the top of the file for faster access</label>
+        <label><input type="radio" name="q2" value="b"> It defers loading a module until the code path that uses it is actually executed</label>
+        <label><input type="radio" name="q2" value="c"> It forces a module to load synchronously during render</label>
+        <div id="feedback2" class="quiz-feedback"></div>
+      </div>
+      <div class="quiz-question">
+        <p><strong>3. When should you hide the splash screen?</strong></p>
+        <label><input type="radio" name="q3" value="a"> Immediately when the app starts</label>
+        <label><input type="radio" name="q3" value="b"> After your app has fully initialized (data fetched, components mounted)</label>
+        <label><input type="radio" name="q3" value="c"> After a fixed timeout of 2 seconds</label>
+        <div id="feedback3" class="quiz-feedback"></div>
+      </div>
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project"><h3>Mini-Project: Optimize Your App's Startup Time</h3>
+      <p>Measure your current startup time, then apply optimizations and measure again.</p>
+      <pre><code>// Step 1: Add startup time measurement
+// In your root App.js or index.js
+const APP_START_TIME = Date.now();
+
+import React, { useEffect, useState } from 'react';
+import { View, ActivityIndicator, Text } from 'react-native';
+import SplashScreen from 'react-native-splash-screen';
+
+export default function App() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    async function initialize() {
+      // Perform your initialization tasks
+      await Promise.all([
+        loadUserData(),
+        loadSettings(),
+        preloadCriticalData(),
+      ]);
+
+      setReady(true);
+      SplashScreen.hide();
+
+      // Log startup time
+      const startupMs = Date.now() - APP_START_TIME;
+      console.log(`Startup: ${startupMs}ms`);
+    }
+
+    initialize();
+  }, []);
+
+  if (!ready) {
+    return (
+      &lt;View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}&gt;
+        &lt;ActivityIndicator size="large" /&gt;
+      &lt;/View&gt;
+    );
+  }
+
+  return (
+    // Your loaded app content
+  );
+}
+
+// Step 2: Apply lazy loading to navigation
+// Convert all screens except the initial one to lazy imports
+
+// Step 3: Apply inline requires for non-critical modules
+// Move heavy imports to where they're first used
+
+// Step 4: Measure again and compare
+// Log the startup time before and after optimizations</code></pre>
+      <p>Use Xcode Instruments or Android Profiler to get precise measurements before and after your optimizations.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li>Hermes pre-compiles JavaScript to bytecode at build time, eliminating parsing overhead at startup</li>
+        <li>Lazy loading screens with React.lazy() defers non-critical screen code to reduce initial load</li>
+        <li>Splash screens should stay visible until the app is fully initialized, then hide programmatically</li>
+        <li>Inline requires defer module loading until the code path is actually executed</li>
+        <li>Measure cold start time with Xcode Instruments, Android Profiler, or programmatic timing</li>
+        <li>Target under 2 seconds for cold start — every additional second increases abandonment rates</li>
+        <li>Profile first to identify bottlenecks, then apply targeted optimizations</li>
+      </ul>
+
+      <div class="info"><strong>Questions?</strong>Ask for clarification on anything that was unclear.</div>
+
+      <h2>Recommended Resource</h2>
+      <ul><li><strong>React Native Performance: Startup Time</strong> — Official guide on measuring and optimizing cold start time. <a href="https://reactnative.dev/docs/performance#startup-time" target="_blank" rel="noopener">Bisitahin</a></li></ul>
+
+      <div class="lesson-nav"></div>
+    </div>
+  </main>
+</div>
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
