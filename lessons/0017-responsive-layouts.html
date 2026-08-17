@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lesson 0017: Responsive Layouts</title>
+  <link rel="stylesheet" href="../assets/style.css">
+  <script>if (localStorage.getItem("theme") === "dark") document.documentElement.setAttribute("data-theme", "dark");</script>
+</head>
+<body>
+<button class="theme-toggle" id="themeToggle" title="Toggle theme">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+</button>
+<div class="lesson-layout">
+  <aside class="lesson-sidebar" id="lesson-sidebar"></aside>
+  <main class="lesson-main">
+    <div class="lesson-container">
+
+      <h1>Lesson 0017: Responsive Layouts</h1>
+      <p><em>Phase 6 — Design Concepts</em></p>
+
+      <div class="info">
+        <strong>Lesson Goal</strong>
+        Build layouts that adapt to different screen sizes, orientations, and device types.
+      </div>
+
+      <!-- ======== Section 1 ======== -->
+      <h2>useWindowDimensions</h2>
+      <p>The <code>useWindowDimensions</code> hook gives you the current screen size and updates when the screen rotates or resizes:</p>
+
+<pre><code>import { useWindowDimensions } from 'react-native';
+
+function ResponsiveLayout() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  return (
+    &lt;View style={{ flexDirection: isLandscape ? 'row' : 'column' }}&gt;
+      &lt;View style={{ flex: 1 }}&gt;&lt;Text&gt;Sidebar&lt;/Text&gt;&lt;/View&gt;
+      &lt;View style={{ flex: 2 }}&gt;&lt;Text&gt;Content&lt;/Text&gt;&lt;/View&gt;
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <!-- ======== Section 2 ======== -->
+      <h2>Breakpoints</h2>
+      <p>Create breakpoint constants for consistent responsive behavior:</p>
+
+<pre><code>// breakpoints.js
+export const breakpoints = {
+  phone: 0,
+  tablet: 768,
+  desktop: 1024,
+};
+
+// Usage
+function useBreakpoint() {
+  const { width } = useWindowDimensions();
+  if (width >= breakpoints.desktop) return 'desktop';
+  if (width >= breakpoints.tablet) return 'tablet';
+  return 'phone';
+}
+
+function AdaptiveGrid() {
+  const breakpoint = useBreakpoint();
+  const columns = breakpoint === 'desktop' ? 3 : breakpoint === 'tablet' ? 2 : 1;
+
+  return (
+    &lt;FlatList
+      data={items}
+      numColumns={columns}
+      key={columns} // Force re-render when columns change
+      renderItem={({ item }) => &lt;Card item={item} /&gt;}
+    /&gt;
+  );
+}</code></pre>
+
+      <!-- ======== Section 3 ======== -->
+      <h2>Orientation Handling</h2>
+      <p>React Native supports portrait and landscape modes. Use the <code>Dimensions</code> API or <code>useWindowDimensions</code> to adapt:</p>
+
+<pre><code>import { useWindowDimensions } from 'react-native';
+
+function OrientationAware() {
+  const { width, height } = useWindowDimensions();
+  const isLandscape = width > height;
+
+  return (
+    &lt;View style={{ flex: 1 }}&gt;
+      {isLandscape ? (
+        &lt;LandscapeLayout /&gt;
+      ) : (
+        &lt;PortraitLayout /&gt;
+      )}
+    &lt;/View&gt;
+  );
+}</code></pre>
+
+      <div class="tip">
+        <strong>Best Practice</strong>
+        Always test your app in both orientations. Use <code>useWindowDimensions</code> instead of <code>Dimensions.get()</code> because it updates dynamically.
+      </div>
+
+      <!-- ======== Quiz ======== -->
+      <h2>Quick Quiz</h2>
+
+      <div class="quiz-item">
+        <div class="quiz-question">1. Why prefer useWindowDimensions over Dimensions.get()?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q1" value="a"> It is faster</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="b"> It updates when the screen rotates or resizes</label>
+          <label class="quiz-option"><input type="radio" name="q1" value="c"> It supports more platforms</label>
+        </div>
+        <div class="quiz-feedback" id="feedback1"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">2. What is a breakpoint?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q2" value="a"> A type of error</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="b"> A screen size threshold for changing layout behavior</label>
+          <label class="quiz-option"><input type="radio" name="q2" value="c"> A debugging tool</label>
+        </div>
+        <div class="quiz-feedback" id="feedback2"></div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-question">3. Why pass key={columns} to FlatList with numColumns?</div>
+        <div class="quiz-options">
+          <label class="quiz-option"><input type="radio" name="q3" value="a"> It is required by React Native</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="b"> To force a re-render when column count changes</label>
+          <label class="quiz-option"><input type="radio" name="q3" value="c"> For performance optimization</label>
+        </div>
+        <div class="quiz-feedback" id="feedback3"></div>
+      </div>
+
+      <button class="quiz-submit" onclick="checkQuiz()">Check Answers</button>
+
+      <div class="project">
+        <h3>Mini-Project: Adaptive Card Grid</h3>
+        <p>Build a grid of cards that shows 1 column on phones, 2 on tablets, and 3 on desktop using useWindowDimensions and breakpoints.</p>
+      </div>
+
+      <h2>Summary</h2>
+      <ul>
+        <li><code>useWindowDimensions</code> updates on rotation/resize</li>
+        <li>Define <strong>breakpoints</strong> for consistent responsive behavior</li>
+        <li>Use <code>numColumns</code> with FlatList for adaptive grids</li>
+        <li>Always test in both portrait and landscape orientations</li>
+      </ul>
+
+      <div class="info">
+        <strong>Questions?</strong>
+        Ask for clarification on anything that was unclear.
+      </div>
+
+      <h2>Recommended Resource</h2>
+      <ul>
+        <li><strong>React Native — Using Window Dimensions</strong> — Official responsive layout guide. <a href="https://reactnative.dev/docs/dimensions" target="_blank" rel="noopener">Bisitahin</a></li>
+      </ul>
+
+      <div class="lesson-nav"></div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lessons-data.js"></script>
+<script src="../assets/sidebar.js"></script>
+<script src="../assets/lesson-nav.js"></script>
+<script>
+  function checkQuiz() {
+    var answers = { q1: 'b', q2: 'b', q3: 'b' };
+    for (var key in answers) {
+      var sel = document.querySelector('input[name="' + key + '"]:checked');
+      var fb = document.getElementById('feedback' + key.slice(1));
+      if (!sel) { fb.textContent = 'Please select an answer.'; fb.className = 'quiz-feedback incorrect'; continue; }
+      if (sel.value === answers[key]) { fb.textContent = '[correct] Correct! Well done.'; fb.className = 'quiz-feedback correct'; }
+      else { fb.textContent = '[incorrect] Review the material and try again.'; fb.className = 'quiz-feedback incorrect'; }
+    }
+  }
+</script>
+<script>
+  (function() { var btn = document.getElementById('themeToggle'); if (btn) { btn.addEventListener('click', function() { var html = document.documentElement; var isDark = html.getAttribute('data-theme') === 'dark'; if (isDark) { html.removeAttribute('data-theme'); localStorage.setItem('theme', 'light'); } else { html.setAttribute('data-theme', 'dark'); localStorage.setItem('theme', 'dark'); } }); } })();
+</script>
+</body>
+</html>
